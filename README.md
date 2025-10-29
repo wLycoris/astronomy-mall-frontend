@@ -1,4 +1,4 @@
-# astronomy-mall-frontend
+# astronomy-mall
 
 
 
@@ -15,14 +15,14 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
 
 ```
 cd existing_repo
-git remote add origin http://192.168.8.48/ly1/astronomy-mall-frontend.git
+git remote add origin http://192.168.8.48/ly1/astronomymall.git
 git branch -M main
 git push -uf origin main
 ```
 
 ## Integrate with your tools
 
-- [ ] [Set up project integrations](http://192.168.8.48/ly1/astronomy-mall-frontend/-/settings/integrations)
+- [ ] [Set up project integrations](http://192.168.8.48/ly1/astronomymall/-/settings/integrations)
 
 ## Collaborate with your team
 
