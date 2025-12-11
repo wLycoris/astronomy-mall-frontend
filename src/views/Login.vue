@@ -97,6 +97,7 @@
 </template>
 
 <script setup>
+import { setToken } from '@/utils/auth'
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'

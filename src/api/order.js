@@ -23,13 +23,19 @@ export function getOrderList(params) {
 }
 
 /**
- * 查询订单详情
+ * 查询订单详情（增加参数校验，避免 orderId 为 undefined 时请求报错）
  */
 export function getOrderDetail(orderId) {
-  return request({
-    url: `/order/detail/${orderId}`,
-    method: 'get'
-  })
+    if (!orderId) { // null / undefined / '' 都会拦截
+        console.warn('getOrderDetail 被非法调用，orderId:', orderId)
+        console.trace() // 打印调用栈帮助定位
+        return Promise.reject(new Error('orderId is required'))
+    }
+
+    return request({
+        url: `/order/detail/${orderId}`,
+        method: 'get'
+    })
 }
 
 /**

@@ -7,9 +7,9 @@
       </el-breadcrumb>
 
       <div class="order-container">
-        <!-- 订单状态筛选 -->
+        <!-- 订单状态筛选 - ✅ 修复: 使用 -1 代替 null -->
         <el-tabs v-model="activeStatus" @tab-change="handleStatusChange">
-          <el-tab-pane label="全部订单" :name="null" />
+          <el-tab-pane label="全部订单" :name="-1" />
           <el-tab-pane label="待支付" :name="0" />
           <el-tab-pane label="待发货" :name="1" />
           <el-tab-pane label="待收货" :name="2" />
@@ -20,9 +20,9 @@
         <!-- 订单列表 -->
         <div v-if="orderList.length > 0" class="order-list">
           <div
-            v-for="order in orderList"
-            :key="order.id"
-            class="order-item"
+              v-for="order in orderList"
+              :key="order.id"
+              class="order-item"
           >
             <!-- 订单头部 -->
             <div class="order-header">
@@ -40,14 +40,14 @@
             <!-- 订单商品列表 -->
             <div class="order-products">
               <div
-                v-for="item in order.items"
-                :key="item.id"
-                class="product-item"
+                  v-for="item in order.items"
+                  :key="item.id"
+                  class="product-item"
               >
                 <el-image
-                  :src="item.productImage"
-                  fit="cover"
-                  class="product-image"
+                    :src="item.productImage"
+                    fit="cover"
+                    class="product-image"
                 />
                 <div class="product-details">
                   <div class="product-name">{{ item.productName }}</div>
@@ -68,32 +68,58 @@
                 实付款: <span class="amount">¥{{ order.paymentAmount.toFixed(2) }}</span>
               </div>
               <div class="order-actions">
+                <!-- 取消订单按钮 (待支付状态) -->
                 <el-button
-                  v-if="order.status === 0"
-                  type="primary"
-                  size="small"
-                  @click="handleCancelOrder(order)"
+                    v-if="order.status === 0"
+                    type="primary"
+                    size="small"
+                    @click="handleCancelOrder(order)"
                 >
                   取消订单
                 </el-button>
+
+                <!-- 确认收货按钮 (待收货状态) -->
                 <el-button
-                  v-if="order.status === 2"
-                  type="primary"
-                  size="small"
-                  @click="handleConfirmReceipt(order)"
+                    v-if="order.status === 2"
+                    type="primary"
+                    size="small"
+                    @click="handleConfirmReceipt(order)"
                 >
                   确认收货
                 </el-button>
+
+                <!-- ✅ 评价商品按钮 (已完成状态 status=3) -->
                 <el-button
-                  v-if="order.status === 3 || order.status === 4"
-                  size="small"
-                  @click="handleDeleteOrder(order)"
+                    v-if="order.status === 3"
+                    type="warning"
+                    size="small"
+                    @click="goToReview(order)"
+                >
+                  评价商品
+                </el-button>
+
+                <!-- ✅ 新增: 查看评价按钮 (已评价的订单) -->
+                <el-button
+                    v-if="order.hasReviewed"
+                    size="small"
+                    @click="goToMyReviews"
+                >
+                  查看评价
+                </el-button>
+
+                <!-- 删除订单按钮 (已完成或已取消状态) -->
+                <el-button
+                    v-if="order.status === 3 || order.status === 4"
+                    size="small"
+                    @click="handleDeleteOrder(order)"
                 >
                   删除订单
                 </el-button>
+
+                <!-- 查看详情按钮 (所有状态都显示) -->
                 <el-button
-                  size="small"
-                  @click="handleViewDetail(order.id)"
+                    size="small"
+                    @click="handleViewDetail(order.id)"
                 >
                   查看详情
                 </el-button>
@@ -107,13 +133,13 @@
 
         <!-- 分页 -->
         <el-pagination
-          v-if="total > 0"
-          v-model:current-page="pageNum"
-          v-model:page-size="pageSize"
-          :total="total"
-          layout="total, prev, pager, next"
-          @current-change="loadOrderList"
-          class="pagination"
+            v-if="total > 0"
+            v-model:current-page="pageNum"
+            v-model:page-size="pageSize"
+            :total="total"
+            layout="total, prev, pager, next"
+            @current-change="loadOrderList"
+            class="pagination"
         />
       </div>
     </div>
@@ -133,34 +159,97 @@ import {
 
 const router = useRouter()
 
-const activeStatus = ref(null)
+// ✅ 修复: 使用 -1 代替 null
+const activeStatus = ref(-1)
 const orderList = ref([])
 const pageNum = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 
-// 加载订单列表
+// ============================================
+// 订单操作方法
+// ============================================
+
+/**
+ * ✅ 修复: 去评价页面 - 添加调试日志
+ */
+// ✅ 新版本 (只传订单ID,让用户在评价页面选择)
+const goToReview = (order) => {
+  console.log('=== 去评价页面 ===')
+  console.log('订单ID:', order.id)
+  console.log('订单号:', order.orderNo)
+  console.log('订单状态:', order.status)
+
+  if (!order.items || order.items.length === 0) {
+    ElMessage.error('订单商品信息异常')
+    return
+  }
+
+  const item = order.items[0]
+  console.log('选择的商品ID:', item.productId)
+  console.log('商品名称:', item.productName)
+
+  router.push({
+    path: '/review/publish',
+    query: {
+      orderId: order.id
+      // ✅ 不传 productId,让用户自己选择
+    }
+  })
+}
+
+/**
+ * ✅ 新增: 跳转到我的评价页面
+ */
+const goToMyReviews = () => {
+  router.push('/review/my')
+}
+
+/**
+ * ✅ 修复: 加载订单列表 - 处理全部订单的情况
+ */
 const loadOrderList = async () => {
   try {
-    const res = await getOrderList({
-      status: activeStatus.value,
+    // ✅ 如果是全部订单(-1),不传status参数
+    const params = {
       pageNum: pageNum.value,
       pageSize: pageSize.value
-    })
+    }
+
+    // 只有非全部订单才传status
+    if (activeStatus.value !== -1) {
+      params.status = activeStatus.value
+    }
+
+    console.log('=== 加载订单列表 ===')
+    console.log('查询参数:', params)
+
+    const res = await getOrderList(params)
     orderList.value = res.data.records
     total.value = res.data.total
+
+    console.log('订单列表:', orderList.value)
+    console.log('订单总数:', total.value)
+
   } catch (error) {
+    console.error('加载订单失败:', error)
     ElMessage.error(error.message || '加载订单失败')
   }
 }
 
-// 切换状态
+/**
+ * 切换订单状态筛选
+ */
 const handleStatusChange = () => {
+  console.log('=== 切换状态 ===')
+  console.log('当前状态:', activeStatus.value)
   pageNum.value = 1
   loadOrderList()
 }
 
-// 取消订单
+/**
+ * 取消订单
+ */
 const handleCancelOrder = async (order) => {
   try {
     const { value } = await ElMessageBox.prompt('请输入取消原因', '取消订单', {
@@ -169,7 +258,7 @@ const handleCancelOrder = async (order) => {
       inputPattern: /.+/,
       inputErrorMessage: '请输入取消原因'
     })
-    
+
     await cancelOrder(order.id, value)
     ElMessage.success('订单已取消')
     loadOrderList()
@@ -180,13 +269,15 @@ const handleCancelOrder = async (order) => {
   }
 }
 
-// 确认收货
+/**
+ * 确认收货
+ */
 const handleConfirmReceipt = async (order) => {
   try {
     await ElMessageBox.confirm('确认已收到商品吗?', '确认收货', {
       type: 'info'
     })
-    
+
     await confirmReceipt(order.id)
     ElMessage.success('确认收货成功')
     loadOrderList()
@@ -197,13 +288,15 @@ const handleConfirmReceipt = async (order) => {
   }
 }
 
-// 删除订单
+/**
+ * 删除订单
+ */
 const handleDeleteOrder = async (order) => {
   try {
     await ElMessageBox.confirm('确认删除该订单吗?', '删除订单', {
       type: 'warning'
     })
-    
+
     await deleteOrder(order.id)
     ElMessage.success('订单已删除')
     loadOrderList()
@@ -214,22 +307,30 @@ const handleDeleteOrder = async (order) => {
   }
 }
 
-// 查看详情
+/**
+ * 查看订单详情
+ */
 const handleViewDetail = (orderId) => {
   router.push(`/order/detail/${orderId}`)
 }
 
-// 获取状态类型
+/**
+ * 获取订单状态对应的标签类型
+ */
 const getStatusType = (status) => {
   const types = {
-    0: 'warning',
-    1: 'primary',
-    2: 'primary',
-    3: 'success',
-    4: 'info'
+    0: 'warning',  // 待支付 - 黄色
+    1: 'primary',  // 待发货 - 蓝色
+    2: 'primary',  // 待收货 - 蓝色
+    3: 'success',  // 已完成 - 绿色
+    4: 'info'      // 已取消 - 灰色
   }
   return types[status] || 'info'
 }
+
+// ============================================
+// 生命周期
+// ============================================
 
 onMounted(() => {
   loadOrderList()

@@ -13,29 +13,31 @@
           <router-link to="/courses" class="nav-item">课程学习</router-link>
           <router-link to="/ai-recognition" class="nav-item">AI识别</router-link>
           <router-link to="/forum" class="nav-item">天文论坛</router-link>
+          <!-- ✅ 新增: 我的评价 (仅登录后显示) -->
+          <router-link v-if="isLoggedIn" to="/review/my" class="nav-item">我的评价</router-link>
         </nav>
-        
+
         <!-- 右侧区域 -->
         <div class="header-right">
           <transition name="fade-slide" mode="out-in">
             <!-- 登录状态 -->
             <div v-if="isLoggedIn" key="logged-in" class="logged-in-section">
               <el-badge :value="cartCount" :hidden="cartCount === 0" class="cart-badge">
-                <el-button 
-                  icon="ShoppingCart" 
-                  circle 
-                  @click="goToCart"
-                  title="购物车"
+                <el-button
+                    icon="ShoppingCart"
+                    circle
+                    @click="goToCart"
+                    title="购物车"
                 />
               </el-badge>
-              
-              <el-button 
-                icon="List" 
-                circle 
-                @click="goToOrders"
-                title="我的订单"
+
+              <el-button
+                  icon="List"
+                  circle
+                  @click="goToOrders"
+                  title="我的订单"
               />
-              
+
               <el-dropdown @command="handleCommand" trigger="click">
                 <div class="user-info">
                   <el-avatar :src="userAvatar" />
@@ -55,6 +57,11 @@
                       <el-icon><List /></el-icon>
                       我的订单
                     </el-dropdown-item>
+                    <!-- ✅ 新增: 我的评价 -->
+                    <el-dropdown-item command="reviews">
+                      <el-icon><ChatDotRound /></el-icon>
+                      我的评价
+                    </el-dropdown-item>
                     <el-dropdown-item command="logout" divided>
                       <el-icon><SwitchButton /></el-icon>
                       退出登录
@@ -63,7 +70,7 @@
                 </template>
               </el-dropdown>
             </div>
-            
+
             <!-- 未登录状态 -->
             <div v-else key="logged-out" class="auth-buttons">
               <el-button @click="goToLogin">登录</el-button>
@@ -115,6 +122,36 @@
       </div>
     </div>
 
+    <!-- ✅ 新增: 用户中心快捷入口 (仅登录后显示) -->
+    <div v-if="isLoggedIn" class="user-center">
+      <div class="section-header">
+        <h2>🎯 我的中心</h2>
+      </div>
+      <div class="user-entry">
+        <div class="user-entry-item" @click="goToOrders">
+          <el-icon :size="32" color="#fff"><List /></el-icon>
+          <h4>我的订单</h4>
+          <p>查看订单状态</p>
+        </div>
+        <div class="user-entry-item" @click="goToCart">
+          <el-icon :size="32" color="#fff"><ShoppingCart /></el-icon>
+          <h4>购物车</h4>
+          <p>{{ cartCount }}件商品</p>
+        </div>
+        <!-- ✅ 我的评价 -->
+        <div class="user-entry-item" @click="goToMyReviews">
+          <el-icon :size="32" color="#fff"><ChatDotRound /></el-icon>
+          <h4>我的评价</h4>
+          <p>查看评价记录</p>
+        </div>
+        <div class="user-entry-item" @click="router.push('/profile')">
+          <el-icon :size="32" color="#fff"><User /></el-icon>
+          <h4>个人中心</h4>
+          <p>管理个人信息</p>
+        </div>
+      </div>
+    </div>
+
     <!-- 推荐商品 -->
     <div class="recommend-section">
       <div class="section-header">
@@ -122,11 +159,11 @@
         <el-button text @click="goToProducts">查看更多 →</el-button>
       </div>
       <div v-loading="loading" class="product-grid">
-        <div 
-          v-for="product in recommendProducts" 
-          :key="product.id"
-          class="product-card"
-          @click="goToProductDetail(product.id)"
+        <div
+            v-for="product in recommendProducts"
+            :key="product.id"
+            class="product-card"
+            @click="goToProductDetail(product.id)"
         >
           <div class="product-image">
             <img :src="product.mainImage" :alt="product.productName">
@@ -155,13 +192,14 @@
 </template>
 
 <script setup>
+import { getToken } from '@/utils/auth'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getRecommendProducts } from '@/api/product'
 import { getCartList } from '@/api/cart'
-import { 
+import {
   Grid, Picture, Reading, ChatDotRound, ShoppingCart,
   List, User, SwitchButton
 } from '@element-plus/icons-vue'
@@ -185,7 +223,10 @@ const banners = [
 // ========================================
 // 计算属性
 // ========================================
-const isLoggedIn = computed(() => userStore.isLoggedIn)
+const isLoggedIn = computed(() => {
+  const token = getToken()
+  return !!token && userStore.isLoggedIn
+})
 const userName = computed(() => userStore.userInfo?.nickname || userStore.userInfo?.username || '用户')
 const userAvatar = computed(() => userStore.userInfo?.avatar || '/images/default_avatar.png')
 
@@ -193,7 +234,9 @@ const userAvatar = computed(() => userStore.userInfo?.avatar || '/images/default
 // 方法
 // ========================================
 const loadCartCount = async () => {
-  if (!isLoggedIn.value) return
+  const token = getToken()
+  if (!token) return
+
   try {
     const res = await getCartList()
     cartCount.value = res.data?.length || 0
@@ -219,13 +262,32 @@ const loadRecommendProducts = async () => {
 const goToProducts = () => router.push('/products')
 const goToProductDetail = (id) => router.push(`/product/${id}`)
 const goToCart = () => {
-  if (!isLoggedIn.value) { ElMessage.warning('请先登录'); router.push('/login'); return }
+  if (!isLoggedIn.value) {
+    ElMessage.warning('请先登录')
+    router.push('/login')
+    return
+  }
   router.push('/cart')
 }
 const goToOrders = () => {
-  if (!isLoggedIn.value) { ElMessage.warning('请先登录'); router.push('/login'); return }
+  if (!isLoggedIn.value) {
+    ElMessage.warning('请先登录')
+    router.push('/login')
+    return
+  }
   router.push('/order/list')
 }
+
+// ✅ 新增: 跳转到我的评价
+const goToMyReviews = () => {
+  if (!isLoggedIn.value) {
+    ElMessage.warning('请先登录')
+    router.push('/login')
+    return
+  }
+  router.push('/review/my')
+}
+
 const goToLogin = () => router.push('/login')
 const goToRegister = () => router.push('/register')
 const goToAI = () => ElMessage.info('AI识别功能开发中...')
@@ -235,16 +297,31 @@ const goToForum = () => ElMessage.info('论坛功能开发中...')
 // 用户菜单操作
 const handleCommand = (command) => {
   switch (command) {
-    case 'profile': router.push('/profile'); break
-    case 'cart': goToCart(); break
-    case 'orders': goToOrders(); break
-    case 'logout': handleLogout(); break
+    case 'profile':
+      router.push('/profile')
+      break
+    case 'cart':
+      goToCart()
+      break
+    case 'orders':
+      goToOrders()
+      break
+    case 'reviews':  // ✅ 新增: 我的评价
+      goToMyReviews()
+      break
+    case 'logout':
+      handleLogout()
+      break
   }
 }
 
 const handleLogout = async () => {
   try {
-    await ElMessageBox.confirm('确定要退出登录吗?', '提示', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' })
+    await ElMessageBox.confirm('确定要退出登录吗?', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
     cartCount.value = 0
     await userStore.logout()
     ElMessage.success('已退出登录')
@@ -265,7 +342,7 @@ watch(() => userStore.isLoggedIn, (newVal) => {
 // 生命周期
 // ========================================
 onMounted(async () => {
-  await userStore.restoreLogin() // 自动恢复登录状态
+  await userStore.restoreLogin()
   if (isLoggedIn.value) loadCartCount()
   loadRecommendProducts()
 })
@@ -494,6 +571,71 @@ onMounted(async () => {
   }
 }
 
+// ✅ 新增: 用户中心区域样式
+.user-center {
+  max-width: 1400px;
+  margin: 0 auto 60px;
+  padding: 0 20px;
+
+  .section-header {
+    margin-bottom: 30px;
+
+    h2 {
+      font-size: 28px;
+      color: #303133;
+    }
+  }
+
+  .user-entry {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+
+    .user-entry-item {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 30px 20px;
+      border-radius: 12px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      color: #fff;
+
+      &:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+      }
+
+      &:nth-child(1) {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      &:nth-child(2) {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      }
+
+      &:nth-child(3) {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      }
+
+      &:nth-child(4) {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+      }
+
+      h4 {
+        margin: 12px 0 8px;
+        font-size: 18px;
+        font-weight: bold;
+      }
+
+      p {
+        font-size: 14px;
+        opacity: 0.9;
+      }
+    }
+  }
+}
+
 .recommend-section {
   max-width: 1400px;
   margin: 0 auto 60px;
@@ -610,6 +752,7 @@ onMounted(async () => {
 
 @media (max-width: 1200px) {
   .quick-entry,
+  .user-center .user-entry,
   .recommend-section .product-grid {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -637,6 +780,7 @@ onMounted(async () => {
   }
 
   .quick-entry,
+  .user-center .user-entry,
   .recommend-section .product-grid {
     grid-template-columns: repeat(2, 1fr);
   }

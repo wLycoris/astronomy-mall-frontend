@@ -1,8 +1,8 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { getToken } from './auth'
+import { getToken, removeToken } from './auth'
+import router from '@/router'
 
-// 创建axios实例
 const request = axios.create({
   baseURL: '/api',
   timeout: 10000
@@ -11,10 +11,17 @@ const request = axios.create({
 // 请求拦截器
 request.interceptors.request.use(
   config => {
-    const token = getToken()
+    const token = getToken() // ✅ 从 Cookies 读取
+    
+    console.log('=== 请求拦截器 ===')
+    console.log('请求URL:', config.url)
+    console.log('Token:', token ? '存在' : '不存在')
+    
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
+      console.log('已添加Authorization头')
     }
+    
     return config
   },
   error => {
@@ -28,17 +35,18 @@ request.interceptors.response.use(
   response => {
     const res = response.data
     
-    // 如果返回码不是200,判断为错误
+    console.log('=== 响应拦截器 ===')
+    console.log('响应code:', res.code)
+    
     if (res.code !== 200) {
-      ElMessage.error(res.message || '请求失败')
-      
-      // 401: 未登录或token过期
       if (res.code === 401) {
-        // 清除token并跳转登录页
-        localStorage.removeItem('token')
-        window.location.href = '/login'
+        ElMessage.error('登录已过期,请重新登录')
+        removeToken() // ✅ 清除 Cookies
+        router.push('/login')
+        return Promise.reject(new Error('未登录'))
       }
       
+      ElMessage.error(res.message || '请求失败')
       return Promise.reject(new Error(res.message || '请求失败'))
     }
     
@@ -46,7 +54,15 @@ request.interceptors.response.use(
   },
   error => {
     console.error('响应错误:', error)
-    ElMessage.error(error.message || '网络错误')
+    
+    if (error.response?.status === 401) {
+      ElMessage.error('未登录或登录已过期')
+      removeToken()
+      router.push('/login')
+    } else {
+      ElMessage.error(error.message || '网络错误')
+    }
+    
     return Promise.reject(error)
   }
 )
