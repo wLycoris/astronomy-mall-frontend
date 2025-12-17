@@ -99,6 +99,22 @@ const routes = [
     },
 
     // ============================================
+    // 支付相关页面 (需要登录) 🆕
+    // ============================================
+    {
+        path: '/payment',
+        name: 'Payment',
+        component: () => import('@/views/payment/PaymentPage.vue'),
+        meta: { title: '支付订单', requiresAuth: true }
+    },
+    {
+        path: '/payment/refund',
+        name: 'Refund',
+        component: () => import('@/views/payment/RefundPage.vue'),
+        meta: { title: '申请退款', requiresAuth: true }
+    },
+
+    // ============================================
     // 404页面
     // ============================================
     {

@@ -181,6 +181,47 @@
               删除订单
             </el-button>
           </div>
+
+          <!-- 新增：订单操作按钮区域（按你要求添加，未改动其它任何代码） -->
+          <div class="order-actions">
+            <!-- 待支付状态 -->
+            <template v-if="order.status === 0">
+              <el-button type="primary" @click="goToPay">
+                立即支付
+              </el-button>
+              <el-button @click="handleCancelOrder">
+                取消订单
+              </el-button>
+            </template>
+
+            <!-- 待发货状态 -->
+            <template v-else-if="order.status === 1">
+              <el-button type="danger" @click="goToRefund">
+                申请退款
+              </el-button>
+            </template>
+
+            <!-- 待收货状态 -->
+            <template v-else-if="order.status === 2">
+              <el-button type="primary" @click="handleConfirmReceipt">
+                确认收货
+              </el-button>
+              <el-button type="danger" @click="goToRefund">
+                申请退款
+              </el-button>
+            </template>
+
+            <!-- 已完成状态 -->
+            <template v-else-if="order.status === 3">
+              <el-button type="primary" @click="goToReview(order.items[0])" v-if="hasUnreviewedItems">
+                评价订单
+              </el-button>
+              <el-button type="danger" @click="goToRefund">
+                申请退款
+              </el-button>
+            </template>
+          </div>
+
         </div>
 
         <el-empty v-else description="订单不存在" />
@@ -243,6 +284,27 @@ const loading = ref(false)
 const order = ref({})
 const reviewDialogVisible = ref(false)
 const currentReview = ref(null)
+
+// 跳转到支付页面
+const goToPay = () => {
+  router.push({
+    path: '/payment',
+    query: {
+      orderId: order.value.id,
+      amount: order.value.paymentAmount
+    }
+  })
+}
+
+// 跳转到退款页面
+const goToRefund = () => {
+  router.push({
+    path: '/payment/refund',
+    query: {
+      orderId: order.value.id
+    }
+  })
+}
 
 // ✅ 计算是否有未评价商品
 const hasUnreviewedItems = computed(() => {
@@ -594,7 +656,19 @@ onMounted(() => {
       cursor: pointer;
     }
   }
+  .order-actions {
+    margin-top: 20px;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
 
+    .el-button {
+      min-width: 100px;
+    }
+  }
   .merchant-reply {
     padding: 12px;
     background: #f5f7fa;
