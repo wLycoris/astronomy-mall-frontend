@@ -22,6 +22,16 @@
           <transition name="fade-slide" mode="out-in">
             <!-- 登录状态 -->
             <div v-if="isLoggedIn" key="logged-in" class="logged-in-section">
+              <!-- 🆕 管理员入口按钮 -->
+              <el-button
+                  v-if="isAdmin"
+                  type="warning"
+                  @click="goToAdmin"
+                  title="进入后台管理"
+              >
+                <el-icon><Setting /></el-icon>
+                <span>后台管理</span>
+              </el-button>
               <el-badge :value="cartCount" :hidden="cartCount === 0" class="cart-badge">
                 <el-button
                     icon="ShoppingCart"
@@ -45,6 +55,11 @@
                 </div>
                 <template #dropdown>
                   <el-dropdown-menu>
+                    <!-- 🆕 管理员菜单项 -->
+                    <el-dropdown-item v-if="isAdmin" command="admin" divided>
+                      <el-icon><Setting /></el-icon>
+                      后台管理
+                    </el-dropdown-item>
                     <el-dropdown-item command="profile">
                       <el-icon><User /></el-icon>
                       个人中心
@@ -201,9 +216,12 @@ import { getRecommendProducts } from '@/api/product'
 import { getCartList } from '@/api/cart'
 import {
   Grid, Picture, Reading, ChatDotRound, ShoppingCart,
-  List, User, SwitchButton
+  List, User, SwitchButton, Setting  // 🆕 添加 Setting
 } from '@element-plus/icons-vue'
-
+// ========================================
+const isAdmin = computed(() => {
+  return userStore.userInfo?.role === 1
+})
 const router = useRouter()
 const userStore = useUserStore()
 
@@ -269,6 +287,9 @@ const goToCart = () => {
   }
   router.push('/cart')
 }
+const goToAdmin = () => {
+  router.push('/admin/dashboard')
+}
 const goToOrders = () => {
   if (!isLoggedIn.value) {
     ElMessage.warning('请先登录')
@@ -297,6 +318,9 @@ const goToForum = () => ElMessage.info('论坛功能开发中...')
 // 用户菜单操作
 const handleCommand = (command) => {
   switch (command) {
+    case 'admin':  // 🆕 添加这个 case
+      goToAdmin()
+      break
     case 'profile':
       router.push('/profile')
       break

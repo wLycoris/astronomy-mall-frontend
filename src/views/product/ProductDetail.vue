@@ -56,6 +56,21 @@
           </div>
 
           <div class="price-section">
+            <div v-if="productTags.length > 0" class="tags-section">
+              <span class="label">商品标签</span>
+              <div class="tags-content">
+                <el-tag
+                    v-for="(tag, index) in productTags"
+                    :key="index"
+                    type="primary"
+                    effect="plain"
+                    size="small"
+                    style="margin-right: 8px; margin-bottom: 5px;"
+                >
+                  {{ tag }}
+                </el-tag>
+              </div>
+            </div>
             <div class="price-row">
               <span class="label">价格</span>
               <div class="price-content">
@@ -307,7 +322,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ShoppingCart, StarFilled, Star } from '@element-plus/icons-vue'
@@ -361,6 +376,18 @@ const loadProductDetail = async () => {
     loading.value = false
   }
 }
+// 🏷️ 解析商品标签
+const productTags = computed(() => {
+  if (!product.value?.tags) return []
+
+  try {
+    const tags = JSON.parse(product.value.tags)
+    return Array.isArray(tags) ? tags : []
+  } catch (error) {
+    console.error('解析标签失败:', error)
+    return product.value.tags.split(',').map(t => t.trim()).filter(Boolean)
+  }
+})
 
 // 加载评价统计
 const loadReviewStats = async () => {
@@ -590,6 +617,26 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
+.tags-section {
+  display: flex;
+  align-items: flex-start;
+  padding: 15px 0;
+  border-bottom: 1px solid #e4e7ed;
+
+  .label {
+    width: 80px;
+    color: #606266;
+    padding-top: 5px;
+  }
+
+  .tags-content {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
+
 .product-detail-container {
   max-width: 1400px;
   margin: 0 auto;

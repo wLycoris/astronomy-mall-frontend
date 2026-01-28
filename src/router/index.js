@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { getToken } from '@/utils/auth'
+import { useUserStore } from '@/stores/user'
+import { ElMessage } from 'element-plus'
 
 const routes = [
     {
@@ -99,7 +101,7 @@ const routes = [
     },
 
     // ============================================
-    // 支付相关页面 (需要登录) 🆕
+    // 支付相关页面 (需要登录)
     // ============================================
     {
         path: '/payment',
@@ -112,6 +114,66 @@ const routes = [
         name: 'Refund',
         component: () => import('@/views/payment/RefundPage.vue'),
         meta: { title: '申请退款', requiresAuth: true }
+    },
+
+    // ============================================
+    // 🆕 后台管理路由
+    // ============================================
+    {
+        path: '/admin',
+        component: () => import('@/views/admin/AdminLayout.vue'),
+        redirect: '/admin/dashboard',
+        meta: { requiresAuth: true, requiresAdmin: true },
+        children: [
+            {
+                path: 'dashboard',
+                name: 'AdminDashboard',
+                component: () => import('@/views/admin/Dashboard.vue'),
+                meta: { title: '数据概览', requiresAdmin: true }
+            },
+            {
+                path: 'product',
+                name: 'AdminProduct',
+                component: () => import('@/views/admin/ProductManage.vue'),
+                meta: { title: '商品管理', requiresAdmin: true }
+            },
+            {
+                path: 'order',
+                name: 'AdminOrder',
+                component: () => import('@/views/admin/OrderManage.vue'),
+                meta: { title: '订单管理', requiresAdmin: true }
+            },
+            {
+                path: 'refund',
+                name: 'AdminRefund',
+                component: () => import('@/views/admin/RefundManage.vue'),
+                meta: { title: '退款审核', requiresAdmin: true }
+            },
+            {
+                path: 'review',
+                name: 'AdminReview',
+                component: () => import('@/views/admin/ReviewManage.vue'),
+                meta: { title: '评价管理', requiresAdmin: true }
+            },
+            {
+                path: 'user',
+                name: 'AdminUser',
+                component: () => import('@/views/admin/UserManage.vue'),
+                meta: { title: '用户管理', requiresAdmin: true }
+            },
+            {
+                path: 'stock-warning',
+                name: 'StockWarning',
+                component: () => import('@/views/admin/StockWarning.vue'),
+                meta: { title: '库存预警' }
+            },
+            {
+                path: 'category',
+                name: 'AdminCategory',
+                component: () => import('@/views/admin/CategoryManage.vue'),
+                meta: { title: '分类管理', requiresAdmin: true }
+            }
+        ]
     },
 
     // ============================================
@@ -131,7 +193,7 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
     // 设置页面标题
     document.title = to.meta.title || '天文器材商城'
 
@@ -150,7 +212,34 @@ router.beforeEach((to, from, next) => {
         return
     }
 
-    // 2. 如果页面需要登录
+    // 🆕 2. 如果访问后台管理页面 (需要管理员权限)
+    if (to.meta.requiresAdmin) {
+        if (!isLoggedIn) {
+            // 未登录,跳转到登录页
+            ElMessage.warning('请先登录')
+            next('/login')
+            return
+        }
+
+        // 已登录,检查是否是管理员
+        const userStore = useUserStore()
+        if (!userStore.userInfo) {
+            await userStore.fetchUserInfo()
+        }
+
+        if (userStore.userInfo?.role !== 1) {
+            // 不是管理员,无权访问
+            ElMessage.error('您不是管理员,无权访问后台')
+            next('/home')
+            return
+        }
+
+        // 是管理员,放行
+        next()
+        return
+    }
+
+    // 3. 如果页面需要登录
     if (to.meta.requiresAuth && !isLoggedIn) {
         // 保存目标路径,登录后跳转
         next({
@@ -160,7 +249,7 @@ router.beforeEach((to, from, next) => {
         return
     }
 
-    // 3. 其他情况正常放行
+    // 4. 其他情况正常放行
     next()
 })
 

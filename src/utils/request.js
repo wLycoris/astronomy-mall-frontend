@@ -33,6 +33,10 @@ request.interceptors.request.use(
 // 响应拦截器
 request.interceptors.response.use(
   response => {
+// ⭐⭐⭐ 关键：如果是文件流，直接返回
+    if (response.config.responseType === 'blob') {
+       return response.data
+    }
     const res = response.data
     
     console.log('=== 响应拦截器 ===')
