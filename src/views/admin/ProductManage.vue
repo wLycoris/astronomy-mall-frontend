@@ -29,7 +29,14 @@
             <el-option label="已下架" :value="0" />
           </el-select>
         </el-form-item>
-
+        <el-form-item label="品牌">
+          <el-input
+              v-model="searchForm.brand"
+              placeholder="请输入品牌"
+              clearable
+              @clear="handleSearch"
+          />
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch">
             搜索
