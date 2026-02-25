@@ -315,7 +315,7 @@ const hasUnreviewedItems = computed(() => {
 const loadOrderDetail = async () => {
   loading.value = true
   try {
-    const orderId = route.params.id
+    const orderId = route.params.id || route.query.id
     const res = await getOrderDetail(orderId)
     order.value = res.data
 

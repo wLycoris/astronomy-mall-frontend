@@ -32,6 +32,10 @@
                 <el-icon><Setting /></el-icon>
                 <span>后台管理</span>
               </el-button>
+
+              <!-- 🔔 新增: 通知铃铛组件 -->
+              <NotificationBell />
+
               <el-badge :value="cartCount" :hidden="cartCount === 0" class="cart-badge">
                 <el-button
                     icon="ShoppingCart"
@@ -76,6 +80,11 @@
                     <el-dropdown-item command="reviews">
                       <el-icon><ChatDotRound /></el-icon>
                       我的评价
+                    </el-dropdown-item>
+                    <!-- 🔔 新增: 通知设置 -->
+                    <el-dropdown-item command="notification-settings">
+                      <el-icon><Bell /></el-icon>
+                      通知设置
                     </el-dropdown-item>
                     <el-dropdown-item command="logout" divided>
                       <el-icon><SwitchButton /></el-icon>
@@ -216,8 +225,12 @@ import { getRecommendProducts } from '@/api/product'
 import { getCartList } from '@/api/cart'
 import {
   Grid, Picture, Reading, ChatDotRound, ShoppingCart,
-  List, User, SwitchButton, Setting  // 🆕 添加 Setting
+  List, User, SwitchButton, Setting, Bell  // 🔔 添加 Bell 图标
 } from '@element-plus/icons-vue'
+
+// 🔔 新增: 导入通知铃铛组件
+import NotificationBell from '@/components/NotificationBell.vue'
+
 // ========================================
 const isAdmin = computed(() => {
   return userStore.userInfo?.role === 1
@@ -318,7 +331,7 @@ const goToForum = () => ElMessage.info('论坛功能开发中...')
 // 用户菜单操作
 const handleCommand = (command) => {
   switch (command) {
-    case 'admin':  // 🆕 添加这个 case
+    case 'admin':
       goToAdmin()
       break
     case 'profile':
@@ -330,8 +343,11 @@ const handleCommand = (command) => {
     case 'orders':
       goToOrders()
       break
-    case 'reviews':  // ✅ 新增: 我的评价
+    case 'reviews':
       goToMyReviews()
+      break
+    case 'notification-settings':  // 🔔 新增: 通知设置
+      router.push('/notification/settings')
       break
     case 'logout':
       handleLogout()

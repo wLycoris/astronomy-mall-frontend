@@ -69,6 +69,16 @@ const routes = [
     },
 
     // ============================================
+    // 🔔 通知相关页面 (需要登录) - 新增
+    // ============================================
+    {
+        path: '/notification/settings',
+        name: 'NotificationSettings',
+        component: () => import('@/components/NotificationSettings.vue'),
+        meta: { title: '通知设置', requiresAuth: true }
+    },
+
+    // ============================================
     // 购物车相关页面 (需要登录)
     // ============================================
     {
@@ -94,7 +104,7 @@ const routes = [
         meta: { title: '我的订单', requiresAuth: true }
     },
     {
-        path: '/order/detail/:id',
+        path: '/order/detail/:id?',
         name: 'OrderDetail',
         component: () => import('@/views/order/OrderDetail.vue'),
         meta: { title: '订单详情', requiresAuth: true }
@@ -165,7 +175,7 @@ const routes = [
                 path: 'stock-warning',
                 name: 'StockWarning',
                 component: () => import('@/views/admin/StockWarning.vue'),
-                meta: { title: '库存预警' }
+                meta: { title: '库存预警', requiresAdmin: true }
             },
             {
                 path: 'category',
