@@ -249,11 +249,6 @@ const handleItemClick = async (item) => {
         targetRoute = `/order/detail/${item.relatedId}`
         break
 
-      case 'refund':
-        // 退款相关 → /payment/refund?refundId=xxx
-        targetRoute = `/payment/refund?refundId=${item.relatedId}`
-        break
-
       case 'product':
         // 商品相关 → /product/:id
         targetRoute = `/product/${item.relatedId}`
