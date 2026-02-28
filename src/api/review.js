@@ -131,3 +131,23 @@ export function getMyReviews(params) {
         }
     })
 }
+export function updateReview(reviewId, data) {
+    return request({ url: `/review/${reviewId}`, method: 'put', data })
+}
+// ============================================
+// 举报评价
+// 举报次数达到3次，评价自动从商品页隐藏，进入管理端审核队列
+// ============================================
+
+/**
+ * 举报评价
+ * @param {number} reviewId - 评价ID
+ * @param {string} reason   - 举报原因（可选）
+ */
+export function reportReview(reviewId, reason = '') {
+    return request({
+        url: `/review/report/${reviewId}`,
+        method: 'post',
+        params: { reason }
+    })
+}

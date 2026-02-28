@@ -259,7 +259,12 @@
                   <div class="review-header">
                     <img :src="review.avatar" class="avatar" alt="头像" />
                     <div class="user-info">
-                      <div class="username">{{ review.nickname }}</div>
+                      <div class="username">
+                        {{ review.nickname }}
+                        <el-tag v-if="review.isTop === 1" type="danger" size="small" effect="dark" style="margin-left:6px">
+                          📌 置顶
+                        </el-tag>
+                      </div>
                       <el-rate
                           :model-value="review.rating || 0"
                           disabled
@@ -278,12 +283,12 @@
                         @click="previewImage(img)"
                     />
                   </div>
-                  <div v-if="review.reply" class="review-reply">
+                  <div v-if="review.replyContent" class="review-reply">
                     <span class="reply-label">商家回复:</span>
-                    <span>{{ review.reply }}</span>
+                    <span>{{ review.replyContent }}</span>
                   </div>
 
-                  <!-- ✅ 新增: 点赞按钮 -->
+                  <!-- ✅ 点赞按钮 + 【改动1】举报按钮 -->
                   <div class="review-actions">
                     <el-button
                         :type="review.isLiked ? 'primary' : 'default'"
@@ -293,6 +298,16 @@
                       <el-icon><StarFilled v-if="review.isLiked" /><Star v-else /></el-icon>
                       {{ review.isLiked ? '已赞' : '点赞' }}
                       <span v-if="review.likeCount > 0">({{ review.likeCount }})</span>
+                    </el-button>
+                    <!-- 【改动1】举报按钮 -->
+                    <el-button
+                        type="danger"
+                        size="small"
+                        plain
+                        @click="handleReport(review)"
+                    >
+                      <el-icon><WarnTriangleFilled /></el-icon>
+                      举报
                     </el-button>
                   </div>
                 </div>
@@ -324,10 +339,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { ShoppingCart, StarFilled, Star } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus' // 【改动2】加 ElMessageBox
+import { ShoppingCart, StarFilled, Star, WarnTriangleFilled } from '@element-plus/icons-vue' // 【改动2】加 WarnTriangleFilled
 import { getProductDetail } from '@/api/product'
-import { getProductReviews, getReviewStatistics, getReviewListAdvanced, toggleLike } from '@/api/review'
+import { getProductReviews, getReviewStatistics, getReviewListAdvanced, toggleLike, reportReview } from '@/api/review'
 import { addToCart as addToCartApi } from '@/api/cart'
 import { getToken } from '@/utils/auth'
 
@@ -601,6 +616,33 @@ const handleLikeReview = async (review) => {
     loadReviews()
   } catch (error) {
     ElMessage.error(error.message || '操作失败')
+  }
+}
+
+// 【改动3】举报评价
+const handleReport = async (review) => {
+  const token = getToken()
+
+  if (!token) {
+    ElMessage.warning('请先登录')
+    router.push({ path: '/login', query: { redirect: route.fullPath } })
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(
+        '确定举报该评价吗？举报次数达到3次后，该评价将被暂时隐藏等待管理员审核。',
+        '举报评价',
+        {
+          confirmButtonText: '确认举报',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+    )
+    await reportReview(review.id)
+    ElMessage.success('举报成功，感谢您的反馈，我们将尽快处理')
+  } catch (error) {
+    if (error !== 'cancel') ElMessage.error(error.message || '操作失败')
   }
 }
 
