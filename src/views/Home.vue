@@ -301,7 +301,7 @@ const goToCart = () => {
   router.push('/cart')
 }
 const goToAdmin = () => {
-  router.push('/admin/dashboard')
+  router.push('/admin/statistics')
 }
 const goToOrders = () => {
   if (!isLoggedIn.value) {

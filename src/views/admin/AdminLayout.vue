@@ -1,7 +1,7 @@
 <template>
   <el-container class="admin-layout" :class="layoutClass">
     <div class="stars-bg">
-      <div v-if="route.path === '/admin/dashboard'" class="nebula-pulse"></div>
+      <div v-if="route.path === '/admin/statistics'" class="nebula-pulse"></div>
     </div>
 
 
@@ -38,7 +38,7 @@
       <el-header class="admin-header">
         <div class="header-left">
           <el-breadcrumb separator="/">
-            <el-breadcrumb-item :to="{ path: '/admin/dashboard' }">
+            <el-breadcrumb-item :to="{ path: '/admin/statistics' }">
               <span class="breadcrumb-text">
                 <el-icon class="mr-1"><DataBoard /></el-icon> 管理中心
               </span>
@@ -105,7 +105,7 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const menuItems = ref([
-  { path: '/admin/dashboard', title: '数据概览', icon: 'DataAnalysis' },
+  { path: '/admin/statistics', title: '数据概览', icon: 'DataAnalysis' },
   { path: '/admin/product', title: '商品管理', icon: 'Goods' },
   { path: '/admin/order', title: '订单管理', icon: 'Document' },
   { path: '/admin/refund', title: '退款审核', icon: 'Money' },
@@ -145,7 +145,7 @@ const handleCommand = async (command) => {
 const theme = ref('red') // red | blue | purple
 
 const layoutClass = computed(() => {
-  const isDashboard = route.path === '/admin/dashboard'
+  const isDashboard = route.path === '/admin/statistics'
   return [
     `theme-${theme.value}`,
     isDashboard ? 'route-dashboard' : 'route-normal'

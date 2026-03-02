@@ -132,14 +132,15 @@ const routes = [
     {
         path: '/admin',
         component: () => import('@/views/admin/AdminLayout.vue'),
-        redirect: '/admin/dashboard',
+        redirect: '/admin/statistics',   // ← 原来是 /admin/dashboard
         meta: { requiresAuth: true, requiresAdmin: true },
         children: [
+            // 2. dashboard 路由替换为 statistics
             {
-                path: 'dashboard',
-                name: 'AdminDashboard',
-                component: () => import('@/views/admin/Dashboard.vue'),
-                meta: { title: '数据概览', requiresAdmin: true }
+                path: 'statistics',
+                name: 'AdminStatistics',
+                component: () => import('@/views/admin/Statistics.vue'),
+                meta: { title: '数据统计', requiresAdmin: true }
             },
             {
                 path: 'product',
