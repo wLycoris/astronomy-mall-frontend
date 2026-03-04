@@ -171,8 +171,10 @@ $glass-bg: rgba(15, 23, 42, 0.7); // 毛玻璃背景
   --core-main: rgba(255, 120, 180, 0.25);
   --core-sub: rgba(120, 60, 160, 0.18);
   --galaxy-main: rgba(140, 90, 255, 0.28);
-  height: 100vh;
+  /* ✅ 修复：改为 min-height，让内容超出时由 body 负责滚动 */
+  min-height: 100vh;
 }
+
 /* 🔴 红色星云 */
 .theme-red {
   --nebula-main: rgba(160, 20, 20, 0.38);
@@ -359,6 +361,7 @@ $glass-bg: rgba(15, 23, 42, 0.7); // 毛玻璃背景
   display: flex;
   flex-direction: column;
   box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+  /* ✅ 修复：侧边栏固定在左侧，不随页面滚动 */
   height: 100vh;
   position: sticky;
   top: 0;
@@ -458,7 +461,10 @@ $glass-bg: rgba(15, 23, 42, 0.7); // 毛玻璃背景
   justify-content: space-between;
   align-items: center;
   padding: 0 30px;
-  z-index: 5;
+  /* ✅ 修复：顶部栏吸顶，不随内容滚动 */
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 /* 面包屑重写 */
@@ -517,17 +523,19 @@ $glass-bg: rgba(15, 23, 42, 0.7); // 毛玻璃背景
 .main-container {
   flex-direction: column;
   position: relative;
-  height: 100%;
+  /* ✅ 修复：去掉固定高度，让内容自然撑开 */
+  min-height: 100vh;
   z-index: 1;
 }
 
 .admin-main {
   padding: 24px;
-  overflow-y: auto;
-  /* 变成半透明，让背后的星星透出来一点 */
+  /* ✅ 修复：去掉 overflow-y: auto，让 body 负责滚动
+     这样 el-dialog 的 align-center 才能相对浏览器视口正确居中 */
+  overflow-y: visible;
   background: rgba(11, 17, 32, 0.3);
-  backdrop-filter: blur(8px); /* 磨砂效果，非常有高级感 */
-  border: 1px solid rgba(255, 255, 255, 0.05); /* 淡淡的边框线 */
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   margin: 15px;
   border-radius: 12px;
 }
@@ -578,4 +586,39 @@ $glass-bg: rgba(15, 23, 42, 0.7); // 毛玻璃背景
   filter: none !important;
 }
 
+/* ✅ 修复：让 el-container 不裁剪内容，body 负责滚动 */
+.el-container,
+.el-main {
+  overflow: visible !important;
+}
+
+html, body {
+  overflow-y: auto;
+}
+/* ✅ 弹窗永远固定在屏幕视口正中间 */
+.el-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+}
+
+.el-overlay-dialog {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow-y: auto !important;
+}
+
+.el-overlay-dialog .el-dialog {
+  margin: 0 !important;
+  position: relative !important;
+  top: auto !important;
+}
 </style>

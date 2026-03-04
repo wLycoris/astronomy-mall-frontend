@@ -226,6 +226,7 @@
         title="评价详情"
         width="680px"
         destroy-on-close
+        append-to-body
     >
       <div v-if="currentReview" class="detail-content">
         <el-descriptions :column="2" border>
@@ -292,6 +293,7 @@
         :title="(replyForm.existingReply != null && replyForm.existingReply !== '') ? '修改商家回复' : '回复评价'"
         width="500px"
         destroy-on-close
+        append-to-body
     >
       <div class="original-review" v-if="replyForm.originalContent">
         <div class="section-title">用户评价</div>
@@ -335,6 +337,7 @@
         v-model="auditVisible"
         :title="auditForm.action === 1 ? '审核通过确认' : '审核拒绝确认'"
         width="460px"
+        append-to-body
     >
       <p v-if="auditForm.action === 1">
         确定审核通过该评价吗？通过后该评价将在商品页面正常显示。

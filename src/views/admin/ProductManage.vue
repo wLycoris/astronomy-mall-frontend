@@ -198,11 +198,12 @@
       </div>
     </el-card>
 
-    <!-- 新增/编辑对话框 - 完整版 -->
+    <!-- ✅ 新增/编辑对话框 - 加 align-center -->
     <el-dialog
         v-model="dialogVisible"
         :title="dialogTitle"
         width="900px"
+        align-center append-to-body
         @close="resetForm"
         :close-on-click-modal="false"
     >
@@ -383,11 +384,12 @@
       </template>
     </el-dialog>
 
-    <!-- 库存调整对话框 -->
+    <!-- ✅ 库存调整对话框 - 加 align-center -->
     <el-dialog
         v-model="stockDialogVisible"
         title="库存调整"
         width="500px"
+        align-center append-to-body
         @close="resetStockForm"
     >
       <el-descriptions :column="2" border style="margin-bottom: 20px;">
@@ -438,11 +440,12 @@
       </template>
     </el-dialog>
 
-    <!-- 🆕 库存日志对话框 -->
+    <!-- ✅ 库存日志对话框 - 加 align-center -->
     <el-dialog
         v-model="stockLogDialogVisible"
         title="库存调整日志"
         width="900px"
+        align-center append-to-body
     >
       <div style="margin-bottom: 15px;">
         <el-tag type="info">商品: {{ currentProduct.productName }}</el-tag>
@@ -511,8 +514,8 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'  // 🔥 添加 ElLoading
-import { Upload, Download, Document } from '@element-plus/icons-vue'  // 🔥 新增
+import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
+import { Upload, Download, Document } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import {
   getProductList,
@@ -970,6 +973,7 @@ const formatDateTime = (datetime) => {
     second: '2-digit'
   })
 }
+
 // 文件上传前校验
 const beforeUpload = (file) => {
   const isExcel = file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
@@ -1055,6 +1059,7 @@ const handleDownloadTemplate = () => {
     ElMessage.error('下载失败：' + (error.message || '未知错误'))
   }
 }
+
 // 初始化
 onMounted(() => {
   loadCategories()
