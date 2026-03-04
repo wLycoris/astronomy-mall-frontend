@@ -183,6 +183,10 @@ const routes = [
                 name: 'AdminCategory',
                 component: () => import('@/views/admin/CategoryManage.vue'),
                 meta: { title: '分类管理', requiresAdmin: true }
+            },
+            {
+                path: 'log',
+                component: () => import('@/views/admin/LogManage.vue')
             }
         ]
     },
