@@ -69,7 +69,7 @@ const routes = [
     },
 
     // ============================================
-    // 🔔 通知相关页面 (需要登录) - 新增
+    // 🔔 通知相关页面 (需要登录)
     // ============================================
     {
         path: '/notification/settings',
@@ -132,10 +132,9 @@ const routes = [
     {
         path: '/admin',
         component: () => import('@/views/admin/AdminLayout.vue'),
-        redirect: '/admin/statistics',   // ← 原来是 /admin/dashboard
+        redirect: '/admin/statistics',
         meta: { requiresAuth: true, requiresAdmin: true },
         children: [
-            // 2. dashboard 路由替换为 statistics
             {
                 path: 'statistics',
                 name: 'AdminStatistics',
@@ -186,7 +185,16 @@ const routes = [
             },
             {
                 path: 'log',
-                component: () => import('@/views/admin/LogManage.vue')
+                name: 'AdminLog',
+                component: () => import('@/views/admin/LogManage.vue'),
+                meta: { title: '操作日志', requiresAdmin: true }
+            },
+            // 🆕 系统设置
+            {
+                path: 'setting',
+                name: 'SystemSetting',
+                component: () => import('@/views/admin/SystemSetting.vue'),
+                meta: { title: '系统设置', requiresAdmin: true }
             }
         ]
     },
@@ -218,45 +226,38 @@ router.beforeEach(async (to, from, next) => {
     // 1. 如果访问的是登录或注册页
     if (to.path === '/login' || to.path === '/register') {
         if (isLoggedIn) {
-            // 已登录,跳转到首页
             next('/home')
         } else {
-            // 未登录,正常访问
             next()
         }
         return
     }
 
-    // 🆕 2. 如果访问后台管理页面 (需要管理员权限)
+    // 2. 如果访问后台管理页面 (需要管理员权限)
     if (to.meta.requiresAdmin) {
         if (!isLoggedIn) {
-            // 未登录,跳转到登录页
             ElMessage.warning('请先登录')
             next('/login')
             return
         }
 
-        // 已登录,检查是否是管理员
         const userStore = useUserStore()
         if (!userStore.userInfo) {
             await userStore.fetchUserInfo()
         }
 
         if (userStore.userInfo?.role !== 1) {
-            // 不是管理员,无权访问
             ElMessage.error('您不是管理员,无权访问后台')
             next('/home')
             return
         }
 
-        // 是管理员,放行
         next()
         return
     }
 
     // 3. 如果页面需要登录
     if (to.meta.requiresAuth && !isLoggedIn) {
-        // 保存目标路径,登录后跳转
         next({
             path: '/login',
             query: { redirect: to.fullPath }
