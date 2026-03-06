@@ -5,7 +5,7 @@
       <div class="header-content">
         <div class="logo" @click="router.push('/home')">
           <span class="logo-icon">🌌</span>
-          <span class="logo-text">天文器材商城</span>
+          <span class="logo-text">{{ mallName }}</span>
         </div>
         <nav class="nav-menu">
           <router-link to="/home" class="nav-item active">首页</router-link>
@@ -210,7 +210,7 @@
 
     <!-- 底部 -->
     <footer class="footer">
-      <p>© 2025 天文器材商城 - 探索宇宙的起点</p>
+      <p>{{ copyright }}</p>
     </footer>
   </div>
 </template>
@@ -223,12 +223,12 @@ import { useUserStore } from '@/stores/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getRecommendProducts } from '@/api/product'
 import { getCartList } from '@/api/cart'
+import { getBasicSetting } from '@/api/admin/setting'  // 🆕
 import {
   Grid, Picture, Reading, ChatDotRound, ShoppingCart,
-  List, User, SwitchButton, Setting, Bell  // 🔔 添加 Bell 图标
+  List, User, SwitchButton, Setting, Bell
 } from '@element-plus/icons-vue'
 
-// 🔔 新增: 导入通知铃铛组件
 import NotificationBell from '@/components/NotificationBell.vue'
 
 // ========================================
@@ -244,6 +244,8 @@ const userStore = useUserStore()
 const loading = ref(false)
 const recommendProducts = ref([])
 const cartCount = ref(0)
+const mallName = ref('天文器材商城')                          // 🆕
+const copyright = ref('© 2025 天文器材商城 - 探索宇宙的起点') // 🆕
 
 const banners = [
   { title: '探索星空的利器', subtitle: '专业天文望远镜 | 高清成像 | 精准追踪', image: 'https://images.unsplash.com/photo-1464802686167-b939a6910659?w=1200' },
@@ -289,6 +291,17 @@ const loadRecommendProducts = async () => {
   }
 }
 
+// 🆕 加载基础设置（商城名称 + 版权信息）
+const loadBasicSetting = async () => {
+  try {
+    const res = await getBasicSetting()
+    if (res.data.mallName)  mallName.value  = res.data.mallName
+    if (res.data.copyright) copyright.value = res.data.copyright
+  } catch (e) {
+    // 读取失败保持默认值
+  }
+}
+
 // 跳转方法
 const goToProducts = () => router.push('/products')
 const goToProductDetail = (id) => router.push(`/product/${id}`)
@@ -312,7 +325,6 @@ const goToOrders = () => {
   router.push('/order/list')
 }
 
-// ✅ 新增: 跳转到我的评价
 const goToMyReviews = () => {
   if (!isLoggedIn.value) {
     ElMessage.warning('请先登录')
@@ -328,7 +340,6 @@ const goToAI = () => ElMessage.info('AI识别功能开发中...')
 const goToCourses = () => ElMessage.info('课程学习功能开发中...')
 const goToForum = () => ElMessage.info('论坛功能开发中...')
 
-// 用户菜单操作
 const handleCommand = (command) => {
   switch (command) {
     case 'admin':
@@ -346,7 +357,7 @@ const handleCommand = (command) => {
     case 'reviews':
       goToMyReviews()
       break
-    case 'notification-settings':  // 🔔 新增: 通知设置
+    case 'notification-settings':
       router.push('/notification/settings')
       break
     case 'logout':
@@ -385,6 +396,7 @@ onMounted(async () => {
   await userStore.restoreLogin()
   if (isLoggedIn.value) loadCartCount()
   loadRecommendProducts()
+  loadBasicSetting()  // 🆕
 })
 </script>
 
@@ -511,14 +523,12 @@ onMounted(async () => {
   }
 }
 
-// 下拉菜单图标样式
 :deep(.el-dropdown-menu__item) {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-// 过渡动画
 .fade-slide-enter-active,
 .fade-slide-leave-active {
   transition: all 0.3s ease;
@@ -611,7 +621,6 @@ onMounted(async () => {
   }
 }
 
-// ✅ 新增: 用户中心区域样式
 .user-center {
   max-width: 1400px;
   margin: 0 auto 60px;

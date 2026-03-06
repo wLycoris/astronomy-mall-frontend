@@ -97,7 +97,7 @@ import { useUserStore } from '@/stores/user'
 import {
   HomeFilled, User, SwitchButton, ShoppingCart,
   DataAnalysis, Goods, Document, Money,
-  ChatDotRound, Menu, CaretBottom, DataBoard, List
+  ChatDotRound, Menu, CaretBottom, DataBoard, List, Setting
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -112,7 +112,8 @@ const menuItems = ref([
   { path: '/admin/review', title: '评价管理', icon: 'ChatDotRound' },
   { path: '/admin/user', title: '用户管理', icon: 'User' },
   { path: '/admin/category', title: '分类管理', icon: 'Menu' },
-  { path: '/admin/log',      title: '操作日志', icon: 'List' }
+  { path: '/admin/log',      title: '操作日志', icon: 'List' },
+  { path: '/admin/setting',    title: '系统设置', icon: 'Setting' }  // ← 新增这一行
 ])
 
 const activeMenu = computed(() => route.path)

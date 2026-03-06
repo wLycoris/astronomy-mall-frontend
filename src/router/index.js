@@ -2,12 +2,24 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { getToken } from '@/utils/auth'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
+import { getMaintenanceSetting } from '@/api/admin/setting'
 
 const routes = [
     {
         path: '/',
         redirect: '/home'
     },
+
+    // ============================================
+    // 🆕 维护模式页面（不需要登录，任何人都能看到）
+    // ============================================
+    {
+        path: '/maintenance',
+        name: 'Maintenance',
+        component: () => import('@/views/MaintenancePage.vue'),
+        meta: { title: '系统维护中' }
+    },
+
     // ============================================
     // 用户相关页面 (不需要登录)
     // ============================================
@@ -69,7 +81,7 @@ const routes = [
     },
 
     // ============================================
-    // 🔔 通知相关页面 (需要登录)
+    // 通知相关页面 (需要登录)
     // ============================================
     {
         path: '/notification/settings',
@@ -127,7 +139,7 @@ const routes = [
     },
 
     // ============================================
-    // 🆕 后台管理路由
+    // 后台管理路由
     // ============================================
     {
         path: '/admin',
@@ -189,7 +201,6 @@ const routes = [
                 component: () => import('@/views/admin/LogManage.vue'),
                 meta: { title: '操作日志', requiresAdmin: true }
             },
-            // 🆕 系统设置
             {
                 path: 'setting',
                 name: 'SystemSetting',
@@ -215,6 +226,27 @@ const router = createRouter({
     routes
 })
 
+// 维护模式缓存（避免每次路由跳转都请求接口，缓存60秒）
+let maintenanceCache = null
+let maintenanceCacheTime = 0
+const CACHE_TTL = 60 * 1000
+
+const checkMaintenance = async () => {
+    const now = Date.now()
+    if (maintenanceCache !== null && now - maintenanceCacheTime < CACHE_TTL) {
+        return maintenanceCache
+    }
+    try {
+        const res = await getMaintenanceSetting()
+        const mode = res.data.maintenanceMode === true || res.data.maintenanceMode === 'true'
+        maintenanceCache = mode
+        maintenanceCacheTime = now
+        return mode
+    } catch (e) {
+        return false // 接口异常不拦截，正常放行
+    }
+}
+
 // 路由守卫
 router.beforeEach(async (to, from, next) => {
     // 设置页面标题
@@ -223,7 +255,28 @@ router.beforeEach(async (to, from, next) => {
     const token = getToken()
     const isLoggedIn = !!token
 
-    // 1. 如果访问的是登录或注册页
+    // 1. 维护模式判断
+    // /maintenance 页面本身、/admin/** 后台路由、/login、/register、已登录管理员 不受影响
+    if (to.path !== '/maintenance' && !to.path.startsWith('/admin')
+        && to.path !== '/login' && to.path !== '/register') {
+        let isAdmin = false
+        if (isLoggedIn) {
+            const userStore = useUserStore()
+            if (!userStore.userInfo) {
+                try { await userStore.fetchUserInfo() } catch (e) {}
+            }
+            isAdmin = userStore.userInfo?.role === 1
+        }
+        if (!isAdmin) {
+            const inMaintenance = await checkMaintenance()
+            if (inMaintenance) {
+                next('/maintenance')
+                return
+            }
+        }
+    }
+
+    // 2. 如果访问的是登录或注册页
     if (to.path === '/login' || to.path === '/register') {
         if (isLoggedIn) {
             next('/home')
@@ -233,7 +286,7 @@ router.beforeEach(async (to, from, next) => {
         return
     }
 
-    // 2. 如果访问后台管理页面 (需要管理员权限)
+    // 3. 如果访问后台管理页面 (需要管理员权限)
     if (to.meta.requiresAdmin) {
         if (!isLoggedIn) {
             ElMessage.warning('请先登录')
@@ -247,7 +300,7 @@ router.beforeEach(async (to, from, next) => {
         }
 
         if (userStore.userInfo?.role !== 1) {
-            ElMessage.error('您不是管理员,无权访问后台')
+            ElMessage.error('您不是管理员，无权访问后台')
             next('/home')
             return
         }
@@ -256,7 +309,7 @@ router.beforeEach(async (to, from, next) => {
         return
     }
 
-    // 3. 如果页面需要登录
+    // 4. 如果页面需要登录
     if (to.meta.requiresAuth && !isLoggedIn) {
         next({
             path: '/login',
@@ -265,7 +318,7 @@ router.beforeEach(async (to, from, next) => {
         return
     }
 
-    // 4. 其他情况正常放行
+    // 5. 其他情况正常放行
     next()
 })
 

@@ -134,6 +134,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Clock, CreditCard, Iphone, Wallet, InfoFilled, CircleCheck } from '@element-plus/icons-vue'
 import { createPayment, simulatePayment, getPaymentByOrderId } from '@/api/payment'
+import { getPaymentSetting } from '@/api/admin/setting'  // 🆕
 
 const route = useRoute()
 const router = useRouter()
@@ -146,7 +147,7 @@ const orderAmount = ref(0)
 // 支付信息
 const selectedPaymentType = ref(1)
 const loading = ref(false)
-const countdown = ref(900) // 15分钟
+const countdown = ref(900) // 15分钟，🆕 onMounted 读取设置后覆盖
 const paymentId = ref(null)
 const paymentTime = ref('')
 
@@ -156,12 +157,13 @@ const showSuccessDialog = ref(false)
 // 倒计时定时器
 let timer = null
 
-// 支付方式列表
-const paymentMethods = ref([
-  { id: 1, name: '支付宝', icon: CreditCard, desc: '推荐使用支付宝安全快捷支付' },
-  { id: 2, name: '微信支付', icon: Iphone, desc: '微信扫码支付，方便快捷' },
-  { id: 3, name: '余额支付', icon: Wallet, desc: '使用账户余额支付' }
-])
+// 🆕 支付方式列表改为动态，onMounted 根据系统设置过滤
+const paymentMethods = ref([])
+const ALL_METHODS = [
+  { id: 1, name: '支付宝', icon: CreditCard, desc: '推荐使用支付宝安全快捷支付', settingKey: 'alipayEnabled' },
+  { id: 2, name: '微信支付', icon: Iphone, desc: '微信扫码支付，方便快捷', settingKey: 'wechatEnabled' },
+  { id: 3, name: '余额支付', icon: Wallet, desc: '使用账户余额支付', settingKey: 'balanceEnabled' }
+]
 
 // 格式化时间
 const formatTime = (seconds) => {
@@ -247,7 +249,7 @@ const goToHome = () => {
 }
 
 // 初始化
-onMounted(() => {
+onMounted(async () => {
   // 从路由参数获取订单信息
   orderId.value = Number(route.query.orderId)
   orderAmount.value = Number(route.query.amount)
@@ -256,6 +258,18 @@ onMounted(() => {
     ElMessage.error('订单信息不完整')
     router.push('/order/list')
     return
+  }
+
+  // 🆕 加载支付设置：过滤可用支付方式 + 超时时间
+  try {
+    const res = await getPaymentSetting()
+    const s = res.data
+    paymentMethods.value = ALL_METHODS.filter(m => s[m.settingKey] === true || s[m.settingKey] === 'true')
+    if (paymentMethods.value.length > 0) selectedPaymentType.value = paymentMethods.value[0].id
+    if (s.payTimeoutMinutes) countdown.value = Number(s.payTimeoutMinutes) * 60
+  } catch (e) {
+    // 读取失败降级：全部展示，保持默认15分钟
+    paymentMethods.value = ALL_METHODS
   }
 
   // 检查是否已有支付记录

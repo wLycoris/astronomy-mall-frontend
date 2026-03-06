@@ -6,9 +6,17 @@
       <div class="gradient-orb orb-2"></div>
       <div class="gradient-orb orb-3"></div>
     </div>
-    
+
+    <!-- 🆕 注册已关闭提示 -->
+    <div v-if="!registerEnabled" class="register-card glass-effect" style="text-align:center; padding: 60px 50px;">
+      <el-icon :size="60" style="color:rgba(255,255,255,0.8); margin-bottom:20px;"><Lock /></el-icon>
+      <h2 class="title" style="color:white; font-size:28px; margin-bottom:12px;">暂未开放注册</h2>
+      <p style="color:rgba(255,255,255,0.8); margin-bottom:24px;">管理员已关闭用户注册，如需账号请联系管理员</p>
+      <router-link to="/login" style="color:#ffe66d;">返回登录</router-link>
+    </div>
+
     <!-- 注册卡片 -->
-    <div class="register-card glass-effect">
+    <div v-else class="register-card glass-effect">
       <div class="card-header">
         <router-link to="/login" class="back-button">
           <el-icon><ArrowLeft /></el-icon>
@@ -17,105 +25,105 @@
         <h2 class="title">创建账户</h2>
         <p class="subtitle">加入天文探索者社区</p>
       </div>
-      
+
       <el-form
-        :model="registerForm"
-        :rules="registerRules"
-        ref="registerFormRef"
-        class="register-form"
+          :model="registerForm"
+          :rules="registerRules"
+          ref="registerFormRef"
+          class="register-form"
       >
         <!-- 用户名 -->
         <el-form-item prop="username">
           <label class="form-label">用户名</label>
           <el-input
-            v-model="registerForm.username"
-            placeholder="4-20位字母、数字或下划线"
-            size="large"
-            clearable
+              v-model="registerForm.username"
+              placeholder="4-20位字母、数字或下划线"
+              size="large"
+              clearable
           >
             <template #prefix>
               <el-icon><User /></el-icon>
             </template>
           </el-input>
         </el-form-item>
-        
+
         <!-- 昵称 -->
         <el-form-item prop="nickname">
           <label class="form-label">昵称</label>
           <el-input
-            v-model="registerForm.nickname"
-            placeholder="请输入您的昵称"
-            size="large"
-            clearable
+              v-model="registerForm.nickname"
+              placeholder="请输入您的昵称"
+              size="large"
+              clearable
           >
             <template #prefix>
               <el-icon><Star /></el-icon>
             </template>
           </el-input>
         </el-form-item>
-        
+
         <!-- 密码 -->
         <el-form-item prop="password">
           <label class="form-label">密码</label>
           <el-input
-            v-model="registerForm.password"
-            type="password"
-            placeholder="6-20位密码"
-            size="large"
-            show-password
+              v-model="registerForm.password"
+              type="password"
+              placeholder="6-20位密码"
+              size="large"
+              show-password
           >
             <template #prefix>
               <el-icon><Lock /></el-icon>
             </template>
           </el-input>
         </el-form-item>
-        
+
         <!-- 确认密码 -->
         <el-form-item prop="confirmPassword">
           <label class="form-label">确认密码</label>
           <el-input
-            v-model="registerForm.confirmPassword"
-            type="password"
-            placeholder="请再次输入密码"
-            size="large"
-            show-password
+              v-model="registerForm.confirmPassword"
+              type="password"
+              placeholder="请再次输入密码"
+              size="large"
+              show-password
           >
             <template #prefix>
               <el-icon><Lock /></el-icon>
             </template>
           </el-input>
         </el-form-item>
-        
+
         <!-- 邮箱 -->
         <el-form-item prop="email">
           <label class="form-label">邮箱 (可选)</label>
           <el-input
-            v-model="registerForm.email"
-            placeholder="your@email.com"
-            size="large"
-            clearable
+              v-model="registerForm.email"
+              placeholder="your@email.com"
+              size="large"
+              clearable
           >
             <template #prefix>
               <el-icon><Message /></el-icon>
             </template>
           </el-input>
         </el-form-item>
-        
+
         <!-- 手机号 -->
         <el-form-item prop="phone">
           <label class="form-label">手机号 (可选)</label>
           <el-input
-            v-model="registerForm.phone"
-            placeholder="11位手机号"
-            size="large"
-            clearable
+              v-model="registerForm.phone"
+              placeholder="11位手机号"
+              size="large"
+              clearable
           >
             <template #prefix>
               <el-icon><Phone /></el-icon>
             </template>
           </el-input>
         </el-form-item>
-        
+
         <!-- 服务条款 -->
         <el-form-item prop="agreement">
           <el-checkbox v-model="registerForm.agreement">
@@ -125,14 +133,14 @@
             <a href="#" class="link">《隐私政策》</a>
           </el-checkbox>
         </el-form-item>
-        
+
         <!-- 注册按钮 -->
         <el-button
-          type="primary"
-          size="large"
-          class="register-button"
-          :loading="loading"
-          @click="handleRegister"
+            type="primary"
+            size="large"
+            class="register-button"
+            :loading="loading"
+            @click="handleRegister"
         >
           <span v-if="!loading">立即注册</span>
           <span v-else>注册中...</span>
@@ -143,15 +151,17 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock, Star, Message, Phone, ArrowLeft } from '@element-plus/icons-vue'
 import { register } from '@/api/user'
+import { getRegisterSetting } from '@/api/admin/setting'  // 🆕
 
 const router = useRouter()
 const registerFormRef = ref(null)
 const loading = ref(false)
+const registerEnabled = ref(true)  // 🆕
 
 const registerForm = reactive({
   username: '',
@@ -214,12 +224,12 @@ const registerRules = {
 const handleRegister = () => {
   registerFormRef.value.validate(async (valid) => {
     if (!valid) return
-    
+
     loading.value = true
     try {
       const { username, nickname, password, email, phone } = registerForm
       await register({ username, nickname, password, email, phone })
-      
+
       ElMessage.success('注册成功!即将跳转到登录页...')
       setTimeout(() => {
         router.push('/login')
@@ -231,6 +241,16 @@ const handleRegister = () => {
     }
   })
 }
+
+// 🆕 检查注册开关
+onMounted(async () => {
+  try {
+    const res = await getRegisterSetting()
+    registerEnabled.value = res.data.registerEnabled === true || res.data.registerEnabled === 'true'
+  } catch (e) {
+    // 读取失败默认允许注册
+  }
+})
 </script>
 
 <style scoped lang="scss">
@@ -252,7 +272,7 @@ const handleRegister = () => {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  
+
   .gradient-orb {
     position: absolute;
     border-radius: 50%;
@@ -260,7 +280,7 @@ const handleRegister = () => {
     opacity: 0.7;
     animation: float 20s infinite ease-in-out;
   }
-  
+
   .orb-1 {
     width: 400px;
     height: 400px;
@@ -269,7 +289,7 @@ const handleRegister = () => {
     left: -100px;
     animation-delay: 0s;
   }
-  
+
   .orb-2 {
     width: 500px;
     height: 500px;
@@ -278,7 +298,7 @@ const handleRegister = () => {
     right: -150px;
     animation-delay: 7s;
   }
-  
+
   .orb-3 {
     width: 350px;
     height: 350px;
@@ -309,7 +329,7 @@ const handleRegister = () => {
 
 .card-header {
   margin-bottom: 30px;
-  
+
   .back-button {
     display: inline-flex;
     align-items: center;
@@ -319,20 +339,20 @@ const handleRegister = () => {
     font-size: 14px;
     margin-bottom: 20px;
     transition: all 0.3s ease;
-    
+
     &:hover {
       transform: translateX(-5px);
       opacity: 0.8;
     }
   }
-  
+
   .title {
     font-size: 32px;
     font-weight: 700;
     color: white;
     margin-bottom: 8px;
   }
-  
+
   .subtitle {
     font-size: 15px;
     color: rgba(255, 255, 255, 0.8);
@@ -343,7 +363,7 @@ const handleRegister = () => {
   .el-form-item {
     margin-bottom: 20px;
   }
-  
+
   .form-label {
     display: block;
     margin-bottom: 8px;
@@ -351,34 +371,34 @@ const handleRegister = () => {
     font-weight: 600;
     color: white;
   }
-  
+
   :deep(.el-input__wrapper) {
     background: rgba(255, 255, 255, 0.9);
     border-radius: 12px;
     box-shadow: none;
     border: 1px solid rgba(255, 255, 255, 0.3);
     transition: all 0.3s ease;
-    
+
     &:hover {
       background: rgba(255, 255, 255, 0.95);
       border-color: rgba(255, 255, 255, 0.5);
     }
-    
+
     &.is-focus {
       background: white;
       box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
     }
   }
-  
+
   :deep(.el-checkbox__label) {
     color: white;
     font-size: 13px;
   }
-  
+
   .link {
     color: #ffe66d;
     text-decoration: none;
-    
+
     &:hover {
       text-decoration: underline;
     }
@@ -396,7 +416,7 @@ const handleRegister = () => {
   color: #667eea;
   border: none;
   transition: all 0.3s ease;
-  
+
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 20px rgba(255, 255, 255, 0.3);
