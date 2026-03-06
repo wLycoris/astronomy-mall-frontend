@@ -211,6 +211,82 @@ const routes = [
     },
 
     // ============================================
+    // 🆕 个人中心路由 (2.4 节新增)
+    // ============================================
+    // 将此对象插入到 routes 数组中，位于 "404页面" 路由之前：
+    {
+        path: '/user',
+        component: () => import('@/views/user/UserLayout.vue'),
+        redirect: '/user/overview',
+        meta: { requiresAuth: true },
+        children: [
+            // 概览首页
+            {
+                path: 'overview',
+                name: 'UserOverview',
+                component: () => import('@/views/user/UserOverview.vue'),
+                meta: { title: '个人概览', requiresAuth: true }
+            },
+
+            // 我的订单（复用现有 OrderList.vue，保留 /order/list 原路径不删除）
+            {
+                path: 'orders',
+                name: 'UserOrders',
+                component: () => import('@/views/order/OrderList.vue'),
+                meta: { title: '我的订单', requiresAuth: true }
+            },
+
+            // 收货地址管理（2.4.2 节开发，组件文件路径预留）
+            {
+                path: 'address',
+                name: 'UserAddress',
+                component: () => import('@/views/user/UserAddress.vue'),
+                meta: { title: '收货地址', requiresAuth: true }
+            },
+
+            // 我的评价（复用现有 MyReviews.vue，保留 /review/my 原路径不删除）
+            {
+                path: 'reviews',
+                name: 'UserReviews',
+                component: () => import('@/views/review/MyReviews.vue'),
+                meta: { title: '我的评价', requiresAuth: true }
+            },
+
+            // 我的钱包（2.4.4 节开发，组件文件路径预留）
+            {
+                path: 'wallet',
+                name: 'UserWallet',
+                component: () => import('@/views/user/UserWallet.vue'),
+                meta: { title: '我的钱包', requiresAuth: true }
+            },
+
+            // 我的收藏（第8周开发，预留入口，暂不挂载组件）
+            // {
+            //     path: 'favorites',
+            //     name: 'UserFavorites',
+            //     component: () => import('@/views/user/UserFavorites.vue'),
+            //     meta: { title: '我的收藏', requiresAuth: true }
+            // },
+
+            // 我的售后（2.5 节开发后接入，预留入口）
+            // {
+            //     path: 'after-sale',
+            //     name: 'UserAfterSale',
+            //     component: () => import('@/views/user/UserAfterSale.vue'),
+            //     meta: { title: '我的售后', requiresAuth: true }
+            // },
+
+            // 账号设置（2.4.5 节开发，组件文件路径预留）
+            {
+                path: 'settings',
+                name: 'UserSettings',
+                component: () => import('@/views/user/UserSettings.vue'),
+                meta: { title: '账号设置', requiresAuth: true }
+            }
+        ]
+    },
+
+    // ============================================
     // 404页面
     // ============================================
     {

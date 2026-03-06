@@ -168,7 +168,7 @@
           <h4>我的评价</h4>
           <p>查看评价记录</p>
         </div>
-        <div class="user-entry-item" @click="router.push('/profile')">
+        <div class="user-entry-item" @click="router.push('/user/overview')">
           <el-icon :size="32" color="#fff"><User /></el-icon>
           <h4>个人中心</h4>
           <p>管理个人信息</p>
@@ -346,7 +346,7 @@ const handleCommand = (command) => {
       goToAdmin()
       break
     case 'profile':
-      router.push('/profile')
+      router.push('/user/overview')
       break
     case 'cart':
       goToCart()
