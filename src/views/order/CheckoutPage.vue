@@ -8,58 +8,68 @@
       </el-breadcrumb>
 
       <div class="checkout-container">
-        <!-- 收货地址 -->
+
+        <!-- ===== 收货地址（v7.6 改造：选择地址替换手填表单）===== -->
         <div class="section address-section">
-          <h3 class="section-title">收货地址</h3>
-          <el-form
-              ref="addressFormRef"
-              :model="addressForm"
-              :rules="addressRules"
-              label-width="100px"
+          <div class="section-header">
+            <h3 class="section-title">收货地址</h3>
+            <el-button link type="primary" @click="router.push('/user/address')">
+              管理地址 →
+            </el-button>
+          </div>
+
+          <!-- 加载中 -->
+          <div v-if="addressLoading" class="address-loading">
+            <el-skeleton :rows="2" animated />
+          </div>
+
+          <!-- 无地址 → 提示跳转 -->
+          <el-empty
+              v-else-if="addressList.length === 0"
+              description="您还没有收货地址，请先添加"
+              :image-size="80"
           >
-            <el-row :gutter="20">
-              <el-col :span="8">
-                <el-form-item label="收货人" prop="receiverName">
-                  <el-input v-model="addressForm.receiverName" placeholder="请输入收货人姓名" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="8">
-                <el-form-item label="手机号码" prop="receiverPhone">
-                  <el-input v-model="addressForm.receiverPhone" placeholder="请输入手机号码" />
-                </el-form-item>
-              </el-col>
-            </el-row>
+            <el-button type="primary" @click="router.push('/user/address')">
+              去添加地址
+            </el-button>
+          </el-empty>
 
-            <el-row :gutter="20">
-              <el-col :span="8">
-                <el-form-item label="省份" prop="receiverProvince">
-                  <el-input v-model="addressForm.receiverProvince" placeholder="请输入省份" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="8">
-                <el-form-item label="城市" prop="receiverCity">
-                  <el-input v-model="addressForm.receiverCity" placeholder="请输入城市" />
-                </el-form-item>
-              </el-col>
-              <el-col :span="8">
-                <el-form-item label="区县" prop="receiverDistrict">
-                  <el-input v-model="addressForm.receiverDistrict" placeholder="请输入区县" />
-                </el-form-item>
-              </el-col>
-            </el-row>
+          <!-- 地址列表（单选卡片） -->
+          <div v-else class="address-list">
+            <div
+                v-for="addr in addressList"
+                :key="addr.id"
+                class="address-card"
+                :class="{ 'is-selected': selectedAddressId === addr.id }"
+                @click="selectedAddressId = addr.id"
+            >
+              <!-- 选中圆圈标识 -->
+              <div class="select-dot">
+                <div class="dot-inner" v-if="selectedAddressId === addr.id" />
+              </div>
 
-            <el-form-item label="详细地址" prop="receiverAddress">
-              <el-input
-                  v-model="addressForm.receiverAddress"
-                  type="textarea"
-                  :rows="2"
-                  placeholder="请输入详细地址"
-              />
-            </el-form-item>
-          </el-form>
+              <!-- 地址信息 -->
+              <div class="addr-body">
+                <div class="addr-top">
+                  <span class="recv-name">{{ addr.receiverName }}</span>
+                  <span class="recv-phone">{{ addr.receiverPhone }}</span>
+                  <el-tag v-if="addr.isDefault === 1" type="success" size="small" effect="dark">默认</el-tag>
+                </div>
+                <div class="addr-detail">
+                  {{ addr.province }} {{ addr.city }} {{ addr.district }} {{ addr.detail }}
+                </div>
+              </div>
+            </div>
+
+            <!-- 去添加新地址快捷入口 -->
+            <div class="addr-add-btn" @click="router.push('/user/address')">
+              <el-icon><Plus /></el-icon>
+              <span>添加新地址</span>
+            </div>
+          </div>
         </div>
 
-        <!-- 商品清单 -->
+        <!-- ===== 商品清单（原样保留）===== -->
         <div class="section product-section">
           <h3 class="section-title">商品清单</h3>
           <div v-for="item in selectedItems" :key="item.id" class="product-item">
@@ -74,27 +84,26 @@
           </div>
         </div>
 
-        <!-- 订单备注 -->
+        <!-- ===== 订单备注（原样保留）===== -->
         <div class="section remark-section">
           <h3 class="section-title">订单备注</h3>
           <el-input
-              v-model="addressForm.remark"
+              v-model="remark"
               type="textarea"
               :rows="3"
-              placeholder="选填,可填写配送要求等信息"
+              placeholder="选填，可填写配送要求等信息"
               maxlength="200"
               show-word-limit
           />
         </div>
 
-        <!-- 费用明细 -->
+        <!-- ===== 费用明细（原样保留）===== -->
         <div class="section summary-section">
           <h3 class="section-title">费用明细</h3>
           <div class="summary-item">
             <span>商品总金额:</span>
             <span class="amount">¥{{ totalAmount.toFixed(2) }}</span>
           </div>
-          <!-- 🆕 运费动态显示，联动系统设置 -->
           <div class="summary-item">
             <span>运费:</span>
             <span class="amount">
@@ -111,24 +120,29 @@
             <span>优惠金额:</span>
             <span class="amount discount">-¥0.00</span>
           </div>
-          <!-- 🆕 应付金额 = 商品总额 + 运费 -->
           <div class="summary-item total">
             <span>应付金额:</span>
             <span class="amount">¥{{ paymentAmount.toFixed(2) }}</span>
           </div>
         </div>
 
-        <!-- 提交订单 -->
+        <!-- ===== 提交订单 ===== -->
         <div class="submit-section">
+          <!-- 未选地址提示 -->
+          <span v-if="addressList.length > 0 && !selectedAddressId" class="no-addr-tip">
+            请选择收货地址
+          </span>
           <el-button
               type="primary"
               size="large"
               :loading="submitting"
+              :disabled="addressList.length === 0 || !selectedAddressId"
               @click="handleSubmitOrder"
           >
             提交订单
           </el-button>
         </div>
+
       </div>
     </div>
   </div>
@@ -138,85 +152,46 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
 import { getCartList } from '@/api/cart'
 import { createOrder } from '@/api/order'
-import { getFreightSetting } from '@/api/admin/setting'  // 🆕
+import { getFreightSetting } from '@/api/admin/setting'
+import { getAddressList } from '@/api/address'  // 📌 v7.6 新增
 
 const router = useRouter()
 
-const addressFormRef = ref(null)
-const addressForm = ref({
-  receiverName: '',
-  receiverPhone: '',
-  receiverProvince: '',
-  receiverCity: '',
-  receiverDistrict: '',
-  receiverAddress: '',
-  remark: ''
-})
+// =====================================================================
+// 收货地址（v7.6 改造：选择地址替换手填表单）
+// =====================================================================
+const addressLoading    = ref(false)
+const addressList       = ref([])
+const selectedAddressId = ref(null)   // 当前选中的地址ID
 
-const addressRules = {
-  receiverName:     [{ required: true, message: '请输入收货人姓名', trigger: 'blur' }],
-  receiverPhone:    [
-    { required: true, message: '请输入手机号码', trigger: 'blur' },
-    { pattern: /^1[3-9]\d{9}$/, message: '手机号格式不正确', trigger: 'blur' }
-  ],
-  receiverProvince: [{ required: true, message: '请输入省份', trigger: 'blur' }],
-  receiverCity:     [{ required: true, message: '请输入城市', trigger: 'blur' }],
-  receiverDistrict: [{ required: true, message: '请输入区县', trigger: 'blur' }],
-  receiverAddress:  [{ required: true, message: '请输入详细地址', trigger: 'blur' }]
-}
-
-const selectedItems  = ref([])
-const submitting     = ref(false)
-
-// 🆕 运费相关状态
-const freightLoading      = ref(false)
-const defaultFreight      = ref(0)      // 默认运费
-const freeFreightEnabled  = ref(false)  // 是否开启包邮
-const freeFreightAmount   = ref(0)      // 包邮门槛
-
-// 🆕 商品总金额
-const totalAmount = computed(() =>
-    selectedItems.value.reduce((sum, item) => sum + item.subtotal, 0)
-)
-
-// 🆕 动态计算运费（与后端 calcFreight 逻辑完全一致）
-const freight = computed(() => {
-  if (defaultFreight.value === 0) return 0
-  if (freeFreightEnabled.value && totalAmount.value >= freeFreightAmount.value) return 0
-  return defaultFreight.value
-})
-
-// 🆕 包邮提示文案
-const freightTip = computed(() => {
-  if (defaultFreight.value === 0) return ''
-  if (!freeFreightEnabled.value) return ''
-  if (freight.value === 0) return ''
-  const diff = (freeFreightAmount.value - totalAmount.value).toFixed(2)
-  return `再购 ¥${diff} 即可享受免运费`
-})
-
-// 🆕 应付金额 = 商品总额 + 运费
-const paymentAmount = computed(() => totalAmount.value + freight.value)
-
-// 加载运费设置
-const loadFreightSetting = async () => {
-  freightLoading.value = true
+/** 加载地址列表，自动选中默认地址（第一条） */
+const loadAddressList = async () => {
+  addressLoading.value = true
   try {
-    const res = await getFreightSetting()
-    defaultFreight.value     = Number(res.data.defaultFreight)     || 0
-    freeFreightEnabled.value = Boolean(res.data.freeFreightEnabled)
-    freeFreightAmount.value  = Number(res.data.freeFreightAmount)  || 0
+    const res = await getAddressList()
+    addressList.value = res.data || []
+    // 自动选中默认地址（isDefault=1）；若无默认则选第一条
+    if (addressList.value.length > 0) {
+      const defaultAddr = addressList.value.find(a => a.isDefault === 1)
+      selectedAddressId.value = defaultAddr
+          ? defaultAddr.id
+          : addressList.value[0].id
+    }
   } catch (e) {
-    // 读取失败兜底免运费，不阻塞下单
-    defaultFreight.value = 0
+    ElMessage.error('加载收货地址失败')
   } finally {
-    freightLoading.value = false
+    addressLoading.value = false
   }
 }
 
-// 加载选中的商品
+// =====================================================================
+// 商品清单
+// =====================================================================
+const selectedItems = ref([])
+
 const loadSelectedItems = async () => {
   try {
     const res = await getCartList()
@@ -230,15 +205,65 @@ const loadSelectedItems = async () => {
   }
 }
 
-// 提交订单
-const handleSubmitOrder = async () => {
-  try {
-    await addressFormRef.value.validate()
-    submitting.value = true
+// =====================================================================
+// 运费计算（原逻辑保留）
+// =====================================================================
+const freightLoading     = ref(false)
+const defaultFreight     = ref(0)
+const freeFreightEnabled = ref(false)
+const freeFreightAmount  = ref(0)
+const remark             = ref('')    // 订单备注（从 addressForm.remark 独立出来）
 
+const totalAmount = computed(() =>
+    selectedItems.value.reduce((sum, item) => sum + item.subtotal, 0)
+)
+
+const freight = computed(() => {
+  if (defaultFreight.value === 0) return 0
+  if (freeFreightEnabled.value && totalAmount.value >= freeFreightAmount.value) return 0
+  return defaultFreight.value
+})
+
+const freightTip = computed(() => {
+  if (defaultFreight.value === 0 || !freeFreightEnabled.value || freight.value === 0) return ''
+  const diff = (freeFreightAmount.value - totalAmount.value).toFixed(2)
+  return `再购 ¥${diff} 即可享受免运费`
+})
+
+const paymentAmount = computed(() => totalAmount.value + freight.value)
+
+const loadFreightSetting = async () => {
+  freightLoading.value = true
+  try {
+    const res = await getFreightSetting()
+    defaultFreight.value     = Number(res.data.defaultFreight)     || 0
+    freeFreightEnabled.value = Boolean(res.data.freeFreightEnabled)
+    freeFreightAmount.value  = Number(res.data.freeFreightAmount)  || 0
+  } catch (e) {
+    defaultFreight.value = 0
+  } finally {
+    freightLoading.value = false
+  }
+}
+
+// =====================================================================
+// 提交订单（v7.6 改造：传 addressId 替换6个地址字段）
+// =====================================================================
+const submitting = ref(false)
+
+const handleSubmitOrder = async () => {
+  // 地址校验
+  if (!selectedAddressId.value) {
+    ElMessage.warning('请先选择收货地址')
+    return
+  }
+
+  submitting.value = true
+  try {
     const orderData = {
-      ...addressForm.value,
-      cartIds: selectedItems.value.map(item => item.id)
+      cartIds:   selectedItems.value.map(item => item.id),
+      addressId: selectedAddressId.value,   // 📌 v7.6 核心改造：传 addressId
+      remark:    remark.value || ''
     }
 
     const res = await createOrder(orderData)
@@ -246,17 +271,19 @@ const handleSubmitOrder = async () => {
     router.push(`/order/detail/${res.data.id}`)
 
   } catch (error) {
-    if (error !== 'validation failed') {
-      ElMessage.error(error.message || '订单创建失败')
-    }
+    ElMessage.error(error.message || '订单创建失败')
   } finally {
     submitting.value = false
   }
 }
 
+// =====================================================================
+// 初始化
+// =====================================================================
 onMounted(() => {
+  loadAddressList()    // 📌 v7.6 新增
   loadSelectedItems()
-  loadFreightSetting()  // 🆕
+  loadFreightSetting()
 })
 </script>
 
@@ -287,14 +314,131 @@ onMounted(() => {
   &:last-child { margin-bottom: 0; }
 }
 
-.section-title {
-  font-size: 18px;
-  font-weight: 600;
+/* ===== 区块标题行（v7.6 新增：标题 + 管理地址按钮）===== */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 20px;
   padding-bottom: 10px;
   border-bottom: 1px solid #e8e8e8;
 }
 
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ===== 地址加载骨架 ===== */
+.address-loading {
+  padding: 12px 0;
+}
+
+/* ===== 地址列表容器 ===== */
+.address-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ===== 地址卡片 ===== */
+.address-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 1.5px solid #e5e6eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.18s;
+
+  &:hover {
+    border-color: #409eff;
+    background: #f0f7ff;
+  }
+
+  /* 选中状态 */
+  &.is-selected {
+    border-color: #409eff;
+    background: #ecf5ff;
+  }
+}
+
+/* 圆形选中指示 */
+.select-dot {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #c0c4cc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.18s;
+
+  .address-card.is-selected & {
+    border-color: #409eff;
+  }
+}
+
+.dot-inner {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #409eff;
+}
+
+/* 地址内容区 */
+.addr-body {
+  flex: 1;
+}
+
+.addr-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.recv-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1d2129;
+}
+
+.recv-phone {
+  font-size: 14px;
+  color: #4e5969;
+}
+
+.addr-detail {
+  font-size: 14px;
+  color: #4e5969;
+  line-height: 1.5;
+}
+
+/* ===== 添加新地址按钮行 ===== */
+.addr-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 18px;
+  border: 1.5px dashed #d9d9d9;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #909399;
+  font-size: 14px;
+  transition: all 0.18s;
+
+  &:hover {
+    border-color: #409eff;
+    color: #409eff;
+    background: #f0f7ff;
+  }
+}
+
+/* ===== 商品清单（原样）===== */
 .product-section {
   .product-item {
     display: flex;
@@ -314,24 +458,16 @@ onMounted(() => {
     flex: 1;
     margin-left: 16px;
   }
-  .product-name {
-    font-size: 16px;
-    margin-bottom: 6px;
-  }
-  .product-brand {
-    font-size: 14px;
-    color: #999;
-  }
+  .product-name  { font-size: 16px; margin-bottom: 6px; }
+  .product-brand { font-size: 14px; color: #999; }
   .product-price,
   .product-quantity,
-  .product-subtotal {
-    width: 120px;
-    text-align: center;
-  }
+  .product-subtotal { width: 120px; text-align: center; }
   .product-price    { color: #ff6b00; }
   .product-subtotal { font-size: 18px; font-weight: 600; color: #ff6b00; }
 }
 
+/* ===== 费用明细（原样）===== */
 .summary-section {
   .summary-item {
     display: flex;
@@ -358,7 +494,6 @@ onMounted(() => {
   }
 }
 
-/* 🆕 包邮提示 */
 .freight-tip {
   text-align: right;
   font-size: 12px;
@@ -367,8 +502,17 @@ onMounted(() => {
   margin-bottom: 4px;
 }
 
+/* ===== 提交区域 ===== */
 .submit-section {
   margin-top: 30px;
-  text-align: right;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.no-addr-tip {
+  font-size: 14px;
+  color: #f56c6c;
 }
 </style>
