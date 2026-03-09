@@ -2,19 +2,6 @@
   <!--
     个人中心 - 概览首页（优化版）
     文件路径: src/views/user/UserOverview.vue
-
-    布局：
-    ┌──────────────────────────────────────────────────┐
-    │  [头像] 昵称 等级  │  总订单  │  累计消费  │ 评价数 │
-    │  城市 · 注册时间   └────────────────────────────┘
-    │  🔭行星 🔭深空摄影
-    ├────────────────────────────┬─────────────────────┤
-    │  我的订单（5个格）           │  我的钱包            │
-    │                            │  ¥0.00  充值 提现    │
-    │                            │  最近: 回收入账...   │
-    ├────────────────────────────┴─────────────────────┤
-    │  最近订单（2条预览，点击跳详情）                    │
-    └──────────────────────────────────────────────────┘
   -->
   <div class="overview-page">
 
@@ -28,10 +15,11 @@
       <!-- ── 第一行：用户信息 + 统计数字 ──────────────────────── -->
       <div class="card user-info-card">
         <div class="user-info-left">
-          <el-avatar :src="overview.avatar" :size="68" class="user-avatar" />
+          <!-- 头像优先用 store（账号设置保存后实时同步），其次用概览接口数据 -->
+          <el-avatar :src="displayAvatar" :size="68" class="user-avatar" />
           <div class="user-meta">
             <div class="user-name-row">
-              <span class="user-name">{{ overview.nickname }}</span>
+              <span class="user-name">{{ displayNickname }}</span>
               <el-tag size="small" type="warning" effect="light" class="level-tag">
                 {{ levelStars }} {{ overview.observationLevelText }}
               </el-tag>
@@ -198,12 +186,30 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Location, Calendar, CreditCard, Van, Box, ChatDotRound, RefreshLeft } from '@element-plus/icons-vue'
 import { getUserOverview } from '@/api/user/overview'
+import { useUserStore } from '@/stores/user'
+import { storeToRefs } from 'pinia'
 import request from '@/utils/request'
 
 const router = useRouter()
 const loading = ref(true)
 const overview = ref(null)
 const recentOrders = ref([])
+
+// ── Store（账号设置保存后实时同步头像/昵称） ──────────────
+const userStore = useUserStore()
+const { userInfo: storeUserInfo } = storeToRefs(userStore)
+
+const DEFAULT_AVATAR = 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
+
+// 优先用 store（fetchUserInfo 后立即生效），其次用概览接口快照
+const displayAvatar = computed(() => {
+  const a = storeUserInfo.value?.avatar || overview.value?.avatar
+  return a && a.trim() ? a : DEFAULT_AVATAR
+})
+
+const displayNickname = computed(() =>
+    storeUserInfo.value?.nickname || overview.value?.nickname || '天文爱好者'
+)
 
 const loadOverview = async () => {
   loading.value = true
@@ -564,15 +570,8 @@ const logTypeText = (t) => ({ 1:'充值', 2:'提现', 3:'回收入账', 4:'购�
   flex-shrink: 0;
 }
 
-.log-in {
-  background: #f0f9eb;
-  color: #67c23a;
-}
-
-.log-out {
-  background: #fef0f0;
-  color: #f56c6c;
-}
+.log-in  { background: #f0f9eb; color: #67c23a; }
+.log-out { background: #fef0f0; color: #f56c6c; }
 
 .log-info {
   flex: 1;
@@ -599,13 +598,8 @@ const logTypeText = (t) => ({ 1:'充值', 2:'提现', 3:'回收入账', 4:'购�
   white-space: nowrap;
 }
 
-.amount-in {
-  color: #67c23a;
-}
-
-.amount-out {
-  color: #f56c6c;
-}
+.amount-in  { color: #67c23a; }
+.amount-out { color: #f56c6c; }
 
 .log-empty {
   font-size: 13px;
@@ -629,9 +623,7 @@ const logTypeText = (t) => ({ 1:'充值', 2:'提现', 3:'回收入账', 4:'购�
   transition: background 0.15s;
 }
 
-.recent-order-item:last-child {
-  border-bottom: none;
-}
+.recent-order-item:last-child { border-bottom: none; }
 
 .recent-order-item:hover {
   background: #fafafa;
@@ -652,16 +644,9 @@ const logTypeText = (t) => ({ 1:'充值', 2:'提现', 3:'回收入账', 4:'购�
   font-size: 20px;
 }
 
-.order-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
+.order-thumb img { width: 100%; height: 100%; object-fit: cover; }
 
-.order-info {
-  flex: 1;
-  min-width: 0;
-}
+.order-info { flex: 1; min-width: 0; }
 
 .order-no {
   font-size: 11px;
@@ -693,10 +678,7 @@ const logTypeText = (t) => ({ 1:'充值', 2:'提现', 3:'回收入账', 4:'购�
 
 /* ── 响应式 ─────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .user-info-card {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  .user-info-card { flex-direction: column; align-items: flex-start; }
 
   .user-stats {
     border-left: none;
@@ -706,14 +688,9 @@ const logTypeText = (t) => ({ 1:'充值', 2:'提现', 3:'回收入账', 4:'购�
     justify-content: space-around;
   }
 
-  .row-two {
-    grid-template-columns: 1fr;
-  }
+  .row-two { grid-template-columns: 1fr; }
 
-  .wallet-body {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  .wallet-body { flex-direction: column; align-items: flex-start; }
 
   .wallet-balance-block {
     border-right: none;
@@ -723,9 +700,6 @@ const logTypeText = (t) => ({ 1:'充值', 2:'提现', 3:'回收入账', 4:'购�
     width: 100%;
   }
 
-  .wallet-log-block {
-    width: 100%;
-    padding-top: 8px;
-  }
+  .wallet-log-block { width: 100%; padding-top: 8px; }
 }
 </style>

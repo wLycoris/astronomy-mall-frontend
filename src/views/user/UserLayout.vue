@@ -31,12 +31,12 @@
       <aside class="user-sidebar">
         <!-- 用户头像信息卡（紧凑版） -->
         <div class="sidebar-user-card">
-          <el-avatar :src="userInfo?.avatar" :size="56" class="sidebar-avatar" />
+          <el-avatar :src="sidebarAvatar" :size="56" class="sidebar-avatar" />
           <div class="sidebar-user-info">
-            <div class="sidebar-username">{{ userInfo?.nickname || userInfo?.username || '天文爱好者' }}</div>
+            <div class="sidebar-username">{{ sidebarNickname }}</div>
             <div class="sidebar-level">
               <span class="level-stars">{{ levelStars }}</span>
-              {{ userInfo?.observationLevelText || '观测者' }}
+              {{ sidebarLevelText }}
             </div>
           </div>
         </div>
@@ -100,12 +100,19 @@ import {
   Setting
 } from '@element-plus/icons-vue'
 import { getUserOverview } from '@/api/user/overview'
+import { useUserStore } from '@/stores/user'
+import { storeToRefs } from 'pinia'
 
 // ── 路由 ─────────────────────────────────────────────────
 const route = useRoute()
 
-// ── 用户信息（轻量版，从概览接口获取） ──────────────────
-const userInfo = ref(null)
+// ── Pinia Store（账号设置保存后会更新 store，侧边栏从这里同步） ──
+const userStore = useUserStore()
+// ⬇ storeToRefs 确保解构后仍保持响应式，fetchUserInfo 后侧边栏自动更新
+const { userInfo: storeUserInfo } = storeToRefs(userStore)
+
+// ── 概览接口返回的原始数据（订单数量等） ────────────────
+const overviewData = ref(null)
 
 // ── 订单各状态数量（用于侧边栏徽标） ──────────────────
 const orderCounts = ref({
@@ -124,13 +131,7 @@ const loadOverview = async () => {
   try {
     const res = await getUserOverview()
     if (res.data) {
-      // 用户基本信息（供侧边栏显示）
-      userInfo.value = {
-        nickname: res.data.nickname,
-        avatar: res.data.avatar,
-        observationLevel: res.data.observationLevel,
-        observationLevelText: res.data.observationLevelText
-      }
+      overviewData.value = res.data
       // 各状态订单数
       orderCounts.value = {
         pendingPay: res.data.pendingPayCount || 0,
@@ -150,9 +151,38 @@ onMounted(() => {
   loadOverview()
 })
 
+// ── 侧边栏显示数据：优先用 userStore（保存后实时同步），其次用概览接口数据 ──
+const DEFAULT_AVATAR = 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png'
+
+const sidebarAvatar = computed(() => {
+  const storeAvatar = storeUserInfo.value?.avatar
+  const overviewAvatar = overviewData.value?.avatar
+  const avatar = storeAvatar || overviewAvatar
+  return avatar && avatar.trim() ? avatar : DEFAULT_AVATAR
+})
+
+const sidebarNickname = computed(() =>
+    storeUserInfo.value?.nickname ||
+    overviewData.value?.nickname ||
+    storeUserInfo.value?.username ||
+    '天文爱好者'
+)
+
+const sidebarLevelText = computed(() =>
+    overviewData.value?.observationLevelText ||
+    storeUserInfo.value?.observationLevelText ||
+    '观测者'
+)
+
+const sidebarLevel = computed(() =>
+    overviewData.value?.observationLevel ||
+    storeUserInfo.value?.observationLevel ||
+    1
+)
+
 // ── 等级星星展示 ─────────────────────────────────────
 const levelStars = computed(() => {
-  const level = userInfo.value?.observationLevel || 1
+  const level = sidebarLevel.value
   return '★'.repeat(level) + '☆'.repeat(5 - level)
 })
 

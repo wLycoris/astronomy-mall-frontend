@@ -6,7 +6,7 @@
       <div class="stars2"></div>
       <div class="stars3"></div>
     </div>
-    
+
     <!-- 登录卡片 -->
     <div class="login-card">
       <!-- 左侧:品牌展示 -->
@@ -28,64 +28,64 @@
           </div>
         </div>
       </div>
-      
+
       <!-- 右侧:登录表单 -->
       <div class="form-section">
         <div class="form-wrapper">
           <h2 class="form-title">欢迎回来</h2>
           <p class="form-subtitle">登录您的账户继续探索</p>
-          
+
           <el-form
-            :model="loginForm"
-            :rules="loginRules"
-            ref="loginFormRef"
-            class="login-form"
+              :model="loginForm"
+              :rules="loginRules"
+              ref="loginFormRef"
+              class="login-form"
           >
             <el-form-item prop="username">
               <el-input
-                v-model="loginForm.username"
-                placeholder="请输入用户名"
-                size="large"
-                clearable
+                  v-model="loginForm.username"
+                  placeholder="请输入用户名"
+                  size="large"
+                  clearable
               >
                 <template #prefix>
                   <el-icon><User /></el-icon>
                 </template>
               </el-input>
             </el-form-item>
-            
+
             <el-form-item prop="password">
               <el-input
-                v-model="loginForm.password"
-                type="password"
-                placeholder="请输入密码"
-                size="large"
-                show-password
-                @keyup.enter="handleLogin"
+                  v-model="loginForm.password"
+                  type="password"
+                  placeholder="请输入密码"
+                  size="large"
+                  show-password
+                  @keyup.enter="handleLogin"
               >
                 <template #prefix>
                   <el-icon><Lock /></el-icon>
                 </template>
               </el-input>
             </el-form-item>
-            
+
             <div class="form-options">
               <el-checkbox v-model="rememberMe">记住我</el-checkbox>
               <a href="#" class="forgot-password">忘记密码?</a>
             </div>
-            
+
             <el-button
-              type="primary"
-              size="large"
-              class="login-button"
-              :loading="loading"
-              @click="handleLogin"
+                type="primary"
+                size="large"
+                class="login-button"
+                :loading="loading"
+                @click="handleLogin"
             >
               <span v-if="!loading">登录</span>
               <span v-else>登录中...</span>
             </el-button>
           </el-form>
-          
+
           <div class="register-link">
             还没有账户?
             <router-link to="/register">立即注册</router-link>
@@ -98,14 +98,22 @@
 
 <script setup>
 import { setToken } from '@/utils/auth'
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock, Check } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
+
+// 密码修改成功后跳转登录页，显示提示
+onMounted(() => {
+  if (route.query.message === 'password_changed') {
+    ElMessage.success('密码已修改，请重新登录')
+  }
+})
 
 const loginFormRef = ref(null)
 const loading = ref(false)
@@ -137,7 +145,7 @@ const features = [
 const handleLogin = () => {
   loginFormRef.value.validate(async (valid) => {
     if (!valid) return
-    
+
     loading.value = true
     try {
       await userStore.login(loginForm)
@@ -166,37 +174,37 @@ const handleLogin = () => {
   position: absolute;
   width: 100%;
   height: 100%;
-  
+
   .stars, .stars2, .stars3 {
     position: absolute;
     width: 100%;
     height: 100%;
     background: transparent;
   }
-  
+
   .stars {
-    background-image: 
-      radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
-      radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
-      radial-gradient(1px 1px at 90px 40px, #fff, rgba(0,0,0,0));
+    background-image:
+        radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
+        radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 90px 40px, #fff, rgba(0,0,0,0));
     background-repeat: repeat;
     background-size: 200px 200px;
     animation: twinkle 3s infinite;
   }
-  
+
   .stars2 {
-    background-image: 
-      radial-gradient(1px 1px at 50px 50px, #fff, rgba(0,0,0,0)),
-      radial-gradient(1px 1px at 100px 100px, #fff, rgba(0,0,0,0));
+    background-image:
+        radial-gradient(1px 1px at 50px 50px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 100px 100px, #fff, rgba(0,0,0,0));
     background-repeat: repeat;
     background-size: 250px 250px;
     animation: twinkle 4s infinite;
   }
-  
+
   .stars3 {
-    background-image: 
-      radial-gradient(1px 1px at 80px 10px, #fff, rgba(0,0,0,0)),
-      radial-gradient(1px 1px at 160px 70px, #fff, rgba(0,0,0,0));
+    background-image:
+        radial-gradient(1px 1px at 80px 10px, #fff, rgba(0,0,0,0)),
+        radial-gradient(1px 1px at 160px 70px, #fff, rgba(0,0,0,0));
     background-repeat: repeat;
     background-size: 300px 300px;
     animation: twinkle 5s infinite;
@@ -240,7 +248,7 @@ const handleLogin = () => {
   width: 120px;
   height: 120px;
   margin: 0 auto 30px;
-  
+
   .planet {
     width: 80px;
     height: 80px;
@@ -252,7 +260,7 @@ const handleLogin = () => {
     animation: float 6s ease-in-out infinite;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   }
-  
+
   .ring {
     width: 120px;
     height: 30px;
@@ -269,7 +277,7 @@ const handleLogin = () => {
   font-size: 36px;
   font-weight: 700;
   margin-bottom: 10px;
-  
+
   .gradient-text {
     background: linear-gradient(90deg, #fff 0%, #e0e7ff 100%);
     -webkit-background-clip: text;
@@ -286,13 +294,13 @@ const handleLogin = () => {
 .feature-list {
   text-align: left;
   display: inline-block;
-  
+
   .feature-item {
     display: flex;
     align-items: center;
     margin-bottom: 16px;
     font-size: 15px;
-    
+
     .el-icon {
       margin-right: 10px;
       font-size: 18px;
@@ -331,12 +339,12 @@ const handleLogin = () => {
   .el-form-item {
     margin-bottom: 24px;
   }
-  
+
   :deep(.el-input__wrapper) {
     border-radius: 12px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
-    
+
     &:hover {
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
@@ -349,11 +357,11 @@ const handleLogin = () => {
   align-items: center;
   margin-bottom: 24px;
   font-size: 14px;
-  
+
   .forgot-password {
     color: #667eea;
     text-decoration: none;
-    
+
     &:hover {
       text-decoration: underline;
     }
@@ -369,7 +377,7 @@ const handleLogin = () => {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   transition: all 0.3s ease;
-  
+
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
@@ -381,12 +389,12 @@ const handleLogin = () => {
   margin-top: 24px;
   font-size: 14px;
   color: #6b7280;
-  
+
   a {
     color: #667eea;
     text-decoration: none;
     font-weight: 600;
-    
+
     &:hover {
       text-decoration: underline;
     }
@@ -421,11 +429,11 @@ const handleLogin = () => {
     height: auto;
     flex-direction: column;
   }
-  
+
   .brand-section {
     padding: 40px 30px;
   }
-  
+
   .form-section {
     padding: 40px 30px;
   }

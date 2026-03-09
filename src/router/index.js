@@ -11,7 +11,7 @@ const routes = [
     },
 
     // ============================================
-    // 🆕 维护模式页面（不需要登录，任何人都能看到）
+    // 维护模式页面（不需要登录，任何人都能看到）
     // ============================================
     {
         path: '/maintenance',
@@ -211,76 +211,49 @@ const routes = [
     },
 
     // ============================================
-    // 🆕 个人中心路由 (2.4 节新增)
+    // 个人中心路由
     // ============================================
-    // 将此对象插入到 routes 数组中，位于 "404页面" 路由之前：
     {
         path: '/user',
         component: () => import('@/views/user/UserLayout.vue'),
         redirect: '/user/overview',
         meta: { requiresAuth: true },
         children: [
-            // 概览首页
             {
                 path: 'overview',
                 name: 'UserOverview',
                 component: () => import('@/views/user/UserOverview.vue'),
                 meta: { title: '个人概览', requiresAuth: true }
             },
-
-            // 我的订单（复用现有 OrderList.vue，保留 /order/list 原路径不删除）
             {
                 path: 'orders',
                 name: 'UserOrders',
                 component: () => import('@/views/order/OrderList.vue'),
                 meta: { title: '我的订单', requiresAuth: true }
             },
-
-            // 收货地址管理（2.4.2 节开发，组件文件路径预留）
             {
                 path: 'address',
                 name: 'UserAddress',
                 component: () => import('@/views/user/UserAddress.vue'),
                 meta: { title: '收货地址', requiresAuth: true }
             },
-
-            // 我的评价（复用现有 MyReviews.vue，保留 /review/my 原路径不删除）
             {
                 path: 'reviews',
                 name: 'UserReviews',
                 component: () => import('@/views/review/MyReviews.vue'),
                 meta: { title: '我的评价', requiresAuth: true }
             },
-
-            // 我的钱包（2.4.4 节开发，组件文件路径预留）
             {
                 path: 'wallet',
                 name: 'UserWallet',
                 component: () => import('@/views/user/UserWallet.vue'),
                 meta: { title: '我的钱包', requiresAuth: true }
             },
-
-            // 我的收藏（第8周开发，预留入口，暂不挂载组件）
-            // {
-            //     path: 'favorites',
-            //     name: 'UserFavorites',
-            //     component: () => import('@/views/user/UserFavorites.vue'),
-            //     meta: { title: '我的收藏', requiresAuth: true }
-            // },
-
-            // 我的售后（2.5 节开发后接入，预留入口）
-            // {
-            //     path: 'after-sale',
-            //     name: 'UserAfterSale',
-            //     component: () => import('@/views/user/UserAfterSale.vue'),
-            //     meta: { title: '我的售后', requiresAuth: true }
-            // },
-
-            // 账号设置（2.4.5 节开发，组件文件路径预留）
+            // 账号设置 ✅ v7.7: 占位 AccountSettings.vue → 正式 AccountSettings.vue
             {
                 path: 'settings',
                 name: 'UserSettings',
-                component: () => import('@/views/user/UserSettings.vue'),
+                component: () => import('@/views/user/AccountSettings.vue'),
                 meta: { title: '账号设置', requiresAuth: true }
             }
         ]
@@ -319,20 +292,18 @@ const checkMaintenance = async () => {
         maintenanceCacheTime = now
         return mode
     } catch (e) {
-        return false // 接口异常不拦截，正常放行
+        return false
     }
 }
 
 // 路由守卫
 router.beforeEach(async (to, from, next) => {
-    // 设置页面标题
     document.title = to.meta.title || '天文器材商城'
 
     const token = getToken()
     const isLoggedIn = !!token
 
     // 1. 维护模式判断
-    // /maintenance 页面本身、/admin/** 后台路由、/login、/register、已登录管理员 不受影响
     if (to.path !== '/maintenance' && !to.path.startsWith('/admin')
         && to.path !== '/login' && to.path !== '/register') {
         let isAdmin = false
@@ -352,7 +323,7 @@ router.beforeEach(async (to, from, next) => {
         }
     }
 
-    // 2. 如果访问的是登录或注册页
+    // 2. 登录/注册页
     if (to.path === '/login' || to.path === '/register') {
         if (isLoggedIn) {
             next('/home')
@@ -362,7 +333,7 @@ router.beforeEach(async (to, from, next) => {
         return
     }
 
-    // 3. 如果访问后台管理页面 (需要管理员权限)
+    // 3. 后台管理页面
     if (to.meta.requiresAdmin) {
         if (!isLoggedIn) {
             ElMessage.warning('请先登录')
@@ -385,7 +356,7 @@ router.beforeEach(async (to, from, next) => {
         return
     }
 
-    // 4. 如果页面需要登录
+    // 4. 需要登录的页面
     if (to.meta.requiresAuth && !isLoggedIn) {
         next({
             path: '/login',
@@ -394,7 +365,7 @@ router.beforeEach(async (to, from, next) => {
         return
     }
 
-    // 5. 其他情况正常放行
+    // 5. 其他正常放行
     next()
 })
 
