@@ -246,10 +246,10 @@ const routes = [
             {
                 path: 'wallet',
                 name: 'UserWallet',
-                component: () => import('@/views/user/UserWallet.vue'),
+                // 📌 2.4.4 钱包系统：占位 UserWallet.vue → 正式 Wallet.vue
+                component: () => import('@/views/user/Wallet.vue'),
                 meta: { title: '我的钱包', requiresAuth: true }
             },
-            // 账号设置 ✅ v7.7: 占位 AccountSettings.vue → 正式 AccountSettings.vue
             {
                 path: 'settings',
                 name: 'UserSettings',

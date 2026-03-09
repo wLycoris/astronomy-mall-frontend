@@ -9,7 +9,7 @@
 
       <div class="checkout-container">
 
-        <!-- ===== 收货地址（v7.6 改造：选择地址替换手填表单）===== -->
+        <!-- ===== 收货地址 ===== -->
         <div class="section address-section">
           <div class="section-header">
             <h3 class="section-title">收货地址</h3>
@@ -18,12 +18,10 @@
             </el-button>
           </div>
 
-          <!-- 加载中 -->
           <div v-if="addressLoading" class="address-loading">
             <el-skeleton :rows="2" animated />
           </div>
 
-          <!-- 无地址 → 提示跳转 -->
           <el-empty
               v-else-if="addressList.length === 0"
               description="您还没有收货地址，请先添加"
@@ -34,7 +32,6 @@
             </el-button>
           </el-empty>
 
-          <!-- 地址列表（单选卡片） -->
           <div v-else class="address-list">
             <div
                 v-for="addr in addressList"
@@ -43,12 +40,9 @@
                 :class="{ 'is-selected': selectedAddressId === addr.id }"
                 @click="selectedAddressId = addr.id"
             >
-              <!-- 选中圆圈标识 -->
               <div class="select-dot">
                 <div class="dot-inner" v-if="selectedAddressId === addr.id" />
               </div>
-
-              <!-- 地址信息 -->
               <div class="addr-body">
                 <div class="addr-top">
                   <span class="recv-name">{{ addr.receiverName }}</span>
@@ -61,7 +55,6 @@
               </div>
             </div>
 
-            <!-- 去添加新地址快捷入口 -->
             <div class="addr-add-btn" @click="router.push('/user/address')">
               <el-icon><Plus /></el-icon>
               <span>添加新地址</span>
@@ -69,7 +62,7 @@
           </div>
         </div>
 
-        <!-- ===== 商品清单（原样保留）===== -->
+        <!-- ===== 商品清单 ===== -->
         <div class="section product-section">
           <h3 class="section-title">商品清单</h3>
           <div v-for="item in selectedItems" :key="item.id" class="product-item">
@@ -84,7 +77,7 @@
           </div>
         </div>
 
-        <!-- ===== 订单备注（原样保留）===== -->
+        <!-- ===== 订单备注 ===== -->
         <div class="section remark-section">
           <h3 class="section-title">订单备注</h3>
           <el-input
@@ -97,7 +90,7 @@
           />
         </div>
 
-        <!-- ===== 费用明细（原样保留）===== -->
+        <!-- ===== 费用明细 ===== -->
         <div class="section summary-section">
           <h3 class="section-title">费用明细</h3>
           <div class="summary-item">
@@ -114,7 +107,6 @@
               <template v-else>¥{{ freight.toFixed(2) }}</template>
             </span>
           </div>
-          <!-- 包邮提示 -->
           <div class="freight-tip" v-if="freightTip">{{ freightTip }}</div>
           <div class="summary-item">
             <span>优惠金额:</span>
@@ -128,7 +120,6 @@
 
         <!-- ===== 提交订单 ===== -->
         <div class="submit-section">
-          <!-- 未选地址提示 -->
           <span v-if="addressList.length > 0 && !selectedAddressId" class="no-addr-tip">
             请选择收货地址
           </span>
@@ -156,29 +147,25 @@ import { Plus } from '@element-plus/icons-vue'
 import { getCartList } from '@/api/cart'
 import { createOrder } from '@/api/order'
 import { getFreightSetting } from '@/api/admin/setting'
-import { getAddressList } from '@/api/address'  // 📌 v7.6 新增
+import { getAddressList } from '@/api/address'
 
 const router = useRouter()
 
 // =====================================================================
-// 收货地址（v7.6 改造：选择地址替换手填表单）
+// 收货地址
 // =====================================================================
 const addressLoading    = ref(false)
 const addressList       = ref([])
-const selectedAddressId = ref(null)   // 当前选中的地址ID
+const selectedAddressId = ref(null)
 
-/** 加载地址列表，自动选中默认地址（第一条） */
 const loadAddressList = async () => {
   addressLoading.value = true
   try {
     const res = await getAddressList()
     addressList.value = res.data || []
-    // 自动选中默认地址（isDefault=1）；若无默认则选第一条
     if (addressList.value.length > 0) {
       const defaultAddr = addressList.value.find(a => a.isDefault === 1)
-      selectedAddressId.value = defaultAddr
-          ? defaultAddr.id
-          : addressList.value[0].id
+      selectedAddressId.value = defaultAddr ? defaultAddr.id : addressList.value[0].id
     }
   } catch (e) {
     ElMessage.error('加载收货地址失败')
@@ -206,13 +193,13 @@ const loadSelectedItems = async () => {
 }
 
 // =====================================================================
-// 运费计算（原逻辑保留）
+// 运费计算
 // =====================================================================
 const freightLoading     = ref(false)
 const defaultFreight     = ref(0)
 const freeFreightEnabled = ref(false)
 const freeFreightAmount  = ref(0)
-const remark             = ref('')    // 订单备注（从 addressForm.remark 独立出来）
+const remark             = ref('')
 
 const totalAmount = computed(() =>
     selectedItems.value.reduce((sum, item) => sum + item.subtotal, 0)
@@ -247,12 +234,11 @@ const loadFreightSetting = async () => {
 }
 
 // =====================================================================
-// 提交订单（v7.6 改造：传 addressId 替换6个地址字段）
+// 提交订单
 // =====================================================================
 const submitting = ref(false)
 
 const handleSubmitOrder = async () => {
-  // 地址校验
   if (!selectedAddressId.value) {
     ElMessage.warning('请先选择收货地址')
     return
@@ -260,13 +246,12 @@ const handleSubmitOrder = async () => {
 
   submitting.value = true
   try {
-    const orderData = {
+    const res = await createOrder({
       cartIds:   selectedItems.value.map(item => item.id),
-      addressId: selectedAddressId.value,   // 📌 v7.6 核心改造：传 addressId
+      addressId: selectedAddressId.value,
       remark:    remark.value || ''
-    }
+    })
 
-    const res = await createOrder(orderData)
     ElMessage.success('订单创建成功')
     router.push(`/order/detail/${res.data.id}`)
 
@@ -281,7 +266,7 @@ const handleSubmitOrder = async () => {
 // 初始化
 // =====================================================================
 onMounted(() => {
-  loadAddressList()    // 📌 v7.6 新增
+  loadAddressList()
   loadSelectedItems()
   loadFreightSetting()
 })
@@ -314,7 +299,6 @@ onMounted(() => {
   &:last-child { margin-bottom: 0; }
 }
 
-/* ===== 区块标题行（v7.6 新增：标题 + 管理地址按钮）===== */
 .section-header {
   display: flex;
   align-items: center;
@@ -330,19 +314,14 @@ onMounted(() => {
   margin: 0;
 }
 
-/* ===== 地址加载骨架 ===== */
-.address-loading {
-  padding: 12px 0;
-}
+.address-loading { padding: 12px 0; }
 
-/* ===== 地址列表容器 ===== */
 .address-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-/* ===== 地址卡片 ===== */
 .address-card {
   display: flex;
   align-items: center;
@@ -353,19 +332,10 @@ onMounted(() => {
   cursor: pointer;
   transition: all 0.18s;
 
-  &:hover {
-    border-color: #409eff;
-    background: #f0f7ff;
-  }
-
-  /* 选中状态 */
-  &.is-selected {
-    border-color: #409eff;
-    background: #ecf5ff;
-  }
+  &:hover { border-color: #409eff; background: #f0f7ff; }
+  &.is-selected { border-color: #409eff; background: #ecf5ff; }
 }
 
-/* 圆形选中指示 */
 .select-dot {
   flex-shrink: 0;
   width: 18px;
@@ -377,22 +347,12 @@ onMounted(() => {
   justify-content: center;
   transition: border-color 0.18s;
 
-  .address-card.is-selected & {
-    border-color: #409eff;
-  }
+  .address-card.is-selected & { border-color: #409eff; }
 }
 
-.dot-inner {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #409eff;
-}
+.dot-inner { width: 10px; height: 10px; border-radius: 50%; background: #409eff; }
 
-/* 地址内容区 */
-.addr-body {
-  flex: 1;
-}
+.addr-body { flex: 1; }
 
 .addr-top {
   display: flex;
@@ -401,24 +361,10 @@ onMounted(() => {
   margin-bottom: 4px;
 }
 
-.recv-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1d2129;
-}
+.recv-name  { font-size: 15px; font-weight: 600; color: #1d2129; }
+.recv-phone { font-size: 14px; color: #4e5969; }
+.addr-detail { font-size: 14px; color: #4e5969; line-height: 1.5; }
 
-.recv-phone {
-  font-size: 14px;
-  color: #4e5969;
-}
-
-.addr-detail {
-  font-size: 14px;
-  color: #4e5969;
-  line-height: 1.5;
-}
-
-/* ===== 添加新地址按钮行 ===== */
 .addr-add-btn {
   display: flex;
   align-items: center;
@@ -430,15 +376,9 @@ onMounted(() => {
   color: #909399;
   font-size: 14px;
   transition: all 0.18s;
-
-  &:hover {
-    border-color: #409eff;
-    color: #409eff;
-    background: #f0f7ff;
-  }
+  &:hover { border-color: #409eff; color: #409eff; background: #f0f7ff; }
 }
 
-/* ===== 商品清单（原样）===== */
 .product-section {
   .product-item {
     display: flex;
@@ -449,17 +389,10 @@ onMounted(() => {
     margin-bottom: 12px;
     &:last-child { margin-bottom: 0; }
   }
-  .product-image {
-    width: 80px;
-    height: 80px;
-    border-radius: 4px;
-  }
-  .product-details {
-    flex: 1;
-    margin-left: 16px;
-  }
-  .product-name  { font-size: 16px; margin-bottom: 6px; }
-  .product-brand { font-size: 14px; color: #999; }
+  .product-image   { width: 80px; height: 80px; border-radius: 4px; }
+  .product-details { flex: 1; margin-left: 16px; }
+  .product-name    { font-size: 16px; margin-bottom: 6px; }
+  .product-brand   { font-size: 14px; color: #999; }
   .product-price,
   .product-quantity,
   .product-subtotal { width: 120px; text-align: center; }
@@ -467,7 +400,6 @@ onMounted(() => {
   .product-subtotal { font-size: 18px; font-weight: 600; color: #ff6b00; }
 }
 
-/* ===== 费用明细（原样）===== */
 .summary-section {
   .summary-item {
     display: flex;
@@ -502,7 +434,6 @@ onMounted(() => {
   margin-bottom: 4px;
 }
 
-/* ===== 提交区域 ===== */
 .submit-section {
   margin-top: 30px;
   display: flex;
@@ -511,8 +442,5 @@ onMounted(() => {
   gap: 12px;
 }
 
-.no-addr-tip {
-  font-size: 14px;
-  color: #f56c6c;
-}
+.no-addr-tip { font-size: 14px; color: #f56c6c; }
 </style>
