@@ -214,7 +214,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   Location, Calendar, CreditCard, Van, Box,
-  ChatDotRound, RefreshLeft, Refresh
+  ChatDotRound, RefreshLeft, Refresh, Tools
 } from '@element-plus/icons-vue'
 import { getUserOverview } from '@/api/user/overview'
 import { getWallet } from '@/api/wallet'        // 2.4.4 新增：独立钱包接口
@@ -386,7 +386,8 @@ const orderStatusItems = computed(() => [
   { label: '待发货',    icon: Box,          count: overview.value?.pendingShipCount    || 0, path: '/user/orders', query: { status: 1 } },
   { label: '待收货',    icon: Van,          count: overview.value?.pendingReceiveCount || 0, path: '/user/orders', query: { status: 2 } },
   { label: '待评价',    icon: ChatDotRound, count: overview.value?.pendingReviewCount  || 0, path: '/user/orders', query: { status: 3 } },
-  { label: '退款/售后', icon: RefreshLeft,  count: overview.value?.refundingCount      || 0, path: '/order/list',  query: {} }
+  { label: '退款/售后', icon: RefreshLeft,  count: overview.value?.refundingCount      || 0, path: '/order/list',  query: {} },
+  { label: '安装预约',  icon: Tools,        count: 0, path: '/user/installation', query: {} }  // ← 新增
 ])
 
 const goOrders = (item) => router.push({ path: item.path, query: item.query })
@@ -553,7 +554,7 @@ const logTypeText = (t) => ({ 1:'充值', 2:'提现', 3:'回收入账', 4:'购�
 /* ── 订单格子 ────────────────────────────────────────────── */
 .order-status-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
 }
 
 .status-item {

@@ -245,11 +245,11 @@ const menuGroups = computed(() => [
         disabled: true  // 第8周开发，暂时禁用
       },
       {
-        path: '/user/after-sale',
-        label: '我的售后',
+        path: '/user/installation',
+        label: '安装预约',
         icon: Tools,
-        badge: orderCounts.value.refunding,
-        disabled: true  // 2.5节开发，暂时禁用
+        badge: 0,
+        disabled: false
       }
     ]
   }

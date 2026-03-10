@@ -139,6 +139,16 @@ const routes = [
     },
 
     // ============================================
+    // 售后服务页面 (需要登录) ← 2.5.1 新增
+    // ============================================
+    {
+        path: '/after-sale/installation',
+        name: 'InstallationList',
+        component: () => import('@/views/afterSale/InstallationList.vue'),
+        meta: { title: '安装预约', requiresAuth: true }
+    },
+
+    // ============================================
     // 后台管理路由
     // ============================================
     {
@@ -206,6 +216,13 @@ const routes = [
                 name: 'SystemSetting',
                 component: () => import('@/views/admin/SystemSetting.vue'),
                 meta: { title: '系统设置', requiresAdmin: true }
+            },
+            // ── 售后服务管理 ← 2.5.1 新增 ─────────────
+            {
+                path: 'installation',
+                name: 'AdminInstallation',
+                component: () => import('@/views/admin/InstallationManage.vue'),
+                meta: { title: '安装预约管理', requiresAdmin: true }
             }
         ]
     },
@@ -246,7 +263,6 @@ const routes = [
             {
                 path: 'wallet',
                 name: 'UserWallet',
-                // 📌 2.4.4 钱包系统：占位 UserWallet.vue → 正式 Wallet.vue
                 component: () => import('@/views/user/Wallet.vue'),
                 meta: { title: '我的钱包', requiresAuth: true }
             },
@@ -255,6 +271,13 @@ const routes = [
                 name: 'UserSettings',
                 component: () => import('@/views/user/AccountSettings.vue'),
                 meta: { title: '账号设置', requiresAuth: true }
+            },
+            // ── 售后服务入口（嵌套在个人中心）← 2.5.1 新增 ──
+            {
+                path: 'installation',
+                name: 'UserInstallation',
+                component: () => import('@/views/afterSale/InstallationList.vue'),
+                meta: { title: '安装预约', requiresAuth: true }
             }
         ]
     },
