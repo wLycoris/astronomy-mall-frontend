@@ -7,14 +7,15 @@
     📌 路由挂载: /user（嵌套路由父容器）
 
     左侧导航菜单项:
-      /user/overview    - 个人概览
-      /user/orders      - 我的订单
-      /user/address     - 收货地址
-      /user/favorites   - 我的收藏（第8周预留入口）
-      /user/reviews     - 我的评价
-      /user/wallet      - 我的钱包
-      /user/after-sale  - 我的售后（2.5节接入）
-      /user/settings    - 账号设置
+      /user/overview          - 个人概览
+      /user/orders            - 我的订单
+      /user/address           - 收货地址
+      /user/favorites         - 我的收藏（第8周预留入口）
+      /user/reviews           - 我的评价
+      /user/wallet            - 我的钱包
+      /user/installation      - 安装预约 (2.5.1)
+      /user/service-reminder  - 器材保养提醒 (2.5.2) 🆕
+      /user/settings          - 账号设置
   -->
   <div class="user-center-wrapper">
     <!-- 顶部面包屑区 -->
@@ -97,6 +98,7 @@ import {
   ChatDotRound,
   Wallet,
   Tools,
+  Bell,      // 🆕 器材保养提醒图标
   Setting
 } from '@element-plus/icons-vue'
 import { getUserOverview } from '@/api/user/overview'
@@ -248,6 +250,14 @@ const menuGroups = computed(() => [
         path: '/user/installation',
         label: '安装预约',
         icon: Tools,
+        badge: 0,
+        disabled: false
+      },
+      // ── 2.5.2 新增：器材保养提醒 ────────────────────
+      {
+        path: '/user/service-reminder',
+        label: '器材保养提醒',
+        icon: Bell,
         badge: 0,
         disabled: false
       }

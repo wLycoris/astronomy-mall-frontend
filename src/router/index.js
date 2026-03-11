@@ -278,6 +278,13 @@ const routes = [
                 name: 'UserInstallation',
                 component: () => import('@/views/afterSale/InstallationList.vue'),
                 meta: { title: '安装预约', requiresAuth: true }
+            },
+            // ── 器材保养提醒 ← 2.5.2 新增 ──────────────
+            {
+                path: 'service-reminder',
+                name: 'ServiceReminderList',
+                component: () => import('@/views/afterSale/ServiceReminderList.vue'),
+                meta: { title: '器材保养提醒', requiresAuth: true }
             }
         ]
     },
