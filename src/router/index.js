@@ -308,6 +308,13 @@ const routes = [
                 name: 'UserRecycling',
                 component: () => import('@/views/afterSale/RecyclingList.vue'),
                 meta: { title: '二手回收', requiresAuth: true }
+            },
+            // ── 我的收藏 ← 2.6 新增 ──────────────────────
+            {
+                path: 'favorites',
+                name: 'UserFavorites',
+                component: () => import('@/views/user/UserFavorite.vue'),
+                meta: { title: '我的收藏', requiresAuth: true }
             }
         ]
     },

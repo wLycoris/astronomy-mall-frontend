@@ -10,7 +10,7 @@
       /user/overview          - 个人概览
       /user/orders            - 我的订单
       /user/address           - 收货地址
-      /user/favorites         - 我的收藏（第8周预留入口）
+      /user/favorites         - 我的收藏（2.6 已上线）
       /user/reviews           - 我的评价
       /user/wallet            - 我的钱包
       /user/installation      - 安装预约 (2.5.1)
@@ -235,12 +235,12 @@ const menuGroups = computed(() => [
         icon: ChatDotRound,
         badge: 0
       },
+      // 🆕 移除 disabled: true，收藏功能 2.6 已上线
       {
         path: '/user/favorites',
         label: '我的收藏',
         icon: Star,
-        badge: 0,
-        disabled: true   // 第8周开发，暂时禁用
+        badge: 0
       },
       { path: '/user/installation',    label: '安装预约',     icon: Tools,        badge: 0 },
       { path: '/user/service-reminder',label: '器材保养提醒', icon: Bell,         badge: 0 },

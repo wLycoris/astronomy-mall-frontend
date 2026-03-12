@@ -124,6 +124,16 @@
             >
               立即购买
             </el-button>
+            <!-- 🆕 收藏按钮 -->
+            <el-button
+                size="large"
+                :type="isFavorited ? 'danger' : 'default'"
+                :loading="favoriteLoading"
+                @click="handleToggleFavorite"
+            >
+              <el-icon><StarFilled v-if="isFavorited" /><Star v-else /></el-icon>
+              {{ isFavorited ? '已收藏' : '收藏' }}
+            </el-button>
           </div>
 
           <!-- 库存不足提示 -->
@@ -345,6 +355,8 @@ import { getProductDetail } from '@/api/product'
 import { getProductReviews, getReviewStatistics, getReviewListAdvanced, toggleLike, reportReview } from '@/api/review'
 import { addToCart as addToCartApi } from '@/api/cart'
 import { getToken } from '@/utils/auth'
+// 🆕 收藏 API
+import { checkFavorite, toggleFavorite } from '@/api/favorite'
 
 const route = useRoute()
 const router = useRouter()
@@ -366,6 +378,10 @@ const reviewsLoading = ref(false)
 const filterRating = ref(0)       // 0=全部, 1-5=对应星级
 const filterHasImages = ref(false) // 是否只看有图
 const sortType = ref(1)            // 1=最新, 2=点赞最多, 3=评分最高, 4=评分最低
+
+// 🆕 收藏状态
+const isFavorited = ref(false)
+const favoriteLoading = ref(false)
 
 // 加载商品详情
 const loadProductDetail = async () => {
@@ -653,8 +669,41 @@ const handleTabChange = (tab) => {
   }
 }
 
+// 🆕 查询收藏状态
+const checkFavoriteStatus = async () => {
+  try {
+    const res = await checkFavorite(route.params.id)
+    isFavorited.value = res.data.isFavorite
+  } catch (e) {
+    // 静默失败，不影响页面
+  }
+}
+
+// 🆕 切换收藏
+const handleToggleFavorite = async () => {
+  if (!getToken()) {
+    ElMessage.warning('请先登录后再收藏')
+    router.push({ path: '/login', query: { redirect: route.fullPath } })
+    return
+  }
+  favoriteLoading.value = true
+  try {
+    const res = await toggleFavorite(route.params.id)
+    isFavorited.value = res.data.isFavorite
+    ElMessage.success(res.data.message)
+  } catch (e) {
+    ElMessage.error('操作失败，请重试')
+  } finally {
+    favoriteLoading.value = false
+  }
+}
+
 onMounted(() => {
   loadProductDetail()
+  // 🆕 已登录则同步收藏状态
+  if (getToken()) {
+    checkFavoriteStatus()
+  }
 })
 </script>
 
