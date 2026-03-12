@@ -14,7 +14,8 @@
       /user/reviews           - 我的评价
       /user/wallet            - 我的钱包
       /user/installation      - 安装预约 (2.5.1)
-      /user/service-reminder  - 器材保养提醒 (2.5.2) 🆕
+      /user/service-reminder  - 器材保养提醒 (2.5.2)
+      /user/recycling         - 二手回收 (2.5.3) 🆕
       /user/settings          - 账号设置
   -->
   <div class="user-center-wrapper">
@@ -98,7 +99,8 @@ import {
   ChatDotRound,
   Wallet,
   Tools,
-  Bell,      // 🆕 器材保养提醒图标
+  Bell,
+  RefreshRight,   // 🆕 2.5.3 二手回收图标
   Setting
 } from '@element-plus/icons-vue'
 import { getUserOverview } from '@/api/user/overview'
@@ -182,7 +184,6 @@ const sidebarLevel = computed(() =>
     1
 )
 
-// ── 等级星星展示 ─────────────────────────────────────
 const levelStars = computed(() => {
   const level = sidebarLevel.value
   return '★'.repeat(level) + '☆'.repeat(5 - level)
@@ -216,12 +217,7 @@ const menuGroups = computed(() => [
   {
     label: '我的订单',
     items: [
-      {
-        path: '/user/orders',
-        label: '全部订单',
-        icon: List,
-        badge: 0
-      }
+      { path: '/user/orders', label: '全部订单', icon: List, badge: 0 }
     ]
   },
   {
@@ -244,23 +240,12 @@ const menuGroups = computed(() => [
         label: '我的收藏',
         icon: Star,
         badge: 0,
-        disabled: true  // 第8周开发，暂时禁用
+        disabled: true   // 第8周开发，暂时禁用
       },
-      {
-        path: '/user/installation',
-        label: '安装预约',
-        icon: Tools,
-        badge: 0,
-        disabled: false
-      },
-      // ── 2.5.2 新增：器材保养提醒 ────────────────────
-      {
-        path: '/user/service-reminder',
-        label: '器材保养提醒',
-        icon: Bell,
-        badge: 0,
-        disabled: false
-      }
+      { path: '/user/installation',    label: '安装预约',     icon: Tools,        badge: 0 },
+      { path: '/user/service-reminder',label: '器材保养提醒', icon: Bell,         badge: 0 },
+      // ── 2.5.3 新增：二手回收 ─────────────────────────
+      { path: '/user/recycling',        label: '二手回收',    icon: RefreshRight, badge: 0 }
     ]
   }
 ])
@@ -275,11 +260,10 @@ const currentMenuTitle = computed(() => {
   return matched?.label || '概览'
 })
 
-// ── 判断是否激活（处理带 query 的路径） ────────────
+// ── 判断是否激活 ──────────────────────────────────
 const isActive = (path) => {
   const basePath = path.split('?')[0]
   if (basePath !== path) {
-    // 带 query 的菜单项：路径+query 都匹配才算激活
     const queryStr = path.split('?')[1] || ''
     const params = new URLSearchParams(queryStr)
     const statusParam = params.get('status')
@@ -397,7 +381,6 @@ const isActive = (path) => {
   color: #409eff;
 }
 
-/* 激活状态 */
 .nav-item.active {
   background: #ecf5ff;
   color: #409eff;
@@ -405,7 +388,6 @@ const isActive = (path) => {
   border-right: 3px solid #409eff;
 }
 
-/* 禁用状态 */
 .nav-item.disabled {
   cursor: not-allowed;
   opacity: 0.6;
@@ -440,7 +422,7 @@ const isActive = (path) => {
 /* ── 右侧内容区 ─────────────────────────────────────── */
 .user-main {
   flex: 1;
-  min-width: 0; /* 防止内容溢出 */
+  min-width: 0;
 }
 
 /* ── 响应式适配 ──────────────────────────────────────── */
