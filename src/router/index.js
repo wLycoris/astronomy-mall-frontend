@@ -163,6 +163,33 @@ const routes = [
     },
 
     // ============================================
+    // AI 星图识别模块 ← 4.1 / 4.2 新增
+    // ============================================
+    {
+        // 上传页：用户选图 → Canvas压缩 → 提交识别
+        path: '/recognition',
+        name: 'StarRecognition',
+        component: () => import('@/views/recognition/StarRecognition.vue'),
+        meta: { title: 'AI星图识别', requiresAuth: true }
+    },
+    {
+        // 等待页：提交后跳转，每5秒轮询 status，识别完成自动跳结果页
+        // ⚠️ 必须放在 /recognition/:id 之前，否则 "waiting" 会被当作 id 参数
+        path: '/recognition/waiting',
+        name: 'RecognitionWaiting',
+        component: () => import('@/views/recognition/RecognitionWaiting.vue'),
+        meta: { title: '识别等待中', requiresAuth: true }
+    },
+    {
+        // 结果页：展示坐标、天体列表、标注图片、推荐商品
+        // ⚠️ 同上，/recognition/result 需在 /recognition/:id 之前注册
+        path: '/recognition/result',
+        name: 'RecognitionResult',
+        component: () => import('@/views/recognition/RecognitionResult.vue'),
+        meta: { title: '识别结果', requiresAuth: true }
+    },
+
+    // ============================================
     // 后台管理路由
     // ============================================
     {
@@ -335,6 +362,13 @@ const routes = [
                 name: 'UserFavorites',
                 component: () => import('@/views/user/UserFavorite.vue'),
                 meta: { title: '我的收藏', requiresAuth: true }
+            },
+            // ── 识别历史 ← 4.2 新增（个人中心入口）──────────────
+            {
+                path: 'recognition',
+                name: 'UserRecognition',
+                component: () => import('@/views/recognition/RecognitionHistory.vue'),
+                meta: { title: '识别历史', requiresAuth: true }
             }
         ]
     },
