@@ -89,6 +89,13 @@ const routes = [
         component: () => import('@/components/NotificationSettings.vue'),
         meta: { title: '通知设置', requiresAuth: true }
     },
+    // ── 公告详情 ← 3.4.1 新增（通知铃铛点击跳转目标）──────────
+    {
+        path: '/notice/detail',
+        name: 'NoticeDetail',
+        component: () => import('@/views/notice/NoticeDetail.vue'),
+        meta: { title: '公告详情', requiresAuth: true }
+    },
 
     // ============================================
     // 购物车相关页面 (需要登录)
@@ -141,7 +148,6 @@ const routes = [
     // ============================================
     // 售后服务独立页面 (需要登录)
     // ← 2.5.1 安装预约 / 2.5.3 二手回收 独立路由
-    // （个人中心嵌套路由见下方 /user 部分）
     // ============================================
     {
         path: '/after-sale/installation',
@@ -149,7 +155,6 @@ const routes = [
         component: () => import('@/views/afterSale/InstallationList.vue'),
         meta: { title: '安装预约', requiresAuth: true }
     },
-    // ── 二手回收独立路由 ← 2.5.3 新增 ──────────────
     {
         path: '/after-sale/recycling',
         name: 'RecyclingList',
@@ -226,19 +231,24 @@ const routes = [
                 component: () => import('@/views/admin/SystemSetting.vue'),
                 meta: { title: '系统设置', requiresAdmin: true }
             },
-            // ── 安装预约管理 ← 2.5.1 新增 ──────────────
             {
                 path: 'installation',
                 name: 'AdminInstallation',
                 component: () => import('@/views/admin/InstallationManage.vue'),
                 meta: { title: '安装预约管理', requiresAdmin: true }
             },
-            // ── 二手回收管理 ← 2.5.3 新增 ──────────────
             {
                 path: 'recycling',
                 name: 'AdminRecycling',
                 component: () => import('@/views/admin/RecyclingManage.vue'),
                 meta: { title: '二手回收管理', requiresAdmin: true }
+            },
+            // ── 系统公告管理 ← 3.4.1 新增 ──────────────
+            {
+                path: 'announcement',
+                name: 'AdminAnnouncement',
+                component: () => import('@/views/admin/AnnouncementManage.vue'),
+                meta: { title: '系统公告', requiresAdmin: true }
             }
         ]
     },
@@ -288,28 +298,24 @@ const routes = [
                 component: () => import('@/views/user/AccountSettings.vue'),
                 meta: { title: '账号设置', requiresAuth: true }
             },
-            // ── 安装预约（嵌套在个人中心）← 2.5.1 新增 ──
             {
                 path: 'installation',
                 name: 'UserInstallation',
                 component: () => import('@/views/afterSale/InstallationList.vue'),
                 meta: { title: '安装预约', requiresAuth: true }
             },
-            // ── 器材保养提醒 ← 2.5.2 新增 ──────────────
             {
                 path: 'service-reminder',
                 name: 'ServiceReminderList',
                 component: () => import('@/views/afterSale/ServiceReminderList.vue'),
                 meta: { title: '器材保养提醒', requiresAuth: true }
             },
-            // ── 二手回收（嵌套在个人中心）← 2.5.3 新增 ──
             {
                 path: 'recycling',
                 name: 'UserRecycling',
                 component: () => import('@/views/afterSale/RecyclingList.vue'),
                 meta: { title: '二手回收', requiresAuth: true }
             },
-            // ── 我的收藏 ← 2.6 新增 ──────────────────────
             {
                 path: 'favorites',
                 name: 'UserFavorites',
