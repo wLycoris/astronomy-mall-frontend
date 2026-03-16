@@ -249,6 +249,20 @@ const routes = [
                 name: 'AdminAnnouncement',
                 component: () => import('@/views/admin/AnnouncementManage.vue'),
                 meta: { title: '系统公告', requiresAdmin: true }
+            },
+            // ── 通知记录管理 ← 3.4.2 新增 ──────────────
+            {
+                path: 'notification-record',
+                name: 'NotificationRecord',
+                component: () => import('@/views/admin/NotificationRecord.vue'),
+                meta: { title: '通知记录', requiresAdmin: true }
+            },
+            // ── 通知模板管理 ← 3.4.3 新增 ──────────────
+            {
+                path: 'notification-template',
+                name: 'NotificationTemplate',
+                component: () => import('@/views/admin/NotificationTemplate.vue'),
+                meta: { title: '通知模板', requiresAdmin: true }
             }
         ]
     },

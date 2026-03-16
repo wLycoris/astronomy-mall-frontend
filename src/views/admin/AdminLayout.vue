@@ -99,7 +99,8 @@ import {
   DataAnalysis, Goods, Document, Money,
   ChatDotRound, Menu, CaretBottom, DataBoard, List, Setting, Tools,
   RefreshRight,   // 🆕 2.5.3 二手回收图标
-  Bell            // 🆕 3.4.1 系统公告图标
+  Bell,           // 🆕 3.4.1 系统公告图标
+  Tickets         // 🆕 3.4.3 通知模板图标
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -107,18 +108,20 @@ const router = useRouter()
 const userStore = useUserStore()
 
 const menuItems = ref([
-  { path: '/admin/statistics',   title: '数据概览',     icon: 'DataAnalysis'  },
-  { path: '/admin/product',      title: '商品管理',     icon: 'Goods'         },
-  { path: '/admin/order',        title: '订单管理',     icon: 'Document'      },
-  { path: '/admin/refund',       title: '退款审核',     icon: 'Money'         },
-  { path: '/admin/review',       title: '评价管理',     icon: 'ChatDotRound'  },
-  { path: '/admin/user',         title: '用户管理',     icon: 'User'          },
-  { path: '/admin/category',     title: '分类管理',     icon: 'Menu'          },
-  { path: '/admin/log',          title: '操作日志',     icon: 'List'          },
-  { path: '/admin/setting',      title: '系统设置',     icon: 'Setting'       },
-  { path: '/admin/installation', title: '安装预约管理', icon: 'Tools'         },  // ← 2.5.1
-  { path: '/admin/recycling',    title: '二手回收管理', icon: 'RefreshRight'  },  // ← 2.5.3 🆕
-  { path: '/admin/announcement', title: '系统公告',     icon: 'Bell'          }   // ← 3.4.1 🆕
+  { path: '/admin/statistics',            title: '数据概览',     icon: 'DataAnalysis'  },
+  { path: '/admin/product',               title: '商品管理',     icon: 'Goods'         },
+  { path: '/admin/order',                 title: '订单管理',     icon: 'Document'      },
+  { path: '/admin/refund',                title: '退款审核',     icon: 'Money'         },
+  { path: '/admin/review',                title: '评价管理',     icon: 'ChatDotRound'  },
+  { path: '/admin/user',                  title: '用户管理',     icon: 'User'          },
+  { path: '/admin/category',              title: '分类管理',     icon: 'Menu'          },
+  { path: '/admin/log',                   title: '操作日志',     icon: 'List'          },
+  { path: '/admin/setting',               title: '系统设置',     icon: 'Setting'       },
+  { path: '/admin/installation',          title: '安装预约管理', icon: 'Tools'         },
+  { path: '/admin/recycling',             title: '二手回收管理', icon: 'RefreshRight'  },
+  { path: '/admin/announcement',          title: '系统公告',     icon: 'Bell'          },
+  { path: '/admin/notification-record',   title: '通知记录',     icon: 'ChatDotRound'  },  // 🆕 3.4.2
+  { path: '/admin/notification-template', title: '通知模板',     icon: 'Tickets'       }   // 🆕 3.4.3
 ])
 
 const activeMenu = computed(() => route.path)
