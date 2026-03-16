@@ -9,6 +9,7 @@ import request from '@/utils/request'
  *   getRecognitionDetail   GET  /recognition/{id}            识别详情（4.2，基础版）
  *   getRecognitionHistory  GET  /recognition/history         用户历史记录（4.2）
  *   getRecognitionResult   GET  /recognition/result/{id}     完整识别结果（4.3⭐新增）
+ *   getRecognitionRecommend  GET  /recognition/recommend/{id}  推荐器材（4.4⭐）
  */
 
 /**
@@ -94,4 +95,17 @@ export function getRecognitionResult(recognitionId) {
         url: `/recognition/result/${recognitionId}`,
         method: 'get'
     })
+}
+
+/**
+ * 获取识别关联推荐器材 ⭐ 4.4新增
+ *
+ * 返回 List<RecognitionProductVO>:
+ *   [{ id, productName, mainImage, price, reason }]
+ * 最多6个，无匹配时兜底返回热销商品
+ *
+ * @param {number} recognitionId 识别记录ID
+ */
+export function getRecognitionRecommend(recognitionId) {
+    return request({ url: `/recognition/recommend/${recognitionId}`, method: 'get' })
 }
