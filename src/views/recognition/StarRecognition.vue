@@ -8,6 +8,9 @@
         <el-button text class="back-btn" @click="router.push('/home')">
           ← 返回首页
         </el-button>
+        <el-button text class="history-btn" @click="router.push('/recognition/history')">
+          📋 识别历史
+        </el-button>
         <h1>
           <span class="icon">🌠</span>
           AI 星图识别
@@ -430,6 +433,14 @@ async function handleSubmit() {
   position: absolute;
   top: 16px;
   left: 20px;
+  color: #5a8ac8 !important;
+  font-size: 0.88rem;
+}
+
+.history-btn {
+  position: absolute;
+  top: 16px;
+  right: 20px;
   color: #5a8ac8 !important;
   font-size: 0.88rem;
 }

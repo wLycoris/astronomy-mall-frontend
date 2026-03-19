@@ -101,7 +101,8 @@ import {
   Tools,
   Bell,
   RefreshRight,   // 🆕 2.5.3 二手回收图标
-  Setting
+  Setting,
+  Search       // ← 新增
 } from '@element-plus/icons-vue'
 import { getUserOverview } from '@/api/user/overview'
 import { useUserStore } from '@/stores/user'
@@ -245,7 +246,9 @@ const menuGroups = computed(() => [
       { path: '/user/installation',    label: '安装预约',     icon: Tools,        badge: 0 },
       { path: '/user/service-reminder',label: '器材保养提醒', icon: Bell,         badge: 0 },
       // ── 2.5.3 新增：二手回收 ─────────────────────────
-      { path: '/user/recycling',        label: '二手回收',    icon: RefreshRight, badge: 0 }
+      { path: '/user/recycling',        label: '二手回收',    icon: RefreshRight, badge: 0 },
+// ── 4.5 新增：识别历史 ──────────────────────────
+      { path: '/user/recognition', label: '识别历史',  icon: Search,       badge: 0 }
     ]
   }
 ])

@@ -188,6 +188,13 @@ const routes = [
         component: () => import('@/views/recognition/RecognitionResult.vue'),
         meta: { title: '识别结果', requiresAuth: true }
     },
+    {
+        // 历史记录页：分页列表 + 状态筛选 + 统计卡片 ← 4.5 新增
+        path: '/recognition/history',
+        name: 'RecognitionHistory',
+        component: () => import('@/views/recognition/RecognitionHistory.vue'),
+        meta: { title: '识别历史', requiresAuth: true }
+    },
 
     // ============================================
     // 后台管理路由
