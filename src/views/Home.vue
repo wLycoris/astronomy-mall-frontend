@@ -176,6 +176,11 @@
       </div>
     </div>
 
+    <!-- 🆕 2.7.1 NASA 每日天文图片（失败时静默隐藏，不影响商城） -->
+    <div class="apod-wrapper">
+      <ApodCard />
+    </div>
+
     <!-- 推荐商品 -->
     <div class="recommend-section">
       <div class="section-header">
@@ -224,6 +229,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getRecommendProducts } from '@/api/product'
 import { getCartList } from '@/api/cart'
 import { getBasicSetting } from '@/api/admin/setting'  // 🆕
+import ApodCard from '@/components/ApodCard.vue'
 import {
   Grid, Picture, Reading, ChatDotRound, ShoppingCart,
   List, User, SwitchButton, Setting, Bell
@@ -404,6 +410,12 @@ onMounted(async () => {
 .home-container {
   min-height: 100vh;
   background: #f5f7fa;
+}
+
+.apod-wrapper {
+  max-width: 1200px;
+  margin: 0 auto 24px;
+  padding: 0 20px;
 }
 
 .header {
