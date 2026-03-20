@@ -10,7 +10,7 @@
         <nav class="nav-menu">
           <router-link to="/home" class="nav-item active">首页</router-link>
           <router-link to="/products" class="nav-item">商品中心</router-link>
-          <router-link to="/courses" class="nav-item">课程学习</router-link>
+          <router-link to="/course" class="nav-item">课程学习</router-link>
           <router-link to="/recognition" class="nav-item">AI识别</router-link>
           <router-link to="/forum" class="nav-item">天文论坛</router-link>
           <!-- ✅ 新增: 我的评价 (仅登录后显示) -->
@@ -343,7 +343,7 @@ const goToMyReviews = () => {
 const goToLogin = () => router.push('/login')
 const goToRegister = () => router.push('/register')
 const goToAI = () => router.push('/recognition')
-const goToCourses = () => ElMessage.info('课程学习功能开发中...')
+const goToCourses = () => router.push('/course')
 const goToForum = () => ElMessage.info('论坛功能开发中...')
 
 const handleCommand = (command) => {

@@ -65,6 +65,23 @@ const routes = [
     },
 
     // ============================================
+    // 天文课程模块 ← 5.1 新增
+    // requiresAuth: false，游客可浏览，登录后有进度/收藏
+    // ============================================
+    {
+        path: '/course',
+        name: 'CourseList',
+        component: () => import('@/views/course/CourseList.vue'),
+        meta: { title: '天文课程', requiresAuth: false }
+    },
+    {
+        path: '/course/:id',
+        name: 'CourseDetail',
+        component: () => import('@/views/course/CourseDetail.vue'),
+        meta: { title: '课程详情', requiresAuth: false }
+    },
+
+    // ============================================
     // 评价相关页面 (需要登录)
     // ============================================
     {
@@ -89,7 +106,6 @@ const routes = [
         component: () => import('@/components/NotificationSettings.vue'),
         meta: { title: '通知设置', requiresAuth: true }
     },
-    // ── 公告详情 ← 3.4.1 新增（通知铃铛点击跳转目标）──────────
     {
         path: '/notice/detail',
         name: 'NoticeDetail',
@@ -147,7 +163,6 @@ const routes = [
 
     // ============================================
     // 售后服务独立页面 (需要登录)
-    // ← 2.5.1 安装预约 / 2.5.3 二手回收 独立路由
     // ============================================
     {
         path: '/after-sale/installation',
@@ -166,30 +181,26 @@ const routes = [
     // AI 星图识别模块 ← 4.1 / 4.2 新增
     // ============================================
     {
-        // 上传页：用户选图 → Canvas压缩 → 提交识别
         path: '/recognition',
         name: 'StarRecognition',
         component: () => import('@/views/recognition/StarRecognition.vue'),
         meta: { title: 'AI星图识别', requiresAuth: true }
     },
     {
-        // 等待页：提交后跳转，每5秒轮询 status，识别完成自动跳结果页
-        // ⚠️ 必须放在 /recognition/:id 之前，否则 "waiting" 会被当作 id 参数
+        // ⚠️ 必须放在 /recognition/:id 之前
         path: '/recognition/waiting',
         name: 'RecognitionWaiting',
         component: () => import('@/views/recognition/RecognitionWaiting.vue'),
         meta: { title: '识别等待中', requiresAuth: true }
     },
     {
-        // 结果页：展示坐标、天体列表、标注图片、推荐商品
-        // ⚠️ 同上，/recognition/result 需在 /recognition/:id 之前注册
+        // ⚠️ 同上，需在 /recognition/:id 之前
         path: '/recognition/result',
         name: 'RecognitionResult',
         component: () => import('@/views/recognition/RecognitionResult.vue'),
         meta: { title: '识别结果', requiresAuth: true }
     },
     {
-        // 历史记录页：分页列表 + 状态筛选 + 统计卡片 ← 4.5 新增
         path: '/recognition/history',
         name: 'RecognitionHistory',
         component: () => import('@/views/recognition/RecognitionHistory.vue'),
@@ -277,27 +288,31 @@ const routes = [
                 component: () => import('@/views/admin/RecyclingManage.vue'),
                 meta: { title: '二手回收管理', requiresAdmin: true }
             },
-            // ── 系统公告管理 ← 3.4.1 新增 ──────────────
             {
                 path: 'announcement',
                 name: 'AdminAnnouncement',
                 component: () => import('@/views/admin/AnnouncementManage.vue'),
                 meta: { title: '系统公告', requiresAdmin: true }
             },
-            // ── 通知记录管理 ← 3.4.2 新增 ──────────────
             {
                 path: 'notification-record',
                 name: 'NotificationRecord',
                 component: () => import('@/views/admin/NotificationRecord.vue'),
                 meta: { title: '通知记录', requiresAdmin: true }
             },
-            // ── 通知模板管理 ← 3.4.3 新增 ──────────────
             {
                 path: 'notification-template',
                 name: 'NotificationTemplate',
                 component: () => import('@/views/admin/NotificationTemplate.vue'),
                 meta: { title: '通知模板', requiresAdmin: true }
-            }
+            },
+            // ── 课程管理 ← 5.2 开发时取消注释 ──────────────
+            // {
+            //     path: 'course',
+            //     name: 'AdminCourse',
+            //     component: () => import('@/views/admin/CourseManage.vue'),
+            //     meta: { title: '课程管理', requiresAdmin: true }
+            // }
         ]
     },
 
@@ -370,12 +385,18 @@ const routes = [
                 component: () => import('@/views/user/UserFavorite.vue'),
                 meta: { title: '我的收藏', requiresAuth: true }
             },
-            // ── 识别历史 ← 4.2 新增（个人中心入口）──────────────
             {
                 path: 'recognition',
                 name: 'UserRecognition',
                 component: () => import('@/views/recognition/RecognitionHistory.vue'),
                 meta: { title: '识别历史', requiresAuth: true }
+            },
+            // ── 课程收藏 / 学习历史 ← 5.1 新增 ──────────────
+            {
+                path: 'course-favorites',
+                name: 'UserCourseFavorites',
+                component: () => import('@/views/course/CourseList.vue'),
+                meta: { title: '课程收藏', requiresAuth: true }
             }
         ]
     },
@@ -396,7 +417,7 @@ const router = createRouter({
     routes
 })
 
-// 维护模式缓存（避免每次路由跳转都请求接口，缓存60秒）
+// 维护模式缓存（60秒TTL，避免每次路由跳转都请求接口）
 let maintenanceCache = null
 let maintenanceCacheTime = 0
 const CACHE_TTL = 60 * 1000
@@ -424,7 +445,7 @@ router.beforeEach(async (to, from, next) => {
     const token = getToken()
     const isLoggedIn = !!token
 
-    // 1. 维护模式判断
+    // 1. 维护模式判断（管理员、登录注册页跳过）
     if (to.path !== '/maintenance' && !to.path.startsWith('/admin')
         && to.path !== '/login' && to.path !== '/register') {
         let isAdmin = false
@@ -444,7 +465,7 @@ router.beforeEach(async (to, from, next) => {
         }
     }
 
-    // 2. 登录/注册页
+    // 2. 登录/注册页：已登录则跳首页
     if (to.path === '/login' || to.path === '/register') {
         if (isLoggedIn) {
             next('/home')
@@ -454,7 +475,7 @@ router.beforeEach(async (to, from, next) => {
         return
     }
 
-    // 3. 后台管理页面
+    // 3. 后台管理页面：必须是管理员
     if (to.meta.requiresAdmin) {
         if (!isLoggedIn) {
             ElMessage.warning('请先登录')
