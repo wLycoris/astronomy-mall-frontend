@@ -84,3 +84,8 @@ export function getCourseHistory(pageNum = 1, pageSize = 10) {
 export function getCourseReviews(id) {
     return request({ url: `/course/${id}/reviews`, method: 'get' })
 }
+
+// 5.4 推荐课程（基于用户近3个月购买商品tags，无购买时返回热门）
+export function getRecommendCourses() {
+    return request({ url: '/course/recommend', method: 'get' })
+}
