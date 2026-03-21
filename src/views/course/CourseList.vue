@@ -119,15 +119,16 @@
           <!-- 封面图 -->
           <div class="card-cover">
             <el-image
-                :src="course.cover || defaultCover"
+                :src="course.cover"
                 fit="cover"
                 lazy
                 class="cover-img"
             >
+              <!-- ✅ 修复：src=null 时 el-image 直接走 #error 插槽
+                   所以把 defaultCover 放在这里，而不是 :src 的 || 运算
+                   无论是 cover 为 null 还是图片链接加载失败，都显示默认星空封面 -->
               <template #error>
-                <div class="cover-fallback">
-                  <el-icon size="40" color="#aaa"><Picture /></el-icon>
-                </div>
+                <img :src="defaultCover" style="width:100%;height:100%;object-fit:cover;" />
               </template>
             </el-image>
 
@@ -233,7 +234,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Search, Document, Picture, Star, StarFilled } from '@element-plus/icons-vue'
@@ -265,8 +266,44 @@ const difficultyOptions = [
   { value: 3,    label: '高级' }
 ]
 
-/** 默认封面图 */
-const defaultCover = 'https://via.placeholder.com/400x225/1a1a2e/7c3aed?text=天文课程'
+/**
+ * 默认封面图（内联 SVG data URI）
+ *
+ * ✅ 修复说明：
+ * 原来用 via.placeholder.com 外部服务，容易因网络/CORS/中文编码问题显示不出来。
+ * 改为内联 SVG data URI，完全不依赖外部服务，任何情况下都能显示。
+ * 效果：深色星空背景 + 望远镜 emoji + "天文课程"文字
+ */
+const defaultCover = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="225" fill="url(#bg)"/>
+  <!-- 装饰星点 -->
+  <circle cx="40"  cy="30"  r="1.5" fill="#ffffff" opacity="0.6"/>
+  <circle cx="120" cy="15"  r="1"   fill="#ffffff" opacity="0.4"/>
+  <circle cx="200" cy="40"  r="2"   fill="#ffffff" opacity="0.7"/>
+  <circle cx="300" cy="20"  r="1.5" fill="#ffffff" opacity="0.5"/>
+  <circle cx="360" cy="50"  r="1"   fill="#ffffff" opacity="0.6"/>
+  <circle cx="80"  cy="70"  r="1"   fill="#ffffff" opacity="0.3"/>
+  <circle cx="340" cy="80"  r="1.5" fill="#ffffff" opacity="0.5"/>
+  <circle cx="60"  cy="180" r="1"   fill="#ffffff" opacity="0.4"/>
+  <circle cx="380" cy="160" r="1.5" fill="#ffffff" opacity="0.5"/>
+  <circle cx="160" cy="190" r="1"   fill="#ffffff" opacity="0.3"/>
+  <circle cx="260" cy="200" r="2"   fill="#ffffff" opacity="0.4"/>
+  <!-- 望远镜图标（简化） -->
+  <text x="200" y="115" font-size="48" text-anchor="middle" dominant-baseline="middle">🔭</text>
+  <!-- 文字 -->
+  <text x="200" y="158" font-size="16" font-family="sans-serif" font-weight="600"
+        text-anchor="middle" fill="#c4b5fd">天文课程</text>
+  <text x="200" y="178" font-size="11" font-family="sans-serif"
+        text-anchor="middle" fill="#7c6aad">Astronomy Course</text>
+</svg>
+`)}`
 
 // ======================== 状态 ========================
 const router = useRouter()
@@ -301,17 +338,21 @@ const hasActiveFilters = computed(() => {
 
 // ======================== 方法 ========================
 
-/** 加载课程列表 */
+/**
+ * 加载课程列表
+ *
+ * ✅ 修复说明：
+ * 原来用 res.code === 200 做二次判断，不符合项目规范。
+ * request.js 响应拦截器已统一处理非200情况并 reject，
+ * 这里直接取 res.data 即可（参考 ReviewManage.vue 规范）。
+ */
 async function loadCourseList() {
   loading.value = true
   try {
-    // 多标签：将选中标签数组转为逗号分隔字符串
     filters.tags = selectedTags.value.join(',')
     const res = await getCourseList({ ...filters })
-    if (res.code === 200) {
-      courseList.value = res.data.records || []
-      total.value = res.data.total || 0
-    }
+    courseList.value = res.data.records || []
+    total.value = res.data.total || 0
   } catch (e) {
     console.error('[CourseList] 加载失败', e)
   } finally {
@@ -370,7 +411,6 @@ function clearTags() {
 function handlePageChange(page) {
   filters.pageNum = page
   loadCourseList()
-  // 回到顶部
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
@@ -403,10 +443,8 @@ async function handleToggleFavorite(course) {
   }
   try {
     const res = await toggleCourseFavorite(course.id)
-    if (res.code === 200) {
-      course.isFavorite = res.data.isFavorite
-      ElMessage.success(res.data.message)
-    }
+    course.isFavorite = res.data.isFavorite
+    ElMessage.success(res.data.message)
   } catch (e) {
     ElMessage.error('操作失败，请重试')
   }
@@ -414,7 +452,6 @@ async function handleToggleFavorite(course) {
 
 // ======================== 初始化 ========================
 onMounted(() => {
-  // 若路由参数带了类型预筛选（如从其他页跳转过来）
   if (route.query.type !== undefined) {
     filters.type = Number(route.query.type)
   }
