@@ -17,6 +17,9 @@
       /user/service-reminder  - 器材保养提醒 (2.5.2)
       /user/recycling         - 二手回收 (2.5.3) 🆕
       /user/settings          - 账号设置
+      /user/recognition       - 识别历史 (4.5) 🆕
+      /user/course-history    - 学习历史 (5.3) 🆕
+      /user/course-favorite   - 课程收藏 (5.3) 🆕
   -->
   <div class="user-center-wrapper">
     <!-- 顶部面包屑区 -->
@@ -102,7 +105,8 @@ import {
   Bell,
   RefreshRight,   // 🆕 2.5.3 二手回收图标
   Setting,
-  Search       // ← 新增
+  Search,         // 4.5 识别历史图标
+  VideoPlay       // 5.3 学习历史图标
 } from '@element-plus/icons-vue'
 import { getUserOverview } from '@/api/user/overview'
 import { useUserStore } from '@/stores/user'
@@ -243,12 +247,15 @@ const menuGroups = computed(() => [
         icon: Star,
         badge: 0
       },
-      { path: '/user/installation',    label: '安装预约',     icon: Tools,        badge: 0 },
-      { path: '/user/service-reminder',label: '器材保养提醒', icon: Bell,         badge: 0 },
+      { path: '/user/installation',     label: '安装预约',     icon: Tools,       badge: 0 },
+      { path: '/user/service-reminder', label: '器材保养提醒', icon: Bell,        badge: 0 },
       // ── 2.5.3 新增：二手回收 ─────────────────────────
-      { path: '/user/recycling',        label: '二手回收',    icon: RefreshRight, badge: 0 },
-// ── 4.5 新增：识别历史 ──────────────────────────
-      { path: '/user/recognition', label: '识别历史',  icon: Search,       badge: 0 }
+      { path: '/user/recycling',        label: '二手回收',     icon: RefreshRight, badge: 0 },
+      // ── 4.5 新增：识别历史 ──────────────────────────
+      { path: '/user/recognition',      label: '识别历史',     icon: Search,       badge: 0 },
+      // ── 5.3 新增：学习历史 / 课程收藏 ──────────────
+      { path: '/user/course-history',   label: '学习历史',     icon: VideoPlay,    badge: 0 },
+      { path: '/user/course-favorite',  label: '课程收藏',     icon: Star,         badge: 0 }
     ]
   }
 ])

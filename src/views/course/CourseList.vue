@@ -3,8 +3,21 @@
 
     <!-- ===== 页面头部 ===== -->
     <div class="page-header">
+      <!-- 返回首页（左上角，绝对定位不影响标题居中） -->
+      <el-button class="back-home-btn" link @click="router.push('/home')">
+        <el-icon><ArrowLeft /></el-icon> 返回首页
+      </el-button>
       <h1 class="page-title">🔭 天文课程</h1>
       <p class="page-subtitle">全部免费 · 边学边探索宇宙的奥秘</p>
+      <!-- 登录用户快捷入口（右上角） -->
+      <div v-if="getToken()" class="header-quick-links">
+        <el-button link size="small" @click="router.push('/user/course-history')">
+          <el-icon><VideoPlay /></el-icon> 学习历史
+        </el-button>
+        <el-button link size="small" @click="router.push('/user/course-favorite')">
+          <el-icon><Star /></el-icon> 我的收藏
+        </el-button>
+      </div>
     </div>
 
     <!-- ===== 筛选区域 ===== -->
@@ -202,8 +215,8 @@
                 {{ course.viewCount || 0 }} 人学习
               </span>
 
+              <!-- 收藏按钮（始终显示，未登录点击时提示去登录） -->
               <button
-                  v-if="isLogin"
                   :class="['favorite-btn', { active: course.isFavorite }]"
                   @click.stop="handleToggleFavorite(course)"
               >
@@ -237,9 +250,10 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Search, Document, Picture, Star, StarFilled } from '@element-plus/icons-vue'
+import { Search, Document, Picture, Star, StarFilled, ArrowLeft, VideoPlay } from '@element-plus/icons-vue'
 import { getCourseList, toggleCourseFavorite } from '@/api/course'
 import { useUserStore } from '@/stores/user'
+import { getToken } from '@/utils/auth'
 
 // ======================== 常量配置 ========================
 
@@ -435,9 +449,9 @@ function difficultyTagType(difficulty) {
   return map[difficulty] || 'info'
 }
 
-/** 收藏/取消收藏 */
+/** 收藏/取消收藏（始终显示，未登录时提示去登录） */
 async function handleToggleFavorite(course) {
-  if (!isLogin.value) {
+  if (!getToken()) {
     ElMessage.warning('请先登录后再收藏')
     return
   }
@@ -470,6 +484,20 @@ onMounted(() => {
 .page-header {
   text-align: center;
   margin-bottom: 32px;
+  position: relative;
+}
+/* 返回首页按钮：左上角绝对定位，不影响标题居中 */
+.back-home-btn {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: #888;
+  padding: 0;
+}
+.back-home-btn:hover {
+  color: #7c3aed;
 }
 .page-title {
   font-size: 28px;
@@ -481,6 +509,22 @@ onMounted(() => {
   color: #888;
   font-size: 14px;
   margin: 0;
+}
+/* 登录用户快捷入口：右上角绝对定位，与返回按钮对称 */
+.header-quick-links {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 4px;
+}
+.header-quick-links .el-button {
+  font-size: 13px;
+  color: #888;
+}
+.header-quick-links .el-button:hover {
+  color: #7c3aed;
 }
 
 /* ===== 筛选区域 ===== */
@@ -786,6 +830,20 @@ onMounted(() => {
   }
   .search-box .el-input {
     width: 100% !important;
+  }
+  /* 小屏返回按钮改为相对定位，不遮挡标题 */
+  .back-home-btn {
+    position: static;
+    transform: none;
+    display: block;
+    margin-bottom: 8px;
+  }
+  /* 小屏快捷入口跟着降级 */
+  .header-quick-links {
+    position: static;
+    transform: none;
+    justify-content: center;
+    margin-top: 8px;
   }
 }
 </style>

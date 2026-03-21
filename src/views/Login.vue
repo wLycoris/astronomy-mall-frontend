@@ -7,6 +7,11 @@
       <div class="stars3"></div>
     </div>
 
+    <!-- 返回首页按钮（左上角） -->
+    <el-button class="back-home-btn" link @click="router.push('/home')">
+      <el-icon><ArrowLeft /></el-icon> 返回首页
+    </el-button>
+
     <!-- 登录卡片 -->
     <div class="login-card">
       <!-- 左侧:品牌展示 -->
@@ -101,7 +106,7 @@ import { setToken } from '@/utils/auth'
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { User, Lock, Check } from '@element-plus/icons-vue'
+import { User, Lock, Check, ArrowLeft } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
@@ -167,6 +172,20 @@ const handleLogin = () => {
   height: 100vh;
   overflow: hidden;
   background: linear-gradient(135deg, #000428 0%, #004e92 100%);
+}
+
+// 返回首页按钮（左上角悬浮）
+.back-home-btn {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 10;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+
+  &:hover {
+    color: #fff;
+  }
 }
 
 // 星空背景动画

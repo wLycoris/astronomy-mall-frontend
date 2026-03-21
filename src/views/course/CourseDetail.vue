@@ -13,9 +13,8 @@
 
           <div class="title-row">
             <h1 class="course-title">{{ course.title }}</h1>
-            <!-- 收藏按钮 -->
+            <!-- 收藏按钮（始终显示，未登录点击时提示去登录） -->
             <button
-                v-if="isLogin"
                 :class="['fav-btn', { active: course.isFavorite }]"
                 @click="handleToggleFavorite"
             >
@@ -120,7 +119,7 @@
           </h3>
           <p>点击左侧章节目录开始你的天文之旅</p>
           <el-button
-              v-if="course.lastChapterId && firstUncompletedChapterId"
+              v-if="course.lastChapterId"
               type="primary"
               @click="loadChapter(course.lastChapterId)"
           >
@@ -241,6 +240,7 @@ import {
 } from '@element-plus/icons-vue'
 import { getCourseDetail, getCourseChapter, toggleCourseFavorite } from '@/api/course'
 import { useUserStore } from '@/stores/user'
+import { getToken } from '@/utils/auth'
 
 const route = useRoute()
 const router = useRouter()
@@ -262,16 +262,8 @@ const completedCount = computed(() => {
   return course.value.chapters.filter(c => c.isCompleted).length
 })
 
-/** 第一个未完成章节ID（继续学习按钮用） */
-const firstUncompletedChapterId = computed(() => {
-  if (!course.value?.chapters) return null
-  const uncompleted = course.value.chapters.find(c => !c.isCompleted)
-  return uncompleted?.id || null
-})
-
 // ======================== 方法 ========================
 
-/** 加载课程详情 */
 async function loadCourseDetail() {
   const courseId = route.params.id
   if (!courseId) return
@@ -280,9 +272,15 @@ async function loadCourseDetail() {
     const res = await getCourseDetail(courseId)
     if (res.code === 200) {
       course.value = res.data
-      // 若有上次学习进度，自动加载上次章节
-      if (course.value.lastChapterId) {
-        await loadChapter(course.value.lastChapterId)
+
+      // 优先使用 URL query.chapterId（来自学习历史跳转），其次使用进度记录
+      const queryChapterId = route.query.chapterId
+          ? Number(route.query.chapterId)
+          : null
+      const targetChapterId = queryChapterId || course.value.lastChapterId
+
+      if (targetChapterId) {
+        await loadChapter(targetChapterId)
       }
     } else {
       ElMessage.error(res.message || '课程不存在')
@@ -322,10 +320,10 @@ async function loadChapter(chapterId) {
   }
 }
 
-/** 收藏/取消收藏 */
+/** 收藏/取消收藏（始终显示，未登录时提示去登录） */
 async function handleToggleFavorite() {
-  if (!isLogin.value) {
-    ElMessage.warning('请先登录')
+  if (!getToken()) {
+    ElMessage.warning('请先登录后再收藏')
     return
   }
   try {
@@ -343,27 +341,20 @@ async function handleToggleFavorite() {
 function openVideoInNewTab() {
   const url = currentChapter.value?.videoUrl
   if (!url) return
-  // bilibili embed URL 转为普通播放页URL
-  // https://player.bilibili.com/player.html?bvid=BV1xx → https://www.bilibili.com/video/BV1xx
   const bvidMatch = url.match(/bvid=([^&]+)/)
   if (bvidMatch) {
     window.open(`https://www.bilibili.com/video/${bvidMatch[1]}`, '_blank')
   } else {
-    // YouTube 或其他：直接提取embed中的视频ID
     window.open(url, '_blank')
   }
 }
 
-/** 跳转论坛（带课程标签联动）
- * 论坛模块开发后，ForumList.vue 检测到 courseId 参数时自动筛选相关帖子（见7.3.7节）
- * 论坛未开发前：resolve 失败时静默降级，提示用户
- */
+/** 跳转论坛 */
 function goToForum() {
   const target = router.resolve({ name: 'ForumList', query: { courseId: course.value.id } })
   if (target.matched.length > 0) {
     router.push(target)
   } else {
-    // 论坛模块尚未开发，给用户友好提示
     ElMessage.info('论坛功能即将上线，敬请期待 💬')
   }
 }
@@ -516,7 +507,7 @@ onMounted(() => {
   box-shadow: 0 2px 12px rgba(0,0,0,0.06);
   overflow: hidden;
   position: sticky;
-  top: 80px;  /* 与 navbar 高度匹配 */
+  top: 80px;
   max-height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
@@ -588,7 +579,6 @@ onMounted(() => {
   font-size: 13px;
   color: #333;
   line-height: 1.4;
-  /* 允许换行，最多2行 */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -690,7 +680,7 @@ onMounted(() => {
 .video-wrapper {
   position: relative;
   width: 100%;
-  padding-top: 56.25%;  /* 16:9 */
+  padding-top: 56.25%;
   background: #000;
   border-radius: 8px;
   overflow: hidden;
@@ -704,7 +694,6 @@ onMounted(() => {
   height: 100%;
   border: none;
 }
-/* 遮罩：覆盖B站播放器顶部约60px，点击在新标签页打开原视频 */
 .video-overlay {
   position: absolute;
   top: 0;
@@ -755,12 +744,11 @@ onMounted(() => {
 }
 :deep(.rich-content blockquote) {
   border-left: 4px solid #7c3aed;
-  padding-left: 16px;
+  padding: 12px 12px 12px 16px;
   color: #666;
   margin: 16px 0;
   background: #f9f4ff;
   border-radius: 0 6px 6px 0;
-  padding: 12px 12px 12px 16px;
 }
 
 /* 内容加载中 */
@@ -773,7 +761,6 @@ onMounted(() => {
   margin-top: 32px;
 }
 
-/* 论坛跳转 */
 .forum-link-section {
   display: flex;
   align-items: center;
@@ -793,7 +780,6 @@ onMounted(() => {
   color: #999;
 }
 
-/* 评价占位 */
 .review-section {
   background: #fff;
   border-radius: 12px;

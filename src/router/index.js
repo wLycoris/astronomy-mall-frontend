@@ -391,12 +391,18 @@ const routes = [
                 component: () => import('@/views/recognition/RecognitionHistory.vue'),
                 meta: { title: '识别历史', requiresAuth: true }
             },
-            // ── 课程收藏 / 学习历史 ← 5.1 新增 ──────────────
+            // ── 课程收藏 / 学习历史 ← 5.3 新增 ──────────────
             {
-                path: 'course-favorites',
-                name: 'UserCourseFavorites',
-                component: () => import('@/views/course/CourseList.vue'),
+                path: 'course-favorite',
+                name: 'CourseFavorite',
+                component: () => import('@/views/user/CourseFavorite.vue'),
                 meta: { title: '课程收藏', requiresAuth: true }
+            },
+            {
+                path: 'course-history',
+                name: 'CourseHistory',
+                component: () => import('@/views/user/CourseHistory.vue'),
+                meta: { title: '学习历史', requiresAuth: true }
             }
         ]
     },
