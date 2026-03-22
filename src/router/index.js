@@ -312,6 +312,13 @@ const routes = [
                 name: 'AdminCourse',
                 component: () => import('@/views/admin/CourseManage.vue'),
                 meta: { title: '课程管理', requiresAdmin: true }
+            },
+            // ── 课程评价管理 ← 5.6 新增 ─────────────────────────
+            {
+                path: 'course-review',
+                name: 'AdminCourseReview',
+                component: () => import('@/views/admin/AdminCourseReview.vue'),
+                meta: { title: '课程评价管理', requiresAdmin: true }
             }
         ]
     },
@@ -403,6 +410,13 @@ const routes = [
                 name: 'CourseHistory',
                 component: () => import('@/views/user/CourseHistory.vue'),
                 meta: { title: '学习历史', requiresAuth: true }
+            },
+            // ── 课程评价 ← 5.6 新增 ──────────────────────────
+            {
+                path: 'course-reviews',
+                name: 'MyCourseReviews',
+                component: () => import('@/views/user/MyCourseReviews.vue'),
+                meta: { title: '我的课程评价', requiresAuth: true }
             }
         ]
     },

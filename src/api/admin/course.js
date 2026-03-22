@@ -1,9 +1,25 @@
 /**
- * 后台课程管理 API 封装
+ * 天文课程 管理员端 API
  * 文件路径: src/api/admin/course.js
  *
- * 对应后端: AdminCourseController.java（11个接口）
- * 全部接口需要管理员登录 Token
+ * v8.26 更新:
+ *   - 5.6 新增 getAdminCourseReviews / deleteCourseReview / getCourseReviewStats
+ *
+ * 接口列表:
+ *   getAdminCourseList      GET    /admin/course/list              课程列表
+ *   addCourse               POST   /admin/course/add               新增课程
+ *   updateCourse            PUT    /admin/course/update/{id}       编辑课程
+ *   deleteCourse            DELETE /admin/course/delete/{id}       删除课程
+ *   updateCourseStatus      POST   /admin/course/status/{id}       发布/下架
+ *   getCourseChapters       GET    /admin/course/{id}/chapters     章节列表
+ *   addChapter              POST   /admin/course/chapter/add       新增章节
+ *   updateChapter           PUT    /admin/course/chapter/{id}      编辑章节
+ *   deleteChapter           DELETE /admin/course/chapter/{id}      删除章节
+ *   sortChapters            POST   /admin/course/chapter/sort      章节排序
+ *   syncApod                POST   /admin/course/apod/sync         手动触发APOD同步
+ *   getAdminCourseReviews   GET    /admin/course/reviews           评价列表  ✅5.6新增
+ *   deleteCourseReview      DELETE /admin/course/review/{id}       删除评价  ✅5.6新增
+ *   getCourseReviewStats    GET    /admin/course/review/stats      评价统计  ✅5.6新增
  */
 import request from '@/utils/request'
 
@@ -174,4 +190,21 @@ export function syncApod(data) {
         method: 'post',
         data
     })
+}
+
+// ✅ 5.6 新增：课程评价列表（分页 + 多条件筛选）
+// params: pageNum / pageSize / courseId(可选) / rating(0-5，可选) / keyword(可选)
+export function getAdminCourseReviews(params) {
+    return request({ url: '/admin/course/reviews', method: 'get', params })
+}
+
+// ✅ 5.6 新增：逻辑删除课程评价（status=0，需二次确认）
+export function deleteCourseReview(id) {
+    return request({ url: `/admin/course/review/${id}`, method: 'delete' })
+}
+
+// ✅ 5.6 新增：课程评价统计（顶部3个统计卡片）
+// 返回: { total, thisWeek, avgRating }
+export function getCourseReviewStats() {
+    return request({ url: '/admin/course/review/stats', method: 'get' })
 }

@@ -217,14 +217,160 @@
         <span class="forum-hint">与其他天文爱好者交流这门课程的心得</span>
       </div>
 
-      <!-- 课程评价占位区 -->
+      <!-- ===== 5.6 课程评价区 ===== -->
       <div class="review-section">
-        <div class="review-placeholder">
-          <el-icon size="32" color="#ccc"><ChatDotRound /></el-icon>
-          <p class="review-placeholder-text">
-            课程评价功能即将开放，期待你的反馈 ✨
-          </p>
+
+        <!-- 标题行 -->
+        <div class="review-header">
+          <span class="review-title">课程评价</span>
+          <span class="review-total" v-if="reviewTotal > 0">{{ reviewTotal }} 条</span>
         </div>
+
+        <!-- 提交表单（已登录 + 有进度 + 未评过）-->
+        <div v-if="isLogin && canSubmitReview && !myReview" class="review-form">
+          <div class="form-stars">
+            <span class="form-label">评分</span>
+            <span
+                v-for="n in 5"
+                :key="n"
+                class="form-star"
+                :class="{ lit: reviewForm.rating >= n || hoverRating >= n }"
+                @mouseenter="hoverRating = n"
+                @mouseleave="hoverRating = 0"
+                @click="reviewForm.rating = n"
+            >★</span>
+            <span class="form-hint" v-if="reviewForm.rating > 0">{{ ratingHintMap[reviewForm.rating] }}</span>
+          </div>
+          <el-input
+              v-model="reviewForm.content"
+              type="textarea"
+              :rows="3"
+              placeholder="说说你的学习感受吧～（选填）"
+              maxlength="500"
+              show-word-limit
+          />
+          <div class="form-footer">
+            <el-button
+                type="primary"
+                size="small"
+                :loading="submitLoading"
+                :disabled="reviewForm.rating === 0"
+                @click="handleSubmitReview"
+            >发布评价</el-button>
+            <span class="form-tip" v-if="reviewForm.rating === 0">请先点击星星评分</span>
+          </div>
+        </div>
+
+        <!-- 未登录 -->
+        <div v-else-if="!isLogin" class="review-tip">
+          <span>登录后参与评价</span>
+          <el-button type="primary" link size="small" @click="router.push('/login')">去登录</el-button>
+        </div>
+
+        <!-- 已登录但未学习 -->
+        <div v-else-if="isLogin && !canSubmitReview && !myReview" class="review-tip">
+          <el-icon><InfoFilled /></el-icon>
+          <span>先学习课程内容，解锁评价功能</span>
+        </div>
+
+        <!-- 已评过：展示我的评价 + 编辑入口 -->
+        <div v-if="myReview && !editingMyReview" class="my-review-bar">
+          <div class="my-review-left">
+            <span class="my-review-label">我的评价</span>
+            <span class="review-stars">
+              <span v-for="n in myReview.rating" :key="'on'+n">★</span>
+              <span class="review-stars-off" v-for="n in (5-myReview.rating)" :key="'off'+n">★</span>
+            </span>
+            <span class="my-review-content" v-if="myReview.content">{{ myReview.content }}</span>
+            <span class="my-review-content empty" v-else>未填写文字</span>
+          </div>
+          <el-button size="small" @click="openEditMyReview">编辑</el-button>
+        </div>
+
+        <!-- 编辑我的评价表单 -->
+        <div v-if="myReview && editingMyReview" class="review-form">
+          <div class="form-stars">
+            <span class="form-label">评分</span>
+            <span
+                v-for="n in 5"
+                :key="n"
+                class="form-star"
+                :class="{ lit: editForm.rating >= n || editHover >= n }"
+                @mouseenter="editHover = n"
+                @mouseleave="editHover = 0"
+                @click="editForm.rating = n"
+            >★</span>
+            <span class="form-hint" v-if="editForm.rating > 0">{{ ratingHintMap[editForm.rating] }}</span>
+          </div>
+          <el-input
+              v-model="editForm.content"
+              type="textarea"
+              :rows="3"
+              placeholder="说说你的学习感受吧～（选填）"
+              maxlength="500"
+              show-word-limit
+          />
+          <div class="form-footer">
+            <el-button
+                type="primary"
+                size="small"
+                :loading="submitLoading"
+                :disabled="editForm.rating === 0"
+                @click="handleUpdateReview"
+            >保存修改</el-button>
+            <el-button size="small" @click="editingMyReview = false">取消</el-button>
+          </div>
+        </div>
+
+        <!-- 评价列表加载中 -->
+        <div v-if="reviewLoading" class="review-skeleton">
+          <el-skeleton :rows="2" animated />
+        </div>
+
+        <!-- 评价列表 -->
+        <div v-else-if="reviewList.length > 0" class="review-list">
+          <div
+              v-for="item in reviewList"
+              :key="item.id"
+              class="review-card"
+              :class="{ 'is-mine': myReview && item.id === myReview.id }"
+          >
+            <el-avatar :src="item.avatar" :size="38" class="review-avatar">
+              {{ (item.nickname || '?').charAt(0) }}
+            </el-avatar>
+            <div class="review-body">
+              <div class="review-top">
+                <span class="review-name">{{ item.nickname || '天文爱好者' }}</span>
+                <span class="review-mine-tag" v-if="myReview && item.id === myReview.id">我</span>
+                <span class="review-stars">
+                  <span v-for="n in item.rating" :key="'s'+n">★</span>
+                  <span class="review-stars-off" v-for="n in (5-item.rating)" :key="'o'+n">★</span>
+                </span>
+                <span class="review-date">{{ formatReviewTime(item.createTime) }}</span>
+              </div>
+              <p class="review-text" v-if="item.content">{{ item.content }}</p>
+              <p class="review-text no-content" v-else>该用户未留下文字</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 暂无评价 -->
+        <div v-else-if="!reviewLoading" class="review-empty">
+          <span>暂无评价，来第一个评价吧 🌟</span>
+        </div>
+
+        <!-- 分页 -->
+        <div v-if="reviewTotal > reviewPageSize" class="review-pager">
+          <el-pagination
+              v-model:current-page="reviewPageNum"
+              :page-size="reviewPageSize"
+              :total="reviewTotal"
+              layout="prev, pager, next"
+              small
+              @current-change="handleReviewPageChange"
+          />
+        </div>
+
       </div>
     </div>
 
@@ -232,20 +378,20 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
-  Star, StarFilled, CircleCheck, ChatDotRound
+  Star, StarFilled, CircleCheck, ChatDotRound, InfoFilled
 } from '@element-plus/icons-vue'
-import { getCourseDetail, getCourseChapter, toggleCourseFavorite } from '@/api/course'
+import { getCourseDetail, getCourseChapter, toggleCourseFavorite, getCourseReviews, submitReview, getMyReview, updateCourseReview } from '@/api/course'
 import { useUserStore } from '@/stores/user'
 import { getToken } from '@/utils/auth'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
-const isLogin = computed(() => userStore.isLogin)
+const isLogin = computed(() => !!getToken())
 
 // ======================== 状态 ========================
 const pageLoading = ref(false)
@@ -261,6 +407,27 @@ const completedCount = computed(() => {
   if (!course.value?.chapters) return 0
   return course.value.chapters.filter(c => c.isCompleted).length
 })
+
+// ======================== 5.6 评价状态 ========================
+const reviewList      = ref([])
+const reviewTotal     = ref(0)
+const reviewPageNum   = ref(1)
+const reviewPageSize  = 10
+const reviewLoading   = ref(false)
+const myReview        = ref(null)
+const canSubmitReview = ref(false)
+
+// 提交表单
+const reviewForm    = reactive({ rating: 0, content: '' })
+const hoverRating   = ref(0)
+const submitLoading = ref(false)
+
+// 编辑表单
+const editingMyReview = ref(false)
+const editForm        = reactive({ rating: 0, content: '' })
+const editHover       = ref(0)
+
+const ratingHintMap = { 1: '很差', 2: '较差', 3: '一般', 4: '不错', 5: '非常棒！' }
 
 // ======================== 方法 ========================
 
@@ -282,6 +449,10 @@ async function loadCourseDetail() {
       if (targetChapterId) {
         await loadChapter(targetChapterId)
       }
+
+      // ✅ 5.6：加载评价数据
+      checkCanSubmit()
+      await Promise.all([loadReviews(), loadMyReview()])
     } else {
       ElMessage.error(res.message || '课程不存在')
       router.push({ name: 'CourseList' })
@@ -311,6 +482,8 @@ async function loadChapter(chapterId) {
           chapterInList.isCompleted = true
         }
       }
+      // 点击章节后更新可评价状态
+      canSubmitReview.value = true
     }
   } catch (e) {
     ElMessage.error('章节加载失败，请重试')
@@ -371,6 +544,110 @@ function parseTags(tagsStr) {
 function difficultyTagType(difficulty) {
   const map = { 1: 'success', 2: 'warning', 3: 'danger' }
   return map[difficulty] || 'info'
+}
+
+// ======================== 5.6 评价方法 ========================
+
+function checkCanSubmit() {
+  canSubmitReview.value = !!(course.value && course.value.lastChapterId)
+}
+
+async function loadReviews() {
+  if (!course.value) return
+  reviewLoading.value = true
+  try {
+    const res = await getCourseReviews(course.value.id, reviewPageNum.value, reviewPageSize)
+    if (res.code === 200) {
+      reviewList.value  = res.data.records || []
+      reviewTotal.value = res.data.total   || 0
+    }
+  } catch (e) {
+    console.warn('[评价] 加载失败', e)
+  } finally {
+    reviewLoading.value = false
+  }
+}
+
+async function loadMyReview() {
+  if (!isLogin.value || !course.value) return
+  try {
+    const res = await getMyReview(course.value.id)
+    myReview.value = (res.code === 200) ? res.data : null
+  } catch (e) {
+    myReview.value = null
+  }
+}
+
+async function handleSubmitReview() {
+  if (!getToken()) { ElMessage.warning('请先登录'); return }
+  if (reviewForm.rating === 0) { ElMessage.warning('请先选择评分'); return }
+  submitLoading.value = true
+  try {
+    const res = await submitReview(course.value.id, {
+      rating:  reviewForm.rating,
+      content: reviewForm.content.trim() || undefined
+    })
+    if (res.code === 200) {
+      ElMessage.success('评价发布成功 🌟')
+      reviewForm.rating  = 0
+      reviewForm.content = ''
+      reviewPageNum.value = 1
+      await Promise.all([loadMyReview(), loadReviews()])
+    } else {
+      ElMessage.error(res.message || '提交失败')
+    }
+  } catch (e) {
+    ElMessage.error('提交失败，请重试')
+  } finally {
+    submitLoading.value = false
+  }
+}
+
+/** 打开编辑我的评价 */
+function openEditMyReview() {
+  editForm.rating  = myReview.value.rating
+  editForm.content = myReview.value.content || ''
+  editHover.value  = 0
+  editingMyReview.value = true
+}
+
+/** 保存编辑 */
+async function handleUpdateReview() {
+  if (editForm.rating === 0) { ElMessage.warning('请先选择评分'); return }
+  submitLoading.value = true
+  try {
+    const res = await updateCourseReview(course.value.id, {
+      rating:  editForm.rating,
+      content: editForm.content.trim() || undefined
+    })
+    if (res.code === 200) {
+      ElMessage.success('评价已更新')
+      editingMyReview.value = false
+      reviewPageNum.value = 1
+      await Promise.all([loadMyReview(), loadReviews()])
+    } else {
+      ElMessage.error(res.message || '更新失败')
+    }
+  } catch (e) {
+    ElMessage.error('更新失败，请重试')
+  } finally {
+    submitLoading.value = false
+  }
+}
+
+function handleReviewPageChange(page) {
+  reviewPageNum.value = page
+  loadReviews()
+}
+
+function formatReviewTime(val) {
+  if (!val) return ''
+  // 数组格式 [2026,3,22,10,0,0]
+  if (Array.isArray(val)) {
+    const [y, M, d] = val
+    return `${y}-${String(M).padStart(2,'0')}-${String(d).padStart(2,'0')}`
+  }
+  return String(val).slice(0, 10)
 }
 
 // ======================== 初始化 ========================
@@ -780,23 +1057,229 @@ onMounted(() => {
   color: #999;
 }
 
+/* ===== 评价区 ===== */
 .review-section {
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-  overflow: hidden;
+  padding: 24px 28px;
 }
-.review-placeholder {
+
+/* 标题行 */
+.review-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.review-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+.review-total {
+  font-size: 13px;
+  color: #999;
+}
+
+/* 提交/编辑表单 */
+.review-form {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 16px 18px;
+  margin-bottom: 24px;
+}
+.form-stars {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 12px;
+}
+.form-label {
+  font-size: 13px;
+  color: #666;
+  margin-right: 6px;
+}
+.form-star {
+  font-size: 26px;
+  color: #e0e0e0;
+  cursor: pointer;
+  transition: color 0.12s;
+  line-height: 1;
+  user-select: none;
+}
+.form-star.lit {
+  color: #f59e0b;
+}
+.form-hint {
+  font-size: 12px;
+  color: #f59e0b;
+  margin-left: 6px;
+}
+.form-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+.form-tip {
+  font-size: 12px;
+  color: #bbb;
+}
+
+/* 未登录/未学习提示 */
+.review-tip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #999;
+  margin-bottom: 20px;
+}
+
+/* 我的评价横条 */
+.my-review-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: #fffdf5;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.my-review-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.my-review-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #7c3aed;
+  background: #f3eeff;
+  padding: 1px 8px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.my-review-stars {
+  font-size: 14px;
+  color: #f59e0b;
+  flex-shrink: 0;
+}
+.my-review-content {
+  font-size: 13px;
+  color: #555;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.my-review-content.empty {
+  color: #ccc;
+  font-style: italic;
+}
+
+/* 骨架屏 */
+.review-skeleton {
+  padding: 8px 0;
+}
+
+/* 评价列表 */
+.review-list {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 40px;
-  text-align: center;
 }
-.review-placeholder-text {
-  margin: 12px 0 0;
-  color: #bbb;
+.review-card {
+  display: flex;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+.review-card:last-child {
+  border-bottom: none;
+}
+.review-card.is-mine {
+  background: #fffdf5;
+  margin: 0 -28px;
+  padding: 16px 28px;
+}
+.review-avatar {
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  color: #fff;
+  font-weight: 600;
+}
+.review-body {
+  flex: 1;
+  min-width: 0;
+}
+.review-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.review-name {
   font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+.review-mine-tag {
+  font-size: 11px;
+  color: #7c3aed;
+  background: #f3eeff;
+  padding: 1px 6px;
+  border-radius: 10px;
+  line-height: 1.6;
+}
+.review-stars {
+  font-size: 13px;
+  color: #f59e0b;
+  letter-spacing: 1px;
+}
+.review-stars-off {
+  color: #e0e0e0;
+}
+.review-date {
+  font-size: 12px;
+  color: #bbb;
+  margin-left: auto;
+}
+.review-text {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.7;
+  margin: 0;
+  word-break: break-word;
+}
+.review-text.no-content {
+  color: #ccc;
+  font-style: italic;
+}
+
+/* 暂无评价 */
+.review-empty {
+  padding: 32px 0;
+  text-align: center;
+  font-size: 14px;
+  color: #bbb;
+}
+
+/* 分页 */
+.review-pager {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
 }
 
 /* ===== 响应式 ===== */

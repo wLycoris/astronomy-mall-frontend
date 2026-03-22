@@ -15,6 +15,10 @@
         <el-button link size="small" @click="router.push('/user/course-favorite')">
           <el-icon><Star /></el-icon> 我的收藏
         </el-button>
+        <!-- ✅ 5.6 新增：我的评价入口 -->
+        <el-button link size="small" @click="router.push('/user/course-reviews')">
+          <el-icon><ChatDotRound /></el-icon> 我的评价
+        </el-button>
       </div>
     </div>
 
@@ -144,6 +148,11 @@
                 <el-icon><Document /></el-icon>
                 {{ course.chapterCount }} 章节
               </span>
+              <!-- ✅ 5.6 新增：评分展示 -->
+              <span v-if="course.avgRating > 0" class="card-rating">
+                <span class="rating-star">★</span>{{ course.avgRating }}
+                <span class="rating-count">( {{ course.reviewCount }} )</span>
+              </span>
             </div>
             <div v-if="parseTags(course.tags).length > 0" class="card-tags">
               <el-tag
@@ -174,11 +183,6 @@
     </div>
 
     <!-- ===== 分页 ===== -->
-    <!--
-      修复说明：原来条件是 total > filters.pageSize（12），
-      种子数据若不足12条则永远不显示分页。
-      改为：total > 0 且总页数 > 1 时才显示，保持单页时不展示的正确 UX。
-    -->
     <div v-if="totalPages > 1" class="pagination-wrapper">
       <el-pagination
           v-model:current-page="filters.pageNum"
@@ -191,25 +195,6 @@
     </div>
 
     <!-- ===== 5.4 「为你推荐」横向滑动区块（放在页面最底部）===== -->
-    <!--
-      位置说明：移至页面最底部，不影响课程列表和筛选的主体浏览体验。
-
-      显示条件：已登录 + 推荐列表非空
-        - 未登录：前端直接不调用接口，整块不渲染
-        - 已登录但近3个月无购买记录：后端返回热门兜底（非空），区块显示
-        - 超过3个月无购买 / 接口失败：recommendList 保留上次结果（不清空），
-          若从未加载成功则 length=0，区块不渲染
-
-      消失问题修复说明（原因 + 方案）：
-        原因：导航到详情页再返回时 onMounted 重新执行，
-              加载期间 recommendList=[] → v-if=false → 区块瞬间消失。
-        方案：loadRecommendCourses() 不在 catch 中清空 recommendList，
-              保留上次成功的结果；同时加载时不清空旧数据，静默刷新。
-
-      滑动修复说明：
-        关键是给 .recommend-scroll 加 min-width: max-content，
-        让内容真正溢出父容器，触发 overflow-x: auto 的横向滚动。
-    -->
     <div
         v-if="getToken() && recommendList.length > 0"
         class="recommend-section"
@@ -261,6 +246,10 @@
                   <el-icon><Document /></el-icon>
                   {{ course.chapterCount }} 章节
                 </span>
+                <!-- ✅ 5.6 新增：推荐卡片评分 -->
+                <span v-if="course.avgRating > 0" class="rec-rating">
+                  <span class="rating-star">★</span>{{ course.avgRating }}
+                </span>
               </div>
               <div v-if="parseTags(course.tags).length > 0" class="rec-card-tags">
                 <el-tag
@@ -298,7 +287,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Search, Document, Star, StarFilled, ArrowLeft, VideoPlay } from '@element-plus/icons-vue'
+import { Search, Document, Star, StarFilled, ArrowLeft, VideoPlay, ChatDotRound } from '@element-plus/icons-vue'
 import { getCourseList, toggleCourseFavorite, getRecommendCourses } from '@/api/course'
 import { useUserStore } from '@/stores/user'
 import { getToken } from '@/utils/auth'
@@ -361,7 +350,6 @@ const loading      = ref(false)
 const courseList   = ref([])
 const total        = ref(0)
 
-// 推荐列表：初始为空数组，加载失败时保留旧值（不清空），避免闪烁消失
 const recommendList    = ref([])
 const scrollWrapperRef = ref(null)
 
@@ -376,7 +364,6 @@ const filters = reactive({
   tags:       ''
 })
 
-// 总页数（用于分页显示判断，替代 total > pageSize 的不准确判断）
 const totalPages = computed(() => Math.ceil(total.value / filters.pageSize))
 
 const hasActiveFilters = computed(() =>
@@ -387,7 +374,6 @@ const hasActiveFilters = computed(() =>
 )
 
 // ======================== 鼠标拖拽横向滚动 ========================
-// 给桌面端提供鼠标拖拽滑动支持（移动端靠 touch 原生处理）
 let isDragging  = false
 let dragStartX  = 0
 let scrollLeft0 = 0
@@ -402,7 +388,7 @@ function onMouseMove(e) {
   if (!isDragging) return
   e.preventDefault()
   const x    = e.pageX - scrollWrapperRef.value.offsetLeft
-  const walk = x - dragStartX           // 鼠标移动距离
+  const walk = x - dragStartX
   scrollWrapperRef.value.scrollLeft = scrollLeft0 - walk
 }
 function onMouseUp() {
@@ -428,24 +414,14 @@ async function loadCourseList() {
   }
 }
 
-/**
- * 5.4 加载推荐课程
- *
- * 修复消失问题的关键：
- *   - catch 里不清空 recommendList，保留上次成功结果
- *   - 也不在加载前置 recommendList=[]，避免 v-if 短暂变 false
- *   - 若本次加载成功则更新为新数据；失败则静默保留旧数据
- */
 async function loadRecommendCourses() {
   if (!getToken()) return
   try {
     const res = await getRecommendCourses()
-    // 只在有数据时才更新，避免后端偶发空列表覆盖旧的正常结果
     if (res.data && res.data.length > 0) {
       recommendList.value = res.data
     }
   } catch (e) {
-    // 静默失败：保留旧数据，不清空，不提示用户
     console.warn('[CourseList] 推荐课程加载失败（静默保留旧数据）', e)
   }
 }
@@ -711,8 +687,20 @@ onMounted(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
 .chapter-count { display: flex; align-items: center; gap: 3px; font-size: 12px; color: #888; }
+
+/* ✅ 5.6 新增：评分样式 */
+.card-rating {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  color: #888;
+}
+.rating-star { color: #f59e0b; font-size: 13px; }
+.rating-count { color: #bbb; }
+
 .card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
 .card-tag { font-size: 11px !important; }
 .more-tags { font-size: 11px; color: #aaa; align-self: center; }
@@ -772,14 +760,6 @@ onMounted(() => {
 }
 .recommend-icon   { font-size: 18px; }
 .recommend-subtitle { font-size: 12px; color: #7c6aad; margin: 0; }
-
-/*
-  横向滑动容器修复说明：
-  1. overflow-x: auto    — 触发横向滚动条（隐藏但可滑动）
-  2. overflow-y: hidden  — 防止纵向溢出影响布局
-  3. -webkit-overflow-scrolling: touch — iOS 原生惯性滚动
-  4. user-select: none   — 鼠标拖拽时防止选中文字
-*/
 .recommend-scroll-wrapper {
   overflow-x: auto;
   overflow-y: hidden;
@@ -787,35 +767,17 @@ onMounted(() => {
   cursor: grab;
   user-select: none;
   width: 100%;
-  padding-bottom: 4px;   /* 给滚动条留空间 */
+  padding-bottom: 4px;
 }
-/* 自定义细滚动条样式 */
-.recommend-scroll-wrapper::-webkit-scrollbar {
-  height: 4px;
-}
-.recommend-scroll-wrapper::-webkit-scrollbar-track {
-  background: #ede9fe;
-  border-radius: 2px;
-}
-.recommend-scroll-wrapper::-webkit-scrollbar-thumb {
-  background: #c4b5fd;
-  border-radius: 2px;
-}
-.recommend-scroll-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #7c3aed;
-}
-
-/*
-  关键修复：min-width: max-content
-  让内层容器宽度 = 所有卡片宽度之和，
-  真正超出父容器，触发 overflow-x 的横向滚动。
-  没有这条，flex 会尝试压缩或换行，导致滑动失效。
-*/
+.recommend-scroll-wrapper::-webkit-scrollbar { height: 4px; }
+.recommend-scroll-wrapper::-webkit-scrollbar-track { background: #ede9fe; border-radius: 2px; }
+.recommend-scroll-wrapper::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 2px; }
+.recommend-scroll-wrapper::-webkit-scrollbar-thumb:hover { background: #7c3aed; }
 .recommend-scroll {
   display: flex;
   gap: 16px;
   padding-bottom: 8px;
-  padding-right: 24px;   /* 右边留空，最后一张卡不被截断 */
+  padding-right: 24px;
   min-width: max-content;
 }
 
@@ -855,8 +817,18 @@ onMounted(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.rec-card-meta   { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.rec-card-meta   { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
 .rec-chapter-count { display: flex; align-items: center; gap: 2px; font-size: 11px; color: #aaa; }
+
+/* ✅ 5.6 新增：推荐卡评分 */
+.rec-rating {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  color: #888;
+}
+
 .rec-card-tags   { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 8px; }
 .rec-card-tag    { font-size: 11px !important; }
 .rec-more-tags   { font-size: 11px; color: #bbb; align-self: center; }

@@ -20,6 +20,7 @@
       /user/recognition       - 识别历史 (4.5) 🆕
       /user/course-history    - 学习历史 (5.3) 🆕
       /user/course-favorite   - 课程收藏 (5.3) 🆕
+      /user/course-reviews    - 我的课程评价 (5.6) 🆕
   -->
   <div class="user-center-wrapper">
     <!-- 顶部面包屑区 -->
@@ -255,7 +256,9 @@ const menuGroups = computed(() => [
       { path: '/user/recognition',      label: '识别历史',     icon: Search,       badge: 0 },
       // ── 5.3 新增：学习历史 / 课程收藏 ──────────────
       { path: '/user/course-history',   label: '学习历史',     icon: VideoPlay,    badge: 0 },
-      { path: '/user/course-favorite',  label: '课程收藏',     icon: Star,         badge: 0 }
+      { path: '/user/course-favorite',  label: '课程收藏',     icon: Star,         badge: 0 },
+      // ── 5.6 新增：我的课程评价 ──────────────────────
+      { path: '/user/course-reviews',   label: '课程评价',     icon: ChatDotRound, badge: 0 }
     ]
   }
 ])
