@@ -265,8 +265,8 @@ const handleItemClick = async (item) => {
         break
 
       case 'course':
-        // 课程 → /course/detail/:id（未来开发）
-        targetRoute = `/course/detail/${item.relatedId}`
+        // 课程 → /course/:id
+        targetRoute = `/course/${item.relatedId}`
         break
 
       default:

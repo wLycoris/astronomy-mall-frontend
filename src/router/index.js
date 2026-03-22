@@ -306,13 +306,13 @@ const routes = [
                 component: () => import('@/views/admin/NotificationTemplate.vue'),
                 meta: { title: '通知模板', requiresAdmin: true }
             },
-            // ── 课程管理 ← 5.2 开发时取消注释 ──────────────
-            // {
-            //     path: 'course',
-            //     name: 'AdminCourse',
-            //     component: () => import('@/views/admin/CourseManage.vue'),
-            //     meta: { title: '课程管理', requiresAdmin: true }
-            // }
+            // ── 课程管理 ← 5.5 已启用 ──────────────────────────
+            {
+                path: 'course',
+                name: 'AdminCourse',
+                component: () => import('@/views/admin/CourseManage.vue'),
+                meta: { title: '课程管理', requiresAdmin: true }
+            }
         ]
     },
 

@@ -98,9 +98,10 @@ import {
   HomeFilled, User, SwitchButton, ShoppingCart,
   DataAnalysis, Goods, Document, Money,
   ChatDotRound, Menu, CaretBottom, DataBoard, List, Setting, Tools,
-  RefreshRight,   // 🆕 2.5.3 二手回收图标
-  Bell,           // 🆕 3.4.1 系统公告图标
-  Tickets         // 🆕 3.4.3 通知模板图标
+  RefreshRight,   // 2.5.3 二手回收图标
+  Bell,           // 3.4.1 系统公告图标
+  Tickets,        // 3.4.3 通知模板图标
+  Reading         // 🆕 5.5 课程管理图标
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -120,8 +121,9 @@ const menuItems = ref([
   { path: '/admin/installation',          title: '安装预约管理', icon: 'Tools'         },
   { path: '/admin/recycling',             title: '二手回收管理', icon: 'RefreshRight'  },
   { path: '/admin/announcement',          title: '系统公告',     icon: 'Bell'          },
-  { path: '/admin/notification-record',   title: '通知记录',     icon: 'ChatDotRound'  },  // 🆕 3.4.2
-  { path: '/admin/notification-template', title: '通知模板',     icon: 'Tickets'       }   // 🆕 3.4.3
+  { path: '/admin/notification-record',   title: '通知记录',     icon: 'ChatDotRound'  },
+  { path: '/admin/notification-template', title: '通知模板',     icon: 'Tickets'       },
+  { path: '/admin/course',                title: '课程管理',     icon: 'Reading'       }  // 🆕 5.5
 ])
 
 const activeMenu = computed(() => route.path)
