@@ -82,6 +82,17 @@ const routes = [
     },
 
     // ============================================
+    // 天文观测点地图 ← 6.1 新增
+    // requiresAuth: false，未登录可浏览；评分/签到在页面内部判断登录态
+    // ============================================
+    {
+        path: '/location',
+        name: 'ObservationMap',
+        component: () => import('@/views/location/ObservationMap.vue'),
+        meta: { title: '天文观测点', requiresAuth: false }
+    },
+
+    // ============================================
     // 评价相关页面 (需要登录)
     // ============================================
     {
@@ -320,6 +331,13 @@ const routes = [
                 component: () => import('@/views/admin/AdminCourseReview.vue'),
                 meta: { title: '课程评价管理', requiresAdmin: true }
             }
+            // ── 观测点管理 ← 6.5 TODO（届时在此追加）─────────────
+            // {
+            //     path: 'location',
+            //     name: 'AdminLocation',
+            //     component: () => import('@/views/admin/ObservationSpotManage.vue'),
+            //     meta: { title: '观测点管理', requiresAdmin: true }
+            // }
         ]
     },
 
@@ -418,6 +436,13 @@ const routes = [
                 component: () => import('@/views/user/MyCourseReviews.vue'),
                 meta: { title: '我的课程评价', requiresAuth: true }
             }
+            // ── 签到历史 ← 6.3 TODO（届时在此追加）──────────────
+            // {
+            //     path: 'checkin-history',
+            //     name: 'CheckinHistory',
+            //     component: () => import('@/views/location/CheckinHistory.vue'),
+            //     meta: { title: '签到历史', requiresAuth: true }
+            // }
         ]
     },
 

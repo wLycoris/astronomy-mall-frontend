@@ -12,6 +12,8 @@
           <router-link to="/products" class="nav-item">商品中心</router-link>
           <router-link to="/course" class="nav-item">课程学习</router-link>
           <router-link to="/recognition" class="nav-item">AI识别</router-link>
+          <!-- ✅ 6.1 新增: 观测点地图 -->
+          <router-link to="/location" class="nav-item">观测点</router-link>
           <router-link to="/forum" class="nav-item">天文论坛</router-link>
           <!-- ✅ 新增: 我的评价 (仅登录后显示) -->
           <router-link v-if="isLoggedIn" to="/review/my" class="nav-item">我的评价</router-link>
@@ -123,6 +125,7 @@
     </div>
 
     <!-- 快捷入口 -->
+    <!-- ✅ 6.1 新增观测点卡片，grid 由4列改为5列 -->
     <div class="quick-entry">
       <div class="entry-item" @click="goToProducts">
         <el-icon :size="40" color="#409EFF"><Grid /></el-icon>
@@ -138,6 +141,12 @@
         <el-icon :size="40" color="#E6A23C"><Reading /></el-icon>
         <h3>课程学习</h3>
         <p>天文知识课程</p>
+      </div>
+      <!-- ✅ 6.1 新增 -->
+      <div class="entry-item" @click="goToLocation">
+        <el-icon :size="40" color="#9B59B6"><MapLocation /></el-icon>
+        <h3>观测点地图</h3>
+        <p>寻找最佳暗天</p>
       </div>
       <div class="entry-item" @click="goToForum">
         <el-icon :size="40" color="#F56C6C"><ChatDotRound /></el-icon>
@@ -232,7 +241,8 @@ import { getBasicSetting } from '@/api/admin/setting'  // 🆕
 import ApodCard from '@/components/ApodCard.vue'
 import {
   Grid, Picture, Reading, ChatDotRound, ShoppingCart,
-  List, User, SwitchButton, Setting, Bell
+  List, User, SwitchButton, Setting, Bell,
+  MapLocation   // ✅ 6.1 新增图标
 } from '@element-plus/icons-vue'
 
 import NotificationBell from '@/components/NotificationBell.vue'
@@ -275,7 +285,6 @@ const userAvatar = computed(() => userStore.userInfo?.avatar || '/images/default
 const loadCartCount = async () => {
   const token = getToken()
   if (!token) return
-
   try {
     const res = await getCartList()
     cartCount.value = res.data?.length || 0
@@ -309,7 +318,7 @@ const loadBasicSetting = async () => {
 }
 
 // 跳转方法
-const goToProducts = () => router.push('/products')
+const goToProducts  = () => router.push('/products')
 const goToProductDetail = (id) => router.push(`/product/${id}`)
 const goToCart = () => {
   if (!isLoggedIn.value) {
@@ -330,7 +339,6 @@ const goToOrders = () => {
   }
   router.push('/order/list')
 }
-
 const goToMyReviews = () => {
   if (!isLoggedIn.value) {
     ElMessage.warning('请先登录')
@@ -339,12 +347,13 @@ const goToMyReviews = () => {
   }
   router.push('/review/my')
 }
-
-const goToLogin = () => router.push('/login')
+const goToLogin    = () => router.push('/login')
 const goToRegister = () => router.push('/register')
-const goToAI = () => router.push('/recognition')
-const goToCourses = () => router.push('/course')
-const goToForum = () => ElMessage.info('论坛功能开发中...')
+const goToAI       = () => router.push('/recognition')
+const goToCourses  = () => router.push('/course')
+const goToForum    = () => ElMessage.info('论坛功能开发中...')
+// ✅ 6.1 新增
+const goToLocation = () => router.push('/location')
 
 const handleCommand = (command) => {
   switch (command) {
@@ -402,7 +411,7 @@ onMounted(async () => {
   await userStore.restoreLogin()
   if (isLoggedIn.value) loadCartCount()
   loadRecommendProducts()
-  loadBasicSetting()  // 🆕
+  loadBasicSetting()
 })
 </script>
 
@@ -444,13 +453,9 @@ onMounted(async () => {
     cursor: pointer;
     transition: transform 0.3s;
 
-    &:hover {
-      transform: scale(1.05);
-    }
+    &:hover { transform: scale(1.05); }
 
-    .logo-icon {
-      font-size: 30px;
-    }
+    .logo-icon { font-size: 30px; }
   }
 
   .nav-menu {
@@ -478,10 +483,7 @@ onMounted(async () => {
       &:hover,
       &.active {
         color: #409EFF;
-
-        &::after {
-          width: 100%;
-        }
+        &::after { width: 100%; }
       }
     }
   }
@@ -513,9 +515,7 @@ onMounted(async () => {
       border-radius: 20px;
       transition: background-color 0.3s;
 
-      &:hover {
-        background-color: #f5f7fa;
-      }
+      &:hover { background-color: #f5f7fa; }
 
       .username {
         font-size: 14px;
@@ -542,19 +542,9 @@ onMounted(async () => {
 }
 
 .fade-slide-enter-active,
-.fade-slide-leave-active {
-  transition: all 0.3s ease;
-}
-
-.fade-slide-enter-from {
-  opacity: 0;
-  transform: translateX(20px);
-}
-
-.fade-slide-leave-to {
-  opacity: 0;
-  transform: translateX(-20px);
-}
+.fade-slide-leave-active { transition: all 0.3s ease; }
+.fade-slide-enter-from   { opacity: 0; transform: translateX(20px); }
+.fade-slide-leave-to     { opacity: 0; transform: translateX(-20px); }
 
 .banner-section {
   margin-bottom: 40px;
@@ -572,10 +562,7 @@ onMounted(async () => {
     &::before {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      inset: 0;
       background: rgba(0, 0, 0, 0.3);
     }
 
@@ -584,32 +571,24 @@ onMounted(async () => {
       text-align: center;
       color: #fff;
 
-      h1 {
-        font-size: 48px;
-        margin-bottom: 20px;
-        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-      }
-
-      p {
-        font-size: 24px;
-        margin-bottom: 30px;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-      }
+      h1 { font-size: 48px; margin-bottom: 20px; text-shadow: 2px 2px 4px rgba(0,0,0,.5); }
+      p  { font-size: 24px; margin-bottom: 30px; text-shadow: 1px 1px 2px rgba(0,0,0,.5); }
     }
   }
 }
 
+/* ✅ 6.1: 快捷入口由4列改为5列 */
 .quick-entry {
   max-width: 1400px;
   margin: 0 auto 60px;
   padding: 0 20px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 30px;
+  grid-template-columns: repeat(5, 1fr);  /* 原来是4列 */
+  gap: 24px;
 
   .entry-item {
     background: #fff;
-    padding: 40px 20px;
+    padding: 36px 16px;
     border-radius: 12px;
     text-align: center;
     cursor: pointer;
@@ -621,15 +600,8 @@ onMounted(async () => {
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     }
 
-    h3 {
-      margin: 15px 0 10px;
-      font-size: 20px;
-    }
-
-    p {
-      color: #909399;
-      font-size: 14px;
-    }
+    h3 { margin: 15px 0 10px; font-size: 18px; }
+    p  { color: #909399; font-size: 13px; }
   }
 }
 
@@ -640,11 +612,7 @@ onMounted(async () => {
 
   .section-header {
     margin-bottom: 30px;
-
-    h2 {
-      font-size: 28px;
-      color: #303133;
-    }
+    h2 { font-size: 28px; color: #303133; }
   }
 
   .user-entry {
@@ -662,37 +630,14 @@ onMounted(async () => {
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       color: #fff;
 
-      &:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
-      }
+      &:hover { transform: translateY(-8px); box-shadow: 0 12px 24px rgba(0,0,0,.2); }
+      &:nth-child(1) { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+      &:nth-child(2) { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+      &:nth-child(3) { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+      &:nth-child(4) { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
 
-      &:nth-child(1) {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      }
-
-      &:nth-child(2) {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-      }
-
-      &:nth-child(3) {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-      }
-
-      &:nth-child(4) {
-        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-      }
-
-      h4 {
-        margin: 12px 0 8px;
-        font-size: 18px;
-        font-weight: bold;
-      }
-
-      p {
-        font-size: 14px;
-        opacity: 0.9;
-      }
+      h4 { margin: 12px 0 8px; font-size: 18px; font-weight: bold; }
+      p  { font-size: 14px; opacity: 0.9; }
     }
   }
 }
@@ -707,11 +652,7 @@ onMounted(async () => {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 30px;
-
-    h2 {
-      font-size: 28px;
-      color: #303133;
-    }
+    h2 { font-size: 28px; color: #303133; }
   }
 
   .product-grid {
@@ -728,10 +669,7 @@ onMounted(async () => {
       transition: all 0.3s;
       box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 
-      &:hover {
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-        transform: translateY(-5px);
-      }
+      &:hover { box-shadow: 0 8px 20px rgba(0,0,0,.15); transform: translateY(-5px); }
 
       .product-image {
         position: relative;
@@ -739,24 +677,10 @@ onMounted(async () => {
         height: 250px;
         overflow: hidden;
 
-        img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          transition: transform 0.3s;
-        }
+        img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+        &:hover img { transform: scale(1.1); }
 
-        &:hover img {
-          transform: scale(1.1);
-        }
-
-        .tags {
-          position: absolute;
-          top: 10px;
-          left: 10px;
-          display: flex;
-          gap: 5px;
-        }
+        .tags { position: absolute; top: 10px; left: 10px; display: flex; gap: 5px; }
       }
 
       .product-info {
@@ -773,30 +697,14 @@ onMounted(async () => {
           min-height: 44px;
         }
 
-        .subtitle {
-          font-size: 12px;
-          color: #909399;
-          margin-bottom: 12px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
+        .subtitle { font-size: 12px; color: #909399; margin-bottom: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         .price-section {
           display: flex;
           justify-content: space-between;
           align-items: center;
-
-          .price {
-            font-size: 22px;
-            color: #f56c6c;
-            font-weight: bold;
-          }
-
-          .sales {
-            font-size: 14px;
-            color: #909399;
-          }
+          .price { font-size: 22px; color: #f56c6c; font-weight: bold; }
+          .sales { font-size: 14px; color: #909399; }
         }
       }
     }
@@ -811,39 +719,28 @@ onMounted(async () => {
   margin-top: 60px;
 }
 
+/* 响应式 */
 @media (max-width: 1200px) {
-  .quick-entry,
+  /* 快捷入口5列 → 3列 */
+  .quick-entry { grid-template-columns: repeat(3, 1fr); }
   .user-center .user-entry,
-  .recommend-section .product-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  .recommend-section .product-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 768px) {
-  .header {
-    .nav-menu {
-      display: none;
-    }
-  }
+  .header .nav-menu { display: none; }
 
   .banner-section .banner-item {
     height: 350px;
-
     .banner-content {
-      h1 {
-        font-size: 32px;
-      }
-
-      p {
-        font-size: 16px;
-      }
+      h1 { font-size: 32px; }
+      p  { font-size: 16px; }
     }
   }
 
+  /* 快捷入口5列 → 2列（小屏幕） */
   .quick-entry,
   .user-center .user-entry,
-  .recommend-section .product-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .recommend-section .product-grid { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
