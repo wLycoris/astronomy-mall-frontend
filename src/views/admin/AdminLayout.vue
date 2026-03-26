@@ -102,7 +102,8 @@ import {
   Bell,           // 3.4.1 系统公告图标
   Tickets,        // 3.4.3 通知模板图标
   Reading,        // 🆕 5.5 课程管理图标
-  Star            // 🆕 5.6 课程评价图标
+  Star,           // 🆕 5.6 课程评价图标
+  MapLocation     // 🆕 6.5 观测点管理图标
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -125,7 +126,8 @@ const menuItems = ref([
   { path: '/admin/notification-record',   title: '通知记录',     icon: 'ChatDotRound'  },
   { path: '/admin/notification-template', title: '通知模板',     icon: 'Tickets'       },
   { path: '/admin/course',                title: '课程管理',     icon: 'Reading'       },  // 🆕 5.5
-  { path: '/admin/course-review',         title: '课程评价',     icon: 'Star'          }   // 🆕 5.6
+  { path: '/admin/course-review',         title: '课程评价',     icon: 'Star'          },  // 🆕 5.6
+  { path: '/admin/location',              title: '观测点管理',   icon: 'MapLocation'   }   // 🆕 6.5
 ])
 
 const activeMenu = computed(() => route.path)

@@ -331,13 +331,13 @@ const routes = [
                 component: () => import('@/views/admin/AdminCourseReview.vue'),
                 meta: { title: '课程评价管理', requiresAdmin: true }
             }
-            // ── 观测点管理 ← 6.5 TODO（届时在此追加）─────────────
-            // {
-            //     path: 'location',
-            //     name: 'AdminLocation',
-            //     component: () => import('@/views/admin/ObservationSpotManage.vue'),
-            //     meta: { title: '观测点管理', requiresAdmin: true }
-            // }
+            // ── 观测点管理 ← 6.5 完成 ─────────────────────────
+            ,{
+                path: 'location',
+                name: 'AdminLocation',
+                component: () => import('@/views/admin/ObservationSpotManage.vue'),
+                meta: { title: '观测点管理', requiresAdmin: true }
+            }
         ]
     },
 

@@ -1,13 +1,13 @@
 // src/api/admin/location.js
 // 地理位置模块 - 管理员端 API 封装
-// 对应后端: AdminLocationController (module/admin/controller/)
+// 对应后端: AdminLocationController (/api/admin/location)
 //
-// 接口清单（5个，6.5节实现）:
-//   listSpotsAdmin  GET  /admin/location/spots     观测点分页列表
-//   addSpot         POST /admin/location/spot      新增观测点
-//   updateSpot      PUT  /admin/location/spot/{id} 编辑观测点
-//   deleteSpot      DELETE /admin/location/spot/{id} 删除观测点
-//   listCheckins    GET  /admin/location/checkins  签到记录查询
+// 接口清单（5个，6.5实现）:
+//   getAdminSpotList  GET    /admin/location/spot/list       观测点分页列表
+//   addSpot           POST   /admin/location/spot/add        新增观测点
+//   updateSpot        PUT    /admin/location/spot/{id}       编辑观测点
+//   deleteSpot        DELETE /admin/location/spot/{id}       删除观测点
+//   getSpotStats      GET    /admin/location/spot/{id}/stats 签到统计
 
 import request from '@/utils/request'
 
@@ -15,18 +15,16 @@ import request from '@/utils/request'
  * 观测点分页列表（管理员）
  *
  * @param {Object} params
- * @param {number} [params.pageNum=1]
- * @param {number} [params.pageSize=10]
- * @param {string} [params.province]    省份筛选
- * @param {string} [params.city]        城市筛选
- * @param {string} [params.keyword]     关键词搜索（观测点名称）
+ * @param {number} [params.pageNum=1]    页码
+ * @param {number} [params.pageSize=10]  每页条数
+ * @param {string} [params.province]     省份筛选
+ * @param {string} [params.city]         城市筛选
+ * @param {string} [params.keyword]      关键词搜索（观测点名称）
  * @returns {Promise<Object>} 分页结果 { records, total }
- *
- * TODO 6.5: 后端接口实现后解除注释
  */
-export const listSpotsAdmin = (params) => {
+export const getAdminSpotList = (params) => {
     return request({
-        url: '/admin/location/spots',
+        url: '/admin/location/spot/list',
         method: 'get',
         params
     })
@@ -47,12 +45,10 @@ export const listSpotsAdmin = (params) => {
  * @param {string} [data.description]         描述
  * @param {string} [data.images]              图片JSON数组
  * @returns {Promise<void>}
- *
- * TODO 6.5: 后端接口实现后解除注释
  */
 export const addSpot = (data) => {
     return request({
-        url: '/admin/location/spot',
+        url: '/admin/location/spot/add',
         method: 'post',
         data
     })
@@ -62,10 +58,8 @@ export const addSpot = (data) => {
  * 编辑观测点（管理员）
  *
  * @param {number} id   观测点ID
- * @param {Object} data 同 addSpot 参数
+ * @param {Object} data 同 addSpot 参数（所有字段可选）
  * @returns {Promise<void>}
- *
- * TODO 6.5: 后端接口实现后解除注释
  */
 export const updateSpot = (id, data) => {
     return request({
@@ -80,8 +74,6 @@ export const updateSpot = (id, data) => {
  *
  * @param {number} id 观测点ID
  * @returns {Promise<void>}
- *
- * TODO 6.5: 后端接口实现后解除注释
  */
 export const deleteSpot = (id) => {
     return request({
@@ -91,21 +83,15 @@ export const deleteSpot = (id) => {
 }
 
 /**
- * 签到记录分页查询（管理员）
+ * 观测点签到统计（管理员）
+ * 返回: totalCount(总次数), last7Days(近7日), last30Days(近30日), topUsers(TOP5用户)
  *
- * @param {Object} params
- * @param {number} [params.pageNum=1]
- * @param {number} [params.pageSize=10]
- * @param {number} [params.spotId]   按观测点筛选
- * @param {string} [params.date]     按签到日期筛选 (yyyy-MM-dd)
- * @returns {Promise<Object>} 分页结果
- *
- * TODO 6.5: 后端接口实现后解除注释
+ * @param {number} id 观测点ID
+ * @returns {Promise<Object>} { totalCount, last7Days, last30Days, topUsers }
  */
-export const listCheckins = (params) => {
+export const getSpotStats = (id) => {
     return request({
-        url: '/admin/location/checkins',
-        method: 'get',
-        params
+        url: `/admin/location/spot/${id}/stats`,
+        method: 'get'
     })
 }
