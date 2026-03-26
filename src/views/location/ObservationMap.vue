@@ -75,6 +75,48 @@
     </div>
 
     <!-- ══════════════════════════════════════════
+         今晚观测条件卡片（6.2）
+         ══════════════════════════════════════════ -->
+    <div class="tonight-bar" v-if="tonightData || tonightLoading">
+      <div class="tonight-inner">
+        <!-- 加载态 -->
+        <div v-if="tonightLoading" class="tonight-loading">
+          <el-icon class="spin"><Loading /></el-icon>
+          <span>正在获取今晚观测条件…</span>
+        </div>
+
+        <!-- 数据展示 -->
+        <template v-else-if="tonightData">
+          <!-- 综合评分星级 -->
+          <div class="tonight-score">
+            <div class="tonight-stars">
+              <span v-for="i in starsArray(tonightData.overallStars)" :key="i" class="star-icon">★</span>
+              <span v-for="i in starsArray(5 - tonightData.overallStars)" :key="'e'+i" class="star-icon star-empty">★</span>
+            </div>
+            <span class="tonight-score-num">{{ tonightData.overallScore }}分</span>
+          </div>
+
+          <!-- 天气适宜度 -->
+          <div class="tonight-item">
+            <span class="tonight-label">天气</span>
+            <span class="tonight-val">{{ tonightData.weatherSuitability }}分</span>
+          </div>
+
+          <!-- 月相信息 -->
+          <div class="tonight-item">
+            <span class="tonight-label">月相</span>
+            <span class="tonight-val">{{ tonightData.moonPhaseName }}（{{ tonightData.moonIllumination }}%）</span>
+          </div>
+
+          <!-- 建议文字 -->
+          <div class="tonight-suggestion">
+            {{ tonightData.suggestion }}
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════
          主体
          ══════════════════════════════════════════ -->
     <div class="obs-body">
@@ -133,13 +175,6 @@
         </div>
       </div>
     </div>
-
-    <!-- TODO 6.2 天气区块 -->
-    <!--
-    <div class="weather-section">
-      TODO 6.2: getWeather(lng, lat) + getTonightCondition(lng, lat)
-    </div>
-    -->
 
     <!-- TODO 6.3 签到区块 -->
     <!--
@@ -207,6 +242,39 @@
           <div class="section-val desc-text">{{ detailSpot.fullDescription || detailSpot.description }}</div>
         </div>
 
+        <!-- 天气（懒加载，6.2）-->
+        <div class="weather-panel">
+          <div class="weather-panel-title">当前天气</div>
+          <div v-if="spotWeatherLoading" class="weather-loading">
+            <el-icon class="spin"><Loading /></el-icon> 加载天气中…
+          </div>
+          <div v-else-if="spotWeather" class="weather-grid">
+            <div class="weather-cell">
+              <span class="weather-icon">🌤</span>
+              <span class="weather-info">{{ spotWeather.condition }}</span>
+            </div>
+            <div class="weather-cell">
+              <span class="weather-icon">🌡</span>
+              <span class="weather-info">{{ spotWeather.temperature }}°C</span>
+            </div>
+            <div class="weather-cell">
+              <span class="weather-icon">💧</span>
+              <span class="weather-info">{{ spotWeather.humidity }}%</span>
+            </div>
+            <div class="weather-cell">
+              <span class="weather-icon">🌬</span>
+              <span class="weather-info">{{ spotWeather.windDirection }} {{ spotWeather.windLevel }}级</span>
+            </div>
+            <div class="weather-suitability">
+              <span class="suit-label">观测适宜度</span>
+              <span class="suit-badge" :style="{ background: spotWeather.suitabilityColor, color: '#fff' }">
+                {{ spotWeather.suitabilityLevel }} {{ spotWeather.suitabilityScore }}分
+              </span>
+            </div>
+          </div>
+          <div v-else class="weather-empty">暂无天气数据</div>
+        </div>
+
         <!-- 评分 -->
         <div class="rating-panel">
           <div class="rating-panel-title">评分</div>
@@ -244,7 +312,7 @@ import {
   InfoFilled
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { getNearbySpots, getSpotDetail, submitRating as apiSubmitRating } from '@/api/location.js'
+import { getNearbySpots, getSpotDetail, submitRating as apiSubmitRating, getWeather, getTonightCondition } from '@/api/location.js'
 import { regionOptions } from '@/utils/regionData'
 
 const router = useRouter()
@@ -353,6 +421,13 @@ const mapContainerRef = ref(null)
 let mapInstance = null
 let markers = []
 
+// ── 天气 & 今晚条件（6.2）──
+const tonightData      = ref(null)       // TonightVO
+const tonightLoading   = ref(false)
+const tonightError     = ref(false)
+const spotWeather      = ref(null)       // 详情弹窗中的 WeatherVO（按需懒加载）
+const spotWeatherLoading = ref(false)
+
 // ── 弹窗 ──
 const dialogVisible    = ref(false)
 const detailLoading    = ref(false)
@@ -403,6 +478,7 @@ function initLocation() {
         userLat.value = pos.coords.latitude
         locating.value = false
         loadSpots()
+        loadTonightCondition()
         nextTick(initMap)
       },
       err => { console.warn('[Geo]', err.message); handleLocErr() },
@@ -412,7 +488,7 @@ function initLocation() {
 function handleLocErr() {
   locating.value = false; locationError.value = true
   userLng.value = 116.4074; userLat.value = 39.9042
-  loadSpots(); nextTick(initMap)
+  loadSpots(); loadTonightCondition(); nextTick(initMap)
 }
 
 // ── 筛选 ──
@@ -518,6 +594,7 @@ function onCardClick(spot) {
 }
 async function openDialog(spot) {
   dialogVisible.value = true; detailLoading.value = true; ratingInput.value = 0
+  spotWeather.value = null  // 重置天气数据
   try {
     const res = await getSpotDetail(spot.id)
     detailSpot.value = res.data
@@ -525,6 +602,8 @@ async function openDialog(spot) {
     if (!detailSpot.value.myScore && localRatingCache[spot.id]) {
       detailSpot.value.myScore = localRatingCache[spot.id]
     }
+    // 6.2: 弹窗打开后按需懒加载该观测点的天气
+    loadSpotWeather(detailSpot.value)
   } catch { ElMessage.error('加载观测点详情失败'); dialogVisible.value = false }
   finally { detailLoading.value = false }
 }
@@ -547,6 +626,45 @@ async function doSubmitRating() {
     ElMessage.success(`评分成功，您给了 ${ratingInput.value} 星 ⭐`)
   } catch (e) { ElMessage.error(e?.response?.data?.message || '评分失败') }
   finally { ratingSubmitting.value = false }
+}
+
+// ── 今晚条件加载（6.2）──
+async function loadTonightCondition() {
+  if (!userLng.value || !userLat.value) return
+  tonightLoading.value = true
+  tonightError.value = false
+  try {
+    const res = await getTonightCondition(userLng.value, userLat.value)
+    tonightData.value = res.data
+  } catch (e) {
+    console.warn('[Tonight]', e)
+    tonightError.value = true
+  } finally {
+    tonightLoading.value = false
+  }
+}
+
+// ── 详情弹窗天气懒加载（6.2）──
+async function loadSpotWeather(spot) {
+  if (!spot) return
+  spotWeather.value = null
+  spotWeatherLoading.value = true
+  try {
+    const lng = parseFloat(spot.longitude)
+    const lat = parseFloat(spot.latitude)
+    const res = await getWeather(lng, lat)
+    spotWeather.value = res.data
+  } catch (e) {
+    console.warn('[SpotWeather]', e)
+    spotWeather.value = null
+  } finally {
+    spotWeatherLoading.value = false
+  }
+}
+
+// 星级数组（用于v-for渲染星星）
+function starsArray(count) {
+  return Array.from({ length: count || 0 }, (_, i) => i)
 }
 
 // ── 工具 ──
@@ -851,4 +969,95 @@ function bortleLevelDesc(l) {
 /* 强制整个弹窗覆盖层背景深色，消除白色外框 */
 :deep(.detail-dialog) { background: transparent !important; }
 :deep(.detail-dialog .el-overlay) { background: rgba(0,0,0,.7) !important; }
+
+/* ── 今晚观测条件卡片（6.2）── */
+.tonight-bar {
+  background: linear-gradient(135deg, rgba(14,18,40,.95), rgba(20,30,60,.95));
+  border-bottom: 1px solid rgba(91,141,238,.18);
+  padding: 12px 20px;
+}
+.tonight-inner {
+  max-width: 1600px; margin: 0 auto;
+  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+}
+.tonight-loading {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: #8ab4f8;
+}
+.tonight-score {
+  display: flex; align-items: center; gap: 8px;
+}
+.tonight-stars { display: flex; gap: 2px; }
+.star-icon {
+  font-size: 18px; color: #f7ba2a;
+  text-shadow: 0 0 6px rgba(247,186,42,.4);
+}
+.star-empty { color: #3a3a42; text-shadow: none; }
+.tonight-score-num {
+  font-size: 15px; font-weight: 700;
+  color: #c8e6ff;
+  background: rgba(91,141,238,.15);
+  padding: 2px 10px; border-radius: 12px;
+}
+.tonight-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px;
+}
+.tonight-label {
+  color: #5a7080;
+}
+.tonight-val {
+  color: #c0d8f0;
+  font-weight: 500;
+}
+.tonight-suggestion {
+  font-size: 12px; color: #8ab4f8;
+  line-height: 1.5;
+  flex: 1; min-width: 200px;
+  padding: 4px 12px;
+  background: rgba(91,141,238,.08);
+  border-radius: 8px;
+  border-left: 3px solid rgba(91,141,238,.4);
+}
+
+/* ── 详情弹窗天气面板（6.2）── */
+.weather-panel {
+  background: #252529;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.weather-panel-title {
+  font-size: 11px;
+  color: #666;
+  letter-spacing: .04em;
+  margin-bottom: 10px;
+}
+.weather-loading {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; color: #888;
+}
+.weather-grid {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  align-items: center;
+}
+.weather-cell {
+  display: flex; align-items: center; gap: 5px;
+  background: rgba(255,255,255,.04);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.weather-icon { font-size: 16px; }
+.weather-info { color: #c0c0c0; }
+.weather-suitability {
+  display: flex; align-items: center; gap: 8px;
+  margin-left: auto;
+}
+.suit-label { font-size: 12px; color: #666; }
+.suit-badge {
+  font-size: 12px; font-weight: 600;
+  padding: 3px 10px; border-radius: 12px;
+}
+.weather-empty { font-size: 13px; color: #555; }
 </style>
