@@ -13,9 +13,20 @@
         <div class="section address-section">
           <div class="section-header">
             <h3 class="section-title">收货地址</h3>
-            <el-button link type="primary" @click="router.push('/user/address')">
-              管理地址 →
-            </el-button>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <!-- 6.4 地址联动：定位按钮，自动填充并保存经纬度 -->
+              <el-button
+                  link
+                  type="primary"
+                  :loading="locating"
+                  @click="handleLocateAndFill"
+              >
+                📍 使用当前位置
+              </el-button>
+              <el-button link type="primary" @click="router.push('/user/address')">
+                管理地址 →
+              </el-button>
+            </div>
           </div>
 
           <div v-if="addressLoading" class="address-loading">
@@ -148,6 +159,7 @@ import { getCartList } from '@/api/cart'
 import { createOrder } from '@/api/order'
 import { getFreightSetting } from '@/api/admin/setting'
 import { getAddressList } from '@/api/address'
+import { updateUserLocation } from '@/api/user'
 
 const router = useRouter()
 
@@ -172,6 +184,82 @@ const loadAddressList = async () => {
   } finally {
     addressLoading.value = false
   }
+}
+
+// =====================================================================
+// 6.4 地址联动：定位 → 逆地理编码 → 匹配最近地址
+// =====================================================================
+const locating = ref(false)
+
+/**
+ * 点击「📍 使用当前位置」：
+ * 1. 浏览器定位获取经纬度
+ * 2. 调用后端保存坐标到用户表
+ * 3. 逆地理编码获取省市区
+ * 4. 在已有地址列表中匹配同城市的地址并自动选中
+ */
+const handleLocateAndFill = () => {
+  if (!navigator.geolocation) {
+    ElMessage.warning('您的浏览器不支持定位功能')
+    return
+  }
+
+  locating.value = true
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const lng = position.coords.longitude
+      const lat = position.coords.latitude
+
+      // 静默保存经纬度到用户表
+      updateUserLocation({ longitude: lng, latitude: lat }).catch(() => {})
+
+      // 逆地理编码 → 匹配地址
+      if (window.AMap) {
+        AMap.plugin('AMap.Geocoder', () => {
+          const geocoder = new AMap.Geocoder()
+          geocoder.getAddress([lng, lat], (status, result) => {
+            locating.value = false
+            if (status === 'complete' && result.regeocode) {
+              const component = result.regeocode.addressComponent
+              const city     = component.city || component.province || ''
+              const district = component.district || ''
+
+              // 在已有地址中查找同城市 + 同区的地址
+              let matched = addressList.value.find(
+                a => a.city === city && a.district === district
+              )
+              // 退而求其次：只匹配城市
+              if (!matched) {
+                matched = addressList.value.find(a => a.city === city)
+              }
+
+              if (matched) {
+                selectedAddressId.value = matched.id
+                ElMessage.success(`已定位到 ${city} ${district}，已自动选中匹配地址`)
+              } else {
+                ElMessage.info(`已定位到 ${city} ${district}，但无匹配地址，请手动选择或添加`)
+              }
+            } else {
+              ElMessage.error('定位解析失败，请手动选择地址')
+            }
+          })
+        })
+      } else {
+        locating.value = false
+        ElMessage.error('地图服务未加载')
+      }
+    },
+    (error) => {
+      locating.value = false
+      const messages = {
+        1: '您拒绝了定位权限，请在浏览器设置中允许',
+        2: '无法获取位置信息，请检查网络',
+        3: '定位超时，请重试'
+      }
+      ElMessage.warning(messages[error.code] || '定位失败')
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  )
 }
 
 // =====================================================================

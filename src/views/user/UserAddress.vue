@@ -114,18 +114,28 @@
           />
         </el-form-item>
 
-        <!-- 省市区级联 -->
+        <!-- 省市区级联 + 定位按钮（6.4 地址联动） -->
         <el-form-item label="所在地区" prop="region">
-          <el-cascader
-              v-model="addressForm.region"
-              :options="regionOptions"
-              :props="cascaderProps"
-              placeholder="请选择省/市/区县"
-              style="width: 100%"
-              filterable
-              clearable
-              @change="handleRegionChange"
-          />
+          <div style="display: flex; gap: 8px; width: 100%;">
+            <el-cascader
+                v-model="addressForm.region"
+                :options="regionOptions"
+                :props="cascaderProps"
+                placeholder="请选择省/市/区县"
+                style="flex: 1"
+                filterable
+                clearable
+                @change="handleRegionChange"
+            />
+            <el-button
+                :icon="Location"
+                :loading="locating"
+                @click="handleUseCurrentLocation"
+                title="使用当前位置自动填充省市区"
+            >
+              📍 定位
+            </el-button>
+          </div>
         </el-form-item>
 
         <!-- 详细地址 -->
@@ -163,7 +173,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Location } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import {
   getAddressList,
@@ -172,6 +182,7 @@ import {
   deleteAddress,
   setDefaultAddress
 } from '@/api/address'
+import { updateUserLocation } from '@/api/user'
 // 📌 引入完整省市区数据
 import { regionOptions } from '@/utils/regionData'
 
@@ -366,6 +377,83 @@ const handleSetDefault = async (address) => {
   } finally {
     settingDefaultId.value = null
   }
+}
+
+// =====================================================================
+// 6.4 地址联动：使用当前位置自动填充省市区
+// =====================================================================
+const locating = ref(false)
+
+/**
+ * 点击「📍 定位」按钮：
+ * 1. navigator.geolocation 获取经纬度
+ * 2. AMap.Geocoder 逆地理编码 → 得到省/市/区
+ * 3. 自动填充级联选择器 + 详细地址中的街道信息
+ * 4. 调用后端 PUT /api/user/location 保存坐标到用户表
+ */
+const handleUseCurrentLocation = () => {
+  if (!navigator.geolocation) {
+    ElMessage.warning('您的浏览器不支持定位功能')
+    return
+  }
+
+  locating.value = true
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const lng = position.coords.longitude
+      const lat = position.coords.latitude
+
+      // 调用后端保存经纬度（静默执行，不阻塞主流程）
+      updateUserLocation({ longitude: lng, latitude: lat }).catch(() => {})
+
+      // 使用高德地图逆地理编码获取省市区
+      if (window.AMap) {
+        AMap.plugin('AMap.Geocoder', () => {
+          const geocoder = new AMap.Geocoder()
+          geocoder.getAddress([lng, lat], (status, result) => {
+            locating.value = false
+            if (status === 'complete' && result.regeocode) {
+              const component = result.regeocode.addressComponent
+              const province = component.province || ''
+              const city     = component.city     || province  // 直辖市 city 可能为空
+              const district = component.district || ''
+
+              // 填充表单字段
+              addressForm.province = province
+              addressForm.city     = city
+              addressForm.district = district
+              addressForm.region   = [province, city, district]
+
+              // 如果详细地址为空，用街道+门牌号预填
+              if (!addressForm.detail) {
+                const street   = component.street     || ''
+                const number   = component.streetNumber || ''
+                const township = component.township    || ''
+                addressForm.detail = township + street + number
+              }
+
+              ElMessage.success(`已定位到: ${province} ${city} ${district}`)
+            } else {
+              ElMessage.error('逆地理编码失败，请手动选择地区')
+            }
+          })
+        })
+      } else {
+        locating.value = false
+        ElMessage.error('地图服务未加载，请手动选择地区')
+      }
+    },
+    (error) => {
+      locating.value = false
+      const messages = {
+        1: '您拒绝了定位权限，请在浏览器设置中允许',
+        2: '无法获取位置信息，请检查网络',
+        3: '定位超时，请重试'
+      }
+      ElMessage.warning(messages[error.code] || '定位失败，请手动选择地区')
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  )
 }
 
 // =====================================================================

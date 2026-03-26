@@ -68,6 +68,19 @@ export function changePasswordSecure(data) {
 }
 
 /**
+ * 6.4 地址联动：更新用户经纬度
+ * PUT /api/user/location
+ * @param {Object} data - { longitude, latitude }
+ */
+export function updateUserLocation(data) {
+    return request({
+        url: '/user/location',
+        method: 'put',
+        data
+    })
+}
+
+/**
  * 用户登出
  */
 export function logout() {
