@@ -258,7 +258,9 @@ const menuGroups = computed(() => [
       { path: '/user/course-history',   label: '学习历史',     icon: VideoPlay,    badge: 0 },
       { path: '/user/course-favorite',  label: '课程收藏',     icon: Star,         badge: 0 },
       // ── 5.6 新增：我的课程评价 ──────────────────────
-      { path: '/user/course-reviews',   label: '课程评价',     icon: ChatDotRound, badge: 0 }
+      { path: '/user/course-reviews',   label: '课程评价',     icon: ChatDotRound, badge: 0 },
+      // ── 6.3 新增：我的足迹（签到历史）──────────────
+      { path: '/user/checkin-history',  label: '我的足迹',     icon: Location,     badge: 0 }
     ]
   }
 ])

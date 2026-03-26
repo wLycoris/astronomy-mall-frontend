@@ -176,12 +176,7 @@
       </div>
     </div>
 
-    <!-- TODO 6.3 签到区块 -->
-    <!--
-    <div class="checkin-section">
-      TODO 6.3: checkin(spotId, lng, lat) + getCheckinHistory()
-    </div>
-    -->
+    <!-- 6.3 签到区块已移入详情弹窗内 -->
 
     <!-- ══════════════════════════════════════════
          详情弹窗
@@ -275,25 +270,55 @@
           <div v-else class="weather-empty">暂无天气数据</div>
         </div>
 
+        <!-- 签到（6.3）-->
+        <div class="checkin-panel">
+          <div v-if="!isLoggedIn" class="checkin-unauth">
+            <router-link to="/login" class="login-link">登录</router-link> 后可签到打卡
+          </div>
+          <div v-else-if="checkinDone" class="checkin-done">
+            <span class="checkin-done-icon">✅</span>
+            <div class="checkin-done-info">
+              <div class="checkin-done-title">今日已签到</div>
+              <div class="checkin-done-meta">
+                <span v-if="checkinResult.weather">{{ checkinResult.weather }}</span>
+                <span v-if="checkinResult.moonPhaseName"> · {{ checkinResult.moonPhaseName }}</span>
+                <span v-if="checkinResult.todayCheckinCount"> · 今日第 {{ checkinResult.todayCheckinCount }} 人</span>
+              </div>
+            </div>
+          </div>
+          <div v-else class="checkin-action">
+            <el-button type="success" :loading="checkinSubmitting" @click="doCheckin" round>
+              📍 签到打卡
+            </el-button>
+            <span class="checkin-tip">需在观测点 5km 范围内</span>
+          </div>
+        </div>
+
         <!-- 评分 -->
         <div class="rating-panel">
           <div class="rating-panel-title">评分</div>
           <div v-if="!isLoggedIn" class="rating-unauth">
             <router-link to="/login" class="login-link">登录</router-link> 后可提交评分
           </div>
-          <div v-else-if="detailSpot.myScore" class="rating-done-row">
+          <!-- 已评分 + 非编辑模式：展示已评信息 + 修改按钮 -->
+          <div v-else-if="detailSpot.myScore && !ratingEditing" class="rating-done-row">
             <el-rate :model-value="detailSpot.myScore" disabled :max="5"
                      :colors="['#f7ba2a','#f7ba2a','#f7ba2a']" />
             <span class="done-label">您已评 {{ detailSpot.myScore }} 星 · 感谢评价</span>
+            <el-button type="primary" link size="small" @click="startEditRating" class="edit-rating-btn">
+              修改
+            </el-button>
           </div>
+          <!-- 未评分 或 编辑模式：输入评分 -->
           <div v-else class="rating-input-row">
             <el-rate v-model="ratingInput" :max="5"
                      :texts="['很差','较差','一般','不错','非常好']" show-text
                      :colors="['#f7ba2a','#f7ba2a','#f7ba2a']" />
             <el-button type="primary" size="small" :loading="ratingSubmitting"
                        :disabled="!ratingInput" @click="doSubmitRating" style="margin-left:10px">
-              提交
+              {{ ratingEditing ? '更新' : '提交' }}
             </el-button>
+            <el-button v-if="ratingEditing" size="small" @click="cancelEditRating">取消</el-button>
           </div>
         </div>
 
@@ -312,7 +337,7 @@ import {
   InfoFilled
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { getNearbySpots, getSpotDetail, submitRating as apiSubmitRating, getWeather, getTonightCondition } from '@/api/location.js'
+import { getNearbySpots, getSpotDetail, submitRating as apiSubmitRating, getWeather, getTonightCondition, checkin as apiCheckin } from '@/api/location.js'
 import { regionOptions } from '@/utils/regionData'
 
 const router = useRouter()
@@ -428,12 +453,47 @@ const tonightError     = ref(false)
 const spotWeather      = ref(null)       // 详情弹窗中的 WeatherVO（按需懒加载）
 const spotWeatherLoading = ref(false)
 
+// ── 签到（6.3）── 使用 localStorage 持久化当天签到状态
+const checkinSubmitting = ref(false)
+const checkinDone       = ref(false)
+const checkinResult     = ref({})   // { todayCheckinCount, weather, moonPhaseName }
+
+// 签到缓存 key: checkin_{spotId}_{yyyy-MM-dd}
+function getCheckinCacheKey(spotId) {
+  const d = new Date()
+  const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+  return `checkin_${spotId}_${ds}`
+}
+function saveCheckinCache(spotId, data) {
+  try { localStorage.setItem(getCheckinCacheKey(spotId), JSON.stringify(data)) } catch {}
+}
+function loadCheckinCache(spotId) {
+  try {
+    const raw = localStorage.getItem(getCheckinCacheKey(spotId))
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+// 清理过期缓存（非今天的 checkin_ 开头的 key）
+function cleanExpiredCheckinCache() {
+  try {
+    const d = new Date()
+    const today = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i)
+      if (key && key.startsWith('checkin_') && !key.endsWith(today)) {
+        localStorage.removeItem(key)
+      }
+    }
+  } catch {}
+}
+
 // ── 弹窗 ──
 const dialogVisible    = ref(false)
 const detailLoading    = ref(false)
 const detailSpot       = ref(null)
 const ratingInput      = ref(0)
 const ratingSubmitting = ref(false)
+const ratingEditing    = ref(false)   // 是否处于修改评分模式
 
 // ── 计算 ──
 const locationStatusText = computed(() => {
@@ -462,7 +522,7 @@ const bortleLevelShort = computed(() => {
 })
 
 // ── 生命周期 ──
-onMounted(() => initLocation())
+onMounted(() => { initLocation(); cleanExpiredCheckinCache() })
 onUnmounted(() => destroyMap())
 watch(viewMode, v => {
   if (v === 'map') nextTick(() => mapInstance ? mapInstance.resize() : initMap())
@@ -593,14 +653,30 @@ function onCardClick(spot) {
   openDialog(spot)
 }
 async function openDialog(spot) {
-  dialogVisible.value = true; detailLoading.value = true; ratingInput.value = 0
-  spotWeather.value = null  // 重置天气数据
+  dialogVisible.value = true; detailLoading.value = true; ratingInput.value = 0; ratingEditing.value = false
+  spotWeather.value = null; checkinDone.value = false; checkinResult.value = {}  // 重置天气和签到状态
   try {
     const res = await getSpotDetail(spot.id)
     detailSpot.value = res.data
     // 合并本地缓存的评分（白名单接口拿不到登录用户的myScore）
     if (!detailSpot.value.myScore && localRatingCache[spot.id]) {
       detailSpot.value.myScore = localRatingCache[spot.id]
+    }
+    // 优先用后端返回的签到状态（登录时后端能查到 todayCheckedIn + 天气月相快照）
+    if (detailSpot.value.todayCheckedIn) {
+      checkinDone.value = true
+      checkinResult.value = {
+        weather: detailSpot.value.checkinWeather || '',
+        moonPhaseName: detailSpot.value.checkinMoonPhase || '',
+        todayCheckinCount: detailSpot.value.todayCheckinCount || 0
+      }
+    } else {
+      // 兜底：从 localStorage 恢复（未登录时）
+      const cached = loadCheckinCache(spot.id)
+      if (cached) {
+        checkinDone.value = true
+        checkinResult.value = cached
+      }
     }
     // 6.2: 弹窗打开后按需懒加载该观测点的天气
     loadSpotWeather(detailSpot.value)
@@ -623,9 +699,21 @@ async function doSubmitRating() {
     localRatingCache[detailSpot.value.id] = ratingInput.value
     const item = spots.value.find(s => s.id === detailSpot.value.id)
     if (item) { item.myScore = ratingInput.value; item.rating = newRating; item.ratingCount = ratingCount }
-    ElMessage.success(`评分成功，您给了 ${ratingInput.value} 星 ⭐`)
+    ratingEditing.value = false  // 退出编辑模式
+    ElMessage.success(ratingEditing.value ? '评分已更新 ⭐' : `评分成功，您给了 ${ratingInput.value} 星 ⭐`)
   } catch (e) { ElMessage.error(e?.response?.data?.message || '评分失败') }
   finally { ratingSubmitting.value = false }
+}
+
+// 进入修改评分模式
+function startEditRating() {
+  ratingEditing.value = true
+  ratingInput.value = detailSpot.value.myScore || 0
+}
+// 取消修改
+function cancelEditRating() {
+  ratingEditing.value = false
+  ratingInput.value = 0
 }
 
 // ── 今晚条件加载（6.2）──
@@ -659,6 +747,35 @@ async function loadSpotWeather(spot) {
     spotWeather.value = null
   } finally {
     spotWeatherLoading.value = false
+  }
+}
+
+// ── 签到（6.3）──
+async function doCheckin() {
+  if (!detailSpot.value) return
+  checkinSubmitting.value = true
+  try {
+    const res = await apiCheckin(detailSpot.value.id, userLng.value, userLat.value)
+    checkinDone.value = true
+    checkinResult.value = res.data || {}
+    // 持久化到 localStorage，关闭弹窗再打开仍显示已签到
+    saveCheckinCache(detailSpot.value.id, checkinResult.value)
+    // 更新弹窗中今日签到数
+    if (detailSpot.value) {
+      detailSpot.value.todayCheckinCount = res.data.todayCheckinCount
+      detailSpot.value.totalCheckinCount = (detailSpot.value.totalCheckinCount || 0) + 1
+    }
+    ElMessage.success('签到成功！')
+  } catch (e) {
+    const msg = e?.response?.data?.message || '签到失败'
+    // 如果是"今日已签到"，标记为已签到状态
+    if (msg.includes('已') && msg.includes('签到')) {
+      checkinDone.value = true
+      checkinResult.value = {}
+    }
+    ElMessage.warning(msg)
+  } finally {
+    checkinSubmitting.value = false
   }
 }
 
@@ -962,7 +1079,8 @@ function bortleLevelDesc(l) {
   border-radius: 8px;
   padding: 10px 14px;
 }
-.done-label { font-size: 13px; color: #f7ba2a; font-weight: 500; }
+.done-label { font-size: 13px; color: #f7ba2a; font-weight: 500; flex: 1; }
+.edit-rating-btn { font-size: 12px; color: #8ab4f8 !important; margin-left: auto; }
 .rating-input-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 :deep(.detail-dialog .el-rate__text) { color: #888 !important; font-size: 13px; }
 
@@ -1060,4 +1178,32 @@ function bortleLevelDesc(l) {
   padding: 3px 10px; border-radius: 12px;
 }
 .weather-empty { font-size: 13px; color: #555; }
+
+/* ── 签到面板（6.3）── */
+.checkin-panel {
+  background: #252529;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex; align-items: center;
+}
+.checkin-unauth { font-size: 13px; color: #666; }
+.checkin-action {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%;
+}
+.checkin-tip { font-size: 12px; color: #555; }
+.checkin-done {
+  display: flex; align-items: center; gap: 12px;
+  width: 100%;
+  background: rgba(103,194,58,.07);
+  border: 1px solid rgba(103,194,58,.2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: -2px;
+}
+.checkin-done-icon { font-size: 20px; }
+.checkin-done-info { display: flex; flex-direction: column; gap: 2px; }
+.checkin-done-title { font-size: 14px; font-weight: 600; color: #67c23a; }
+.checkin-done-meta { font-size: 12px; color: #888; }
 </style>

@@ -436,13 +436,13 @@ const routes = [
                 component: () => import('@/views/user/MyCourseReviews.vue'),
                 meta: { title: '我的课程评价', requiresAuth: true }
             }
-            // ── 签到历史 ← 6.3 TODO（届时在此追加）──────────────
-            // {
-            //     path: 'checkin-history',
-            //     name: 'CheckinHistory',
-            //     component: () => import('@/views/location/CheckinHistory.vue'),
-            //     meta: { title: '签到历史', requiresAuth: true }
-            // }
+            // ── 签到历史 ← 6.3 新增 ──────────────────────────
+            ,{
+                path: 'checkin-history',
+                name: 'CheckinHistory',
+                component: () => import('@/views/location/CheckinHistory.vue'),
+                meta: { title: '我的足迹', requiresAuth: true }
+            }
         ]
     },
 
