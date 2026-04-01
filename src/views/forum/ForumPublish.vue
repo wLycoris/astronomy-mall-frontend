@@ -1,41 +1,6 @@
 <template>
   <div class="creator-platform">
-
-    <!-- ═══════════ 左侧边栏 ═══════════ -->
-    <aside class="sidebar">
-      <!-- Logo -->
-      <div class="sidebar-header">
-        <span class="logo-icon">🔭</span>
-        <span class="logo-text">创作服务平台</span>
-      </div>
-
-      <!-- 发布按钮 -->
-      <div class="sidebar-publish-btn" @click="router.push('/forum/publish')">
-        <el-icon><EditPen /></el-icon>
-        <span>发布帖子</span>
-      </div>
-
-      <!-- 导航菜单 -->
-      <nav class="sidebar-menu">
-        <div class="menu-item" @click="router.push('/home')">
-          <el-icon><HomeFilled /></el-icon><span>首页</span>
-        </div>
-        <div class="menu-item active">
-          <el-icon><Document /></el-icon><span>笔记管理</span>
-        </div>
-        <div class="menu-item" @click="router.push('/recognition')">
-          <el-icon><Camera /></el-icon><span>AI星图识别</span>
-        </div>
-        <div class="menu-item" @click="router.push('/course')">
-          <el-icon><Reading /></el-icon><span>天文课程</span>
-        </div>
-        <div class="menu-item" @click="router.push('/location')">
-          <el-icon><MapLocation /></el-icon><span>观测点地图</span>
-        </div>
-      </nav>
-    </aside>
-
-    <!-- ═══════════ 中间编辑区 ═══════════ -->
+    <!-- ═══════════ 编辑区 ═══════════ -->
     <main class="editor-area">
       <!-- ① 图片编辑区 -->
       <div class="section-block image-block">
@@ -269,7 +234,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
-  HomeFilled, EditPen, Camera, Reading, MapLocation, Document,
   Plus, Close, Connection, Picture, PictureFilled, User, Star
 } from '@element-plus/icons-vue'
 import { publishPost, updatePost } from '@/api/forum'
@@ -426,64 +390,7 @@ $text4: #ccc;
   background: #fff;
 }
 
-/* ─── 左侧边栏 ─── */
-.sidebar {
-  width: 200px;
-  border-right: 1px solid $border;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  background: #fff;
-}
-
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 20px 20px 16px;
-
-  .logo-icon { font-size: 22px; }
-  .logo-text { font-size: 14px; font-weight: 700; color: $text; }
-}
-
-.sidebar-publish-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin: 4px 16px 20px;
-  height: 38px;
-  background: $red;
-  color: #fff;
-  border-radius: 20px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-  &:hover { background: #e61f3a; }
-}
-
-.sidebar-menu {
-  flex: 1;
-  .menu-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 11px 24px;
-    font-size: 14px;
-    color: $text2;
-    cursor: pointer;
-    transition: all 0.15s;
-
-    &:hover { color: $text; background: $bg; }
-    &.active { color: $text; font-weight: 600; }
-  }
-}
-
-/* ─── 中间编辑区 ─── */
+/* ─── 编辑区 ─── */
 .editor-area {
   flex: 1;
   min-width: 0;
@@ -1067,8 +974,5 @@ $text4: #ccc;
 /* ─── 响应式 ─── */
 @media (max-width: 1200px) {
   .preview-side { display: none; }
-}
-@media (max-width: 768px) {
-  .sidebar { display: none; }
 }
 </style>

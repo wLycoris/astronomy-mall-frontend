@@ -219,14 +219,32 @@ const routes = [
     },
 
     // ============================================
-    // 论坛社区模块 ← 7.2 新增
-    // requiresAuth: true，发帖/编辑需要登录
+    // 论坛社区模块 ← 7.2/7.3 新增
+    // 嵌套路由: ForumLayout(左侧深色边栏) + 子页面
     // ============================================
     {
-        path: '/forum/publish',
-        name: 'ForumPublish',
-        component: () => import('@/views/forum/ForumPublish.vue'),
-        meta: { title: '发布帖子', requiresAuth: true }
+        path: '/forum',
+        component: () => import('@/views/forum/ForumLayout.vue'),
+        children: [
+            {
+                path: '',
+                redirect: '/forum/list'
+            },
+            {
+                // 7.3: 瀑布流首页（可选认证，游客可浏览）
+                path: 'list',
+                name: 'ForumList',
+                component: () => import('@/views/forum/ForumList.vue'),
+                meta: { title: '天文社区', requiresAuth: false }
+            },
+            {
+                // 7.2: 发帖页（需要登录）
+                path: 'publish',
+                name: 'ForumPublish',
+                component: () => import('@/views/forum/ForumPublish.vue'),
+                meta: { title: '发布帖子', requiresAuth: true }
+            }
+        ]
     },
 
     // ============================================

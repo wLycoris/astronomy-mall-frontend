@@ -6,6 +6,10 @@
 //   POST   /api/post/publish    发布帖子
 //   PUT    /api/post/{id}       编辑帖子（仅草稿/已拒绝可编辑）
 //   DELETE /api/post/{id}       删除帖子（逻辑删除）
+//
+// 📌 7.3 帖子列表+详情 (2个方法)
+//   GET    /api/post/list       帖子列表（tab分流+分页，可选认证）
+//   GET    /api/post/{id}       帖子详情（含互动状态，可选认证）
 
 import request from '@/utils/request'
 
@@ -49,5 +53,36 @@ export function deletePost(id) {
   return request({
     url: `/post/${id}`,
     method: 'delete'
+  })
+}
+
+// ============================================================
+// ④ 帖子列表（7.3 ✅）
+// ============================================================
+// 参数:
+//   tab      - 标签: all(推荐)/follow(关注)/hot(热门)，默认all
+//   tag      - 分类标签筛选（如 "深空摄影"），可选
+//   pageNum  - 页码，默认1
+//   pageSize - 每页条数，默认20
+//
+// 可选认证: 游客可浏览，登录后follow模式生效
+// 返回: { list: PostVO[], total, pageNum, pageSize }
+export function getPostList(params) {
+  return request({
+    url: '/post/list',
+    method: 'get',
+    params
+  })
+}
+
+// ============================================================
+// ⑤ 帖子详情（7.3 ✅）
+// ============================================================
+// 可选认证: 游客可查看，登录后返回 isLiked/isCollected/isFollowed
+// 浏览量自动+1
+export function getPostDetail(id) {
+  return request({
+    url: `/post/${id}`,
+    method: 'get'
   })
 }
