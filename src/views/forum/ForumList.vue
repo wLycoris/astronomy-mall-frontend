@@ -57,6 +57,7 @@
       v-if="detailVisible"
       :post-id="currentPostId"
       @close="detailVisible = false"
+      @updated="onDetailUpdated"
     />
   </div>
 </template>
@@ -104,6 +105,18 @@ const currentPostId = ref(null)
 const openDetail = (post) => {
   currentPostId.value = post.id
   detailVisible.value = true
+}
+
+/** 详情页点赞/收藏/评论后同步更新列表中对应卡片的计数 */
+const onDetailUpdated = (updatedPost) => {
+  if (!updatedPost) return
+  const idx = postList.value.findIndex(p => p.id === updatedPost.id)
+  if (idx !== -1) {
+    const card = postList.value[idx]
+    card.likeCount = updatedPost.likeCount
+    card.collectCount = updatedPost.collectCount
+    card.commentCount = updatedPost.commentCount
+  }
 }
 
 // ────────── 空状态文案 ──────────
