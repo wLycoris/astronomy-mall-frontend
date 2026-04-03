@@ -243,6 +243,13 @@ const routes = [
                 name: 'ForumPublish',
                 component: () => import('@/views/forum/ForumPublish.vue'),
                 meta: { title: '发布帖子', requiresAuth: true }
+            },
+            {
+                // 7.5: 用户主页（可选认证，游客可查看）
+                path: 'user/:id',
+                name: 'UserProfile',
+                component: () => import('@/views/forum/UserProfile.vue'),
+                meta: { title: '用户主页', requiresAuth: false }
             }
         ]
     },
@@ -471,6 +478,19 @@ const routes = [
                 name: 'CheckinHistory',
                 component: () => import('@/views/location/CheckinHistory.vue'),
                 meta: { title: '我的足迹', requiresAuth: true }
+            },
+            // ── 7.5 新增：我的帖子 / 帖子收藏 ──────────────────
+            {
+                path: 'my-posts',
+                name: 'MyPosts',
+                component: () => import('@/views/user/MyPosts.vue'),
+                meta: { title: '我的帖子', requiresAuth: true }
+            },
+            {
+                path: 'my-collects',
+                name: 'MyCollects',
+                component: () => import('@/views/user/MyCollects.vue'),
+                meta: { title: '帖子收藏', requiresAuth: true }
             }
         ]
     },

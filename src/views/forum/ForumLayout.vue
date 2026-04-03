@@ -41,7 +41,7 @@
             <el-icon><Bell /></el-icon>
             <span>通知</span>
           </router-link>
-          <router-link v-if="isLoggedIn" to="/user/overview" class="nav-item">
+          <router-link v-if="isLoggedIn" :to="`/forum/user/${userStore.userInfo?.id}`" class="nav-item" :class="{ active: isActive('profile') }">
             <img v-if="userStore.userInfo?.avatar" :src="userStore.userInfo.avatar" class="nav-avatar" />
             <el-icon v-else><User /></el-icon>
             <span>我</span>
@@ -94,6 +94,7 @@ const isLoggedIn = computed(() => !!userStore.userInfo?.id)
 const isActive = (name) => {
   if (name === 'list') return route.path === '/forum' || route.path === '/forum/list'
   if (name === 'publish') return route.path === '/forum/publish'
+  if (name === 'profile') return route.path.startsWith('/forum/user/')
   return false
 }
 

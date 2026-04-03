@@ -51,13 +51,13 @@
       <div v-if="post" class="detail-right">
         <!-- 作者栏 -->
         <div class="author-bar">
-          <div class="author-info">
+          <div class="author-info" style="cursor:pointer" @click="goToAuthorProfile">
             <img v-if="post.authorAvatar" :src="post.authorAvatar" class="avatar" />
             <span v-else class="avatar-text">{{ (post.authorNickname || '?').charAt(0) }}</span>
             <span class="nickname">{{ post.authorNickname || '匿名用户' }}</span>
           </div>
-          <button v-if="!isSelf" class="follow-btn" :class="{ followed: post.isFollowed }">
-            {{ post.isFollowed ? '已关注' : '关注' }}
+          <button v-if="!isSelf" class="follow-btn" :class="{ followed: post.isFollowed }" :disabled="followLoading" @click="handleFollow">
+            {{ post.isFollowed ? '已关注' : '+ 关注' }}
           </button>
         </div>
 
@@ -234,8 +234,9 @@
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { Close, ArrowLeft, ArrowRight, ArrowDown, Star, ChatDotRound, Share, Connection, Loading } from '@element-plus/icons-vue'
-import { getPostDetail, getCommentList, addComment, deleteComment, likeComment, likePost, collectPost } from '@/api/forum'
+import { getPostDetail, getCommentList, addComment, deleteComment, likeComment, likePost, collectPost, followUser } from '@/api/forum'
 import { useUserStore } from '@/stores/user'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const props = defineProps({
@@ -244,14 +245,40 @@ const props = defineProps({
 const emit = defineEmits(['close', 'updated'])
 
 const userStore = useUserStore()
+const router = useRouter()
 const post = ref(null)
 const loading = ref(true)
 const currentImageIndex = ref(0)
+const followLoading = ref(false)
 const currentUserId = computed(() => userStore.userInfo?.id)
 const isSelf = computed(() => {
   if (!post.value || !userStore.userInfo?.id) return false
   return post.value.userId === userStore.userInfo.id
 })
+
+// ══════ 关注/取消关注（7.5 新增）══════
+const handleFollow = async () => {
+  if (!userStore.userInfo?.id) { ElMessage.warning('请先登录'); return }
+  if (!post.value?.userId) return
+  followLoading.value = true
+  try {
+    const res = await followUser(post.value.userId)
+    post.value.isFollowed = res.data
+    ElMessage.success(res.data ? '关注成功' : '已取消关注')
+  } catch (err) {
+    ElMessage.error(err.response?.data?.message || '操作失败')
+  } finally {
+    followLoading.value = false
+  }
+}
+
+// 跳转到作者主页（7.5 新增）
+const goToAuthorProfile = () => {
+  if (post.value?.userId) {
+    emit('close')
+    router.push(`/forum/user/${post.value.userId}`)
+  }
+}
 
 // ══════ 图片缩放 ══════
 const zoomVisible = ref(false)

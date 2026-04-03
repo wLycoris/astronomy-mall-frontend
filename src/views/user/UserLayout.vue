@@ -107,7 +107,9 @@ import {
   RefreshRight,   // 🆕 2.5.3 二手回收图标
   Setting,
   Search,         // 4.5 识别历史图标
-  VideoPlay       // 5.3 学习历史图标
+  VideoPlay,      // 5.3 学习历史图标
+  EditPen,        // 7.5 我的帖子图标
+  Collection      // 7.5 我的帖子收藏图标
 } from '@element-plus/icons-vue'
 import { getUserOverview } from '@/api/user/overview'
 import { useUserStore } from '@/stores/user'
@@ -261,6 +263,14 @@ const menuGroups = computed(() => [
       { path: '/user/course-reviews',   label: '课程评价',     icon: ChatDotRound, badge: 0 },
       // ── 6.3 新增：我的足迹（签到历史）──────────────
       { path: '/user/checkin-history',  label: '我的足迹',     icon: Location,     badge: 0 }
+    ]
+  },
+  {
+    label: '社区互动',
+    items: [
+      // ── 7.5 新增：我的帖子 / 我的帖子收藏 ────────
+      { path: '/user/my-posts',    label: '我的帖子',     icon: EditPen,      badge: 0 },
+      { path: '/user/my-collects', label: '帖子收藏',     icon: Collection,   badge: 0 }
     ]
   }
 ])

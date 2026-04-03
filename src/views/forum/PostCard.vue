@@ -20,7 +20,7 @@
     <div class="card-body">
       <h3 class="card-title">{{ post.title }}</h3>
       <div class="card-footer">
-        <div class="author-info">
+        <div class="author-info" @click.stop="goToProfile">
           <img v-if="post.authorAvatar" :src="post.authorAvatar" class="author-avatar" alt="" />
           <span v-else class="avatar-placeholder">{{ avatarLetter }}</span>
           <span class="author-name">{{ post.authorNickname || '匿名用户' }}</span>
@@ -38,6 +38,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { PictureFilled } from '@element-plus/icons-vue'
 
 const props = defineProps({
@@ -45,6 +46,15 @@ const props = defineProps({
 })
 
 defineEmits(['click'])
+
+const router = useRouter()
+
+// 点击作者头像/昵称 → 跳转用户主页
+const goToProfile = () => {
+  if (props.post.userId) {
+    router.push(`/forum/user/${props.post.userId}`)
+  }
+}
 
 const avatarLetter = computed(() => (props.post.authorNickname || '?').charAt(0))
 

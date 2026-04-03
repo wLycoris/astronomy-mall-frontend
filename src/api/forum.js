@@ -173,3 +173,105 @@ export function collectPost(id) {
     method: 'post'
   })
 }
+
+// ============================================================
+// ⑫ 关注/取消关注（7.5 ✅）
+// ============================================================
+// 幂等切换: 已关注→取消, 未关注→关注
+// 返回: true=已关注, false=已取消
+export function followUser(userId) {
+  return request({
+    url: `/post/user/follow/${userId}`,
+    method: 'post'
+  })
+}
+
+// ============================================================
+// ⑬ 我关注的人列表（7.5 ✅）
+// ============================================================
+// 参数: pageNum, pageSize
+// 返回: { list, total, pageNum, pageSize }
+export function getFollowList(params) {
+  return request({
+    url: '/post/user/follow/list',
+    method: 'get',
+    params
+  })
+}
+
+// ============================================================
+// ⑭ 关注我的人（粉丝）列表（7.5 ✅）
+// ============================================================
+// 参数: pageNum, pageSize
+// 返回: { list, total, pageNum, pageSize }
+export function getFansList(params) {
+  return request({
+    url: '/post/user/fans/list',
+    method: 'get',
+    params
+  })
+}
+
+// ============================================================
+// ⑮ 我发布的帖子（7.5 ✅）
+// ============================================================
+// 参数: pageNum, pageSize
+// 返回: { list: PostVO[], total, pageNum, pageSize }
+export function getMyPosts(params) {
+  return request({
+    url: '/post/my/list',
+    method: 'get',
+    params
+  })
+}
+
+// ============================================================
+// ⑯ 我收藏的帖子（7.5 ✅）
+// ============================================================
+// 参数: pageNum, pageSize
+// 返回: { list: PostVO[], total, pageNum, pageSize }
+export function getMyCollects(params) {
+  return request({
+    url: '/post/my/collect',
+    method: 'get',
+    params
+  })
+}
+
+// ============================================================
+// ⑯.5 我点赞的帖子（7.5 ✅）
+// ============================================================
+// 参数: pageNum, pageSize
+// 返回: { list: PostVO[], total, pageNum, pageSize }
+export function getMyLikes(params) {
+  return request({
+    url: '/post/my/like',
+    method: 'get',
+    params
+  })
+}
+
+// ============================================================
+// ⑰ 用户主页信息（7.5 ✅）
+// ============================================================
+// 可选认证: 游客可查看，登录后返回 isFollowed
+// 返回: { profile: UserProfileVO }
+export function getUserProfile(userId) {
+  return request({
+    url: `/post/user/profile/${userId}`,
+    method: 'get'
+  })
+}
+
+// ============================================================
+// ⑱ 切换收藏/点赞可见性（7.5 ✅）
+// ============================================================
+// type: 'collect' | 'like'
+// 返回: true=公开, false=私密
+export function toggleVisibility(type) {
+  return request({
+    url: '/post/user/visibility',
+    method: 'post',
+    params: { type }
+  })
+}
