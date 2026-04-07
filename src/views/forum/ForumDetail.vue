@@ -66,7 +66,7 @@
           <h1 class="post-title">{{ post.title }}</h1>
           <div class="post-body">{{ post.content }}</div>
           <div v-if="post.tags && post.tags.length > 0" class="post-tags">
-            <span v-for="tag in post.tags" :key="tag" class="tag-link">#{{ tag }}</span>
+            <span v-for="tag in post.tags" :key="tag" class="tag-link" @click="searchTag(tag)">#{{ tag }}</span>
           </div>
           <div class="post-meta">{{ formatTime(post.createTime) }}</div>
           <div v-if="post.recognitionId" class="recognition-link">
@@ -278,6 +278,12 @@ const goToAuthorProfile = () => {
     emit('close')
     router.push(`/forum/user/${post.value.userId}`)
   }
+}
+
+// 点击标签 → 跳转搜索
+const searchTag = (tag) => {
+  emit('close')
+  router.push({ path: '/forum/search', query: { keyword: tag } })
 }
 
 // ══════ 图片缩放 ══════

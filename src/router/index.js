@@ -250,6 +250,13 @@ const routes = [
                 name: 'UserProfile',
                 component: () => import('@/views/forum/UserProfile.vue'),
                 meta: { title: '用户主页', requiresAuth: false }
+            },
+            {
+                // 7.6: 搜索页（可选认证，游客可搜索）
+                path: 'search',
+                name: 'ForumSearch',
+                component: () => import('@/views/forum/ForumSearch.vue'),
+                meta: { title: '搜索', requiresAuth: false }
             }
         ]
     },

@@ -275,3 +275,29 @@ export function toggleVisibility(type) {
     params: { type }
   })
 }
+
+// ============================================================
+// ⑲ 搜索帖子/用户（7.6 ✅）
+// ============================================================
+// 可选认证: 游客可搜索，登录后记录搜索日志
+// params: { keyword, type('post'|'user'), pageNum, pageSize }
+// 返回: { list, total, pageNum, pageSize }
+export function searchPost(params) {
+  return request({
+    url: '/post/search',
+    method: 'get',
+    params
+  })
+}
+
+// ============================================================
+// ⑳ 热门搜索词Top10（7.6 ✅）
+// ============================================================
+// 公开接口，内存缓存1小时
+// 返回: string[]
+export function getHotSearch() {
+  return request({
+    url: '/post/search/hot',
+    method: 'get'
+  })
+}

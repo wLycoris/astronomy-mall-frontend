@@ -64,6 +64,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import { getPostList } from '@/api/forum'
 import PostWaterfall from './PostWaterfall.vue'
 import ForumDetail from './ForumDetail.vue'
@@ -199,7 +200,13 @@ const setupObserver = () => {
 }
 
 // ────────── 生命周期 ──────────
+const route = useRoute()
+
 onMounted(async () => {
+  // 从话题搜索跳转过来，自动选中对应标签
+  if (route.query.tag) {
+    currentTag.value = route.query.tag
+  }
   await fetchPosts(true)
   await nextTick()
   setupObserver()
