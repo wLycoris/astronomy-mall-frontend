@@ -381,6 +381,13 @@ const routes = [
                 component: () => import('@/views/admin/ObservationSpotManage.vue'),
                 meta: { title: '观测点管理', requiresAdmin: true }
             }
+            // ── 论坛管理 ← 7.7 新增 ─────────────────────────
+            ,{
+                path: 'forum',
+                name: 'AdminForum',
+                component: () => import('@/views/admin/ForumManage.vue'),
+                meta: { title: '论坛管理', requiresAdmin: true }
+            }
         ]
     },
 

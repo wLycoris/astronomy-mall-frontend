@@ -28,7 +28,16 @@
             :index="item.path"
         >
           <el-icon><component :is="item.icon" /></el-icon>
-          <span>{{ item.title }}</span>
+          <span class="menu-title-wrap">
+            {{ item.title }}
+            <!-- 7.7 论坛管理：待审核帖子数角标 -->
+            <el-badge
+                v-if="item.path === '/admin/forum' && forumPendingCount > 0"
+                :value="forumPendingCount"
+                :max="99"
+                class="forum-badge"
+            />
+          </span>
           <div class="active-glow" v-if="activeMenu === item.path"></div>
         </el-menu-item>
       </el-menu>
@@ -89,21 +98,23 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, onBeforeUnmount } from 'vue'
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+import { getPendingCount } from '@/api/admin/forum'   // 🆕 7.7 论坛待审核数
 import {
   HomeFilled, User, SwitchButton, ShoppingCart,
   DataAnalysis, Goods, Document, Money,
   ChatDotRound, Menu, CaretBottom, DataBoard, List, Setting, Tools,
-  RefreshRight,   // 2.5.3 二手回收图标
-  Bell,           // 3.4.1 系统公告图标
-  Tickets,        // 3.4.3 通知模板图标
-  Reading,        // 🆕 5.5 课程管理图标
-  Star,           // 🆕 5.6 课程评价图标
-  MapLocation     // 🆕 6.5 观测点管理图标
+  RefreshRight,        // 2.5.3 二手回收图标
+  Bell,                // 3.4.1 系统公告图标
+  Tickets,             // 3.4.3 通知模板图标
+  Reading,             // 🆕 5.5 课程管理图标
+  Star,                // 🆕 5.6 课程评价图标
+  MapLocation,         // 🆕 6.5 观测点管理图标
+  ChatLineSquare       // 🆕 7.7 论坛管理图标
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -127,8 +138,25 @@ const menuItems = ref([
   { path: '/admin/notification-template', title: '通知模板',     icon: 'Tickets'       },
   { path: '/admin/course',                title: '课程管理',     icon: 'Reading'       },  // 🆕 5.5
   { path: '/admin/course-review',         title: '课程评价',     icon: 'Star'          },  // 🆕 5.6
-  { path: '/admin/location',              title: '观测点管理',   icon: 'MapLocation'   }   // 🆕 6.5
+  { path: '/admin/location',              title: '观测点管理',   icon: 'MapLocation'   },  // 🆕 6.5
+  { path: '/admin/forum',                 title: '论坛管理',     icon: 'ChatLineSquare' }  // 🆕 7.7
 ])
+
+// ============================================================
+// 🆕 7.7 论坛待审核数（侧边栏角标）
+// 进入后台后立即拉取一次，并每 60s 静默刷新一次
+// ============================================================
+const forumPendingCount = ref(0)
+let forumPendingTimer = null
+
+const refreshForumPendingCount = async () => {
+  try {
+    const res = await getPendingCount()
+    forumPendingCount.value = res.data || 0
+  } catch (e) {
+    // 静默失败，不打扰管理员
+  }
+}
 
 const activeMenu = computed(() => route.path)
 const currentPage = computed(() => {
@@ -139,6 +167,16 @@ const themes = ['red', 'blue', 'purple']
 
 onMounted(() => {
   theme.value = themes[Math.floor(Math.random() * themes.length)]
+  // 7.7 拉取一次论坛待审核数 + 60s 定时刷新
+  refreshForumPendingCount()
+  forumPendingTimer = setInterval(refreshForumPendingCount, 60 * 1000)
+})
+
+onBeforeUnmount(() => {
+  if (forumPendingTimer) {
+    clearInterval(forumPendingTimer)
+    forumPendingTimer = null
+  }
 })
 const backToHome = () => router.push('/')
 
@@ -404,6 +442,23 @@ $glass-bg: rgba(15, 23, 42, 0.7);
       transition: transform 0.3s;
     }
     &:hover .el-icon { transform: scale(1.1); }
+
+    /* 🆕 7.7 论坛待审核数角标：包在 menu-title-wrap 里和文字同行 */
+    .menu-title-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+
+      :deep(.forum-badge) {
+        line-height: 1;
+        .el-badge__content {
+          background: linear-gradient(135deg, #ff4d6d, #c9184a);
+          box-shadow: 0 0 8px rgba(255, 77, 109, 0.6);
+          border: none;
+          font-weight: 600;
+        }
+      }
+    }
   }
 }
 

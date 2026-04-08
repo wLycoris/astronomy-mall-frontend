@@ -122,11 +122,49 @@
         />
       </div>
     </el-drawer>
+
+    <!-- ====================================================== -->
+    <!-- 🆕 通知详情对话框（点击单条通知时弹出，完整展示内容）       -->
+    <!-- ====================================================== -->
+    <el-dialog
+        v-model="detailVisible"
+        :title="detailItem?.title || '通知详情'"
+        width="520px"
+        :close-on-click-modal="true"
+        append-to-body
+        class="notification-detail-dialog"
+    >
+      <div v-if="detailItem" class="detail-body">
+        <!-- 顶部 meta 行：模块标签 + 时间 + 优先级 -->
+        <div class="detail-meta">
+          <el-tag :type="moduleTagType(detailItem.module)" size="small">
+            {{ moduleLabel(detailItem.module) }}
+          </el-tag>
+          <el-tag v-if="detailItem.priority === 1" type="warning" size="small">重要</el-tag>
+          <el-tag v-if="detailItem.priority === 2" type="danger" size="small">紧急</el-tag>
+          <span class="detail-time">{{ detailItem.createTime }}</span>
+        </div>
+
+        <!-- 完整内容（保留换行，无截断） -->
+        <div class="detail-content">{{ detailItem.content }}</div>
+      </div>
+
+      <template #footer>
+        <el-button @click="detailVisible = false">关闭</el-button>
+        <el-button
+            v-if="detailItem && canJump(detailItem)"
+            type="primary"
+            @click="jumpFromDetail"
+        >
+          前往查看
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -159,6 +197,10 @@ const pageNum = ref(1)
 const pageSize = ref(10)
 const total = ref(0)
 
+// 🆕 通知详情弹窗
+const detailVisible = ref(false)
+const detailItem = ref(null)
+
 const unreadCount = reactive({
   mall: 0,
   forum: 0,
@@ -169,9 +211,11 @@ const unreadCount = reactive({
   system: 0
 })
 
-const totalUnread = computed(() => {
-  return Object.values(unreadCount).reduce((a, b) => a + b, 0)
-})
+// 🔥 修复：totalUnread 直接用后端返回的 total 字段，不再用 Object.values 求和
+//   （之前的 bug：后端返回 {total: 18, mall:0, ..., course:14, system:4}
+//    Object.assign 把 total 也写进 reactive，reduce 求和时把 total 算成模块和的一部分，
+//    导致显示的总数 = 真实未读 × 2）
+const totalUnread = ref(0)
 
 // 显示抽屉
 const showDrawer = () => {
@@ -183,7 +227,17 @@ const showDrawer = () => {
 const fetchUnreadCount = async () => {
   try {
     const res = await getUnreadCount()
-    Object.assign(unreadCount, res.data)
+    const data = res.data || {}
+    // 🔥 总未读数直接取后端的 total 字段（避免与各模块求和重复）
+    totalUnread.value = Number(data.total || 0)
+    // 各模块未读数：仅同步已知模块字段，避免污染 reactive 对象
+    unreadCount.mall      = Number(data.mall || 0)
+    unreadCount.forum     = Number(data.forum || 0)
+    unreadCount.course    = Number(data.course || 0)
+    unreadCount.location  = Number(data.location || 0)
+    unreadCount.recommend = Number(data.recommend || 0)
+    unreadCount.ai        = Number(data.ai || 0)
+    unreadCount.system    = Number(data.system || 0)
   } catch (error) {
     console.error('获取未读数量失败:', error)
   }
@@ -216,9 +270,11 @@ const handleModuleChange = () => {
   fetchList()
 }
 
-// 🔥 修改：点击通知项
+// 🔥 改：点击通知项 → 弹出详情对话框（不再直接跳转）
+//   原因：通知列表里 title/content 都被 ellipsis 截断，看不到完整原因。
+//   现在统一弹详情，用户在详情里再决定要不要"前往查看"。
 const handleItemClick = async (item) => {
-  // 标记为已读
+  // 1. 标记为已读
   if (item.isRead === 0) {
     try {
       await markAsRead({ ids: [item.id] })
@@ -229,59 +285,59 @@ const handleItemClick = async (item) => {
     }
   }
 
-  // 🔥 修复：智能跳转
+  // 2. 弹出详情
+  detailItem.value = item
+  detailVisible.value = true
+}
+
+// 🆕 根据业务类型 + 数据库 jumpUrl 计算最终跳转地址（供详情对话框"前往查看"使用）
+const buildTargetRoute = (item) => {
+  if (!item) return ''
   if (item.relatedType && item.relatedId) {
-    visible.value = false
-
-    // 🔍 调试日志
-    console.log('🔔 点击通知:', {
-      type: item.relatedType,
-      id: item.relatedId,
-      jumpUrl: item.jumpUrl
-    })
-
-    // 🔥 根据业务类型构建正确的路由
-    let targetRoute = ''
-
     switch (item.relatedType) {
-      case 'order':
-        // 订单相关 → /order/detail/:id
-        targetRoute = `/order/detail/${item.relatedId}`
-        break
-
-      case 'product':
-        // 商品相关 → /product/:id
-        targetRoute = `/product/${item.relatedId}`
-        break
-
-      case 'notice':
-        // 系统公告 → /notice/detail/:id（如果你有这个页面）
-        targetRoute = `/notice/detail/${item.relatedId}`
-        break
-
-      case 'post':
-        // 论坛帖子 → /forum/post/:id（未来开发）
-        targetRoute = `/forum/post/${item.relatedId}`
-        break
-
-      case 'course':
-        // 课程 → /course/:id
-        targetRoute = `/course/${item.relatedId}`
-        break
-
-      default:
-        // 默认使用jumpUrl或跳转首页
-        targetRoute = item.jumpUrl || '/home'
+      case 'order':   return `/order/detail/${item.relatedId}`
+      case 'product': return `/product/${item.relatedId}`
+      case 'notice':  return `/notice/detail/${item.relatedId}`
+      case 'post':    return item.jumpUrl || `/forum/list?postId=${item.relatedId}`
+      case 'course':  return `/course/${item.relatedId}`
+      default:        return item.jumpUrl || ''
     }
-
-    console.log('➡️ 跳转到:', targetRoute)
-    router.push(targetRoute)
-  } else if (item.jumpUrl) {
-    // 兜底：如果没有relatedType，尝试使用jumpUrl
-    visible.value = false
-    console.log('⚠️ 使用jumpUrl跳转:', item.jumpUrl)
-    router.push(item.jumpUrl)
   }
+  return item.jumpUrl || ''
+}
+
+// 🆕 是否可跳转（用于决定"前往查看"按钮是否显示）
+const canJump = (item) => !!buildTargetRoute(item)
+
+// 🆕 详情对话框中点击"前往查看"
+const jumpFromDetail = () => {
+  const target = buildTargetRoute(detailItem.value)
+  if (!target) return
+  detailVisible.value = false
+  visible.value = false
+  console.log('➡️ 从通知详情跳转到:', target)
+  router.push(target)
+}
+
+// 🆕 模块标签的颜色类型
+const moduleTagType = (m) => {
+  switch (m) {
+    case 'mall':     return 'primary'
+    case 'forum':    return 'success'
+    case 'course':   return 'danger'
+    case 'location': return 'info'
+    case 'system':   return 'warning'
+    default:         return 'info'
+  }
+}
+
+// 🆕 模块标签的中文名
+const moduleLabel = (m) => {
+  const map = {
+    mall: '商城', forum: '论坛', course: '课程',
+    location: '观测点', recommend: '推荐', ai: 'AI识别', system: '系统'
+  }
+  return map[m] || '通知'
 }
 
 // 全部标记为已读
@@ -486,5 +542,54 @@ onBeforeUnmount(() => {
   padding: 15px 0;
   text-align: center;
   border-top: 1px solid #eee;
+}
+
+/* ────────── 通知详情对话框 ────────── */
+:deep(.notification-detail-dialog) {
+  .el-dialog__header {
+    padding: 18px 20px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    margin-right: 0;
+  }
+  .el-dialog__title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #303133;
+    line-height: 1.5;
+    word-break: break-all;
+  }
+  .el-dialog__body {
+    padding: 18px 20px;
+  }
+}
+
+.detail-body {
+  .detail-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .detail-time {
+    font-size: 12px;
+    color: #909399;
+    margin-left: 4px;
+  }
+
+  .detail-content {
+    font-size: 14px;
+    color: #303133;
+    line-height: 1.75;
+    white-space: pre-wrap;       /* 保留换行 */
+    word-break: break-all;
+    background: #fafbfc;
+    border: 1px solid #ebeef5;
+    border-radius: 6px;
+    padding: 14px 16px;
+    max-height: 360px;
+    overflow-y: auto;
+  }
 }
 </style>

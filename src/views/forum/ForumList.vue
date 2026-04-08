@@ -210,6 +210,16 @@ onMounted(async () => {
   await fetchPosts(true)
   await nextTick()
   setupObserver()
+
+  // 🆕 7.7 通知跳转：?postId=xx 时自动打开帖子详情弹窗
+  // （由站内信"帖子审核通过/拒绝"的 jumpUrl 触发）
+  if (route.query.postId) {
+    const pid = Number(route.query.postId)
+    if (!isNaN(pid) && pid > 0) {
+      currentPostId.value = pid
+      detailVisible.value = true
+    }
+  }
 })
 
 onUnmounted(() => {
