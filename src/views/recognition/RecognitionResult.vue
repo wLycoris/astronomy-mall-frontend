@@ -142,8 +142,12 @@
         <el-card class="info-card share-card" shadow="never">
           <template #header><span class="card-title">📤 分享结果</span></template>
           <div class="share-area">
-            <p class="share-tip">将识别结果复制为文字，分享给天文爱好者</p>
-            <el-button type="primary" plain size="small" @click="handleShare">复制结果文字</el-button>
+            <p class="share-tip">将识别结果分享给天文爱好者</p>
+            <div class="share-actions">
+              <el-button type="primary" plain size="small" @click="handleShare">复制结果文字</el-button>
+              <!-- 7.8: 跨模块联动 - 分享到论坛 -->
+              <el-button type="success" size="small" @click="handleShareToForum">📝 分享到论坛</el-button>
+            </div>
           </div>
         </el-card>
 
@@ -369,6 +373,56 @@ function formatPrice(price) {
   return Number(price).toFixed(2)
 }
 
+// ============================================================
+// 7.8 跨模块联动: 分享识别结果到论坛
+// 将标注图 + 天体列表预填到 ForumPublish.vue
+// ============================================================
+function handleShareToForum() {
+  if (!detail.value) return
+  const d = detail.value
+
+  // 构造预填标题
+  const objectStr = d.celestialObjects?.length
+      ? d.celestialObjects.map(o => o.zh || o.en).filter(Boolean).slice(0, 3).join('、')
+      : (d.objectsInField?.slice(0, 3).join('、') || '星空')
+  const presetTitle = `🌌 我用AI识别到了${objectStr}`
+
+  // 构造预填正文 - 完整天体列表 + 坐标
+  const lines = ['📡 通过天文商城AI星图识别系统，我成功识别出以下天体：', '']
+  if (d.celestialObjects?.length) {
+    d.celestialObjects.forEach((o, i) => {
+      const zh   = o.zh || ''
+      const en   = o.en ? `(${o.en})` : ''
+      const type = o.type ? ` - ${typeLabel(o.type)}` : ''
+      lines.push(`${i + 1}. ${zh}${en}${type}`)
+    })
+  } else if (d.objectsInField?.length) {
+    d.objectsInField.forEach((o, i) => lines.push(`${i + 1}. ${o}`))
+  }
+  lines.push('')
+  if (d.raFormatted)  lines.push(`赤经：${d.raFormatted}`)
+  if (d.decFormatted) lines.push(`赤纬：${d.decFormatted}`)
+  if (d.radiusFormatted) lines.push(`视野半径：${d.radiusFormatted}`)
+  lines.push('')
+  lines.push('✨ 一起来探索星空吧！')
+  const presetContent = lines.join('\n')
+
+  // 标注图 - 仅传图片URL（ForumPublish 会自动加入图片列表）
+  const presetImages = d.resultImageUrl ? [d.resultImageUrl] : []
+
+  // 路由跳转 - 携带预填数据 + recognitionId 关联
+  router.push({
+    path: '/forum/publish',
+    query: {
+      recognitionId: recognitionId.value,
+      title:   presetTitle,
+      content: presetContent,
+      images:  JSON.stringify(presetImages),
+      tags:    JSON.stringify(['AI识别', '星空'])
+    }
+  })
+}
+
 async function handleShare() {
   if (!detail.value) return
   const d = detail.value
@@ -513,8 +567,9 @@ async function handleShare() {
 .object-tag { font-size: 0.85rem; cursor: default; }
 .tags-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .machine-tag { background: rgba(30,60,100,0.5) !important; border-color: rgba(80,130,200,0.25) !important; color: #6a9ac8 !important; }
-.share-area { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.share-area { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .share-tip { color: #4a6a8a; font-size: 0.85rem; margin: 0; }
+.share-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .still-processing { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 60px); }
 .processing-card {
   background: rgba(10,22,48,0.85); border: 1px solid rgba(80,130,200,0.2);

@@ -94,9 +94,16 @@
             <el-icon><EditPen /></el-icon>
             <span>发布</span>
           </router-link>
-          <router-link to="/notification/settings" class="nav-item">
+          <router-link to="/forum/notification" class="nav-item" :class="{ active: isActive('notification') }">
             <el-icon><Bell /></el-icon>
             <span>通知</span>
+            <el-badge
+                v-if="forumUnread > 0"
+                :value="forumUnread"
+                :max="99"
+                type="danger"
+                class="nav-badge"
+            />
           </router-link>
           <router-link v-if="isLoggedIn" :to="`/forum/user/${userStore.userInfo?.id}`" class="nav-item" :class="{ active: isActive('profile') }">
             <img v-if="userStore.userInfo?.avatar" :src="userStore.userInfo.avatar" class="nav-avatar" />
@@ -239,7 +246,25 @@ const isActive = (name) => {
   if (name === 'list') return route.path === '/forum' || route.path === '/forum/list'
   if (name === 'publish') return route.path === '/forum/publish'
   if (name === 'profile') return route.path.startsWith('/forum/user/')
+  if (name === 'notification') return route.path === '/forum/notification'
   return false
+}
+
+// 7.8: 侧边栏「通知」按钮的未读角标（仅 forum 模块）
+const forumUnread = ref(0)
+let unreadTimer = null
+const refreshForumUnread = async () => {
+  if (!isLoggedIn.value) {
+    forumUnread.value = 0
+    return
+  }
+  try {
+    const { getUnreadCount } = await import('@/api/notification')
+    const res = await getUnreadCount()
+    forumUnread.value = Number(res.data?.forum || 0)
+  } catch {
+    // 未登录或请求失败静默处理
+  }
 }
 
 // 监听路由变化 — 搜索页时同步顶部搜索框
@@ -264,6 +289,21 @@ watch(() => userStore.userInfo?.id, () => {
 onMounted(() => {
   loadHistory()
   fetchHotSearch()
+  // 7.8: 侧栏通知角标 — 首次加载 + 30s 轮询
+  refreshForumUnread()
+  unreadTimer = setInterval(refreshForumUnread, 30000)
+})
+
+// 路由切换回论坛页时刷新一次(比如从详情关掉或者点击了未读)
+watch(() => route.path, () => {
+  refreshForumUnread()
+})
+
+onUnmounted(() => {
+  if (unreadTimer) {
+    clearInterval(unreadTimer)
+    unreadTimer = null
+  }
 })
 </script>
 
@@ -562,6 +602,14 @@ onMounted(() => {
     height: 22px;
     border-radius: 50%;
     object-fit: cover;
+  }
+
+  /* 7.8: 通知未读角标 */
+  .nav-badge {
+    margin-left: auto;
+    :deep(.el-badge__content) {
+      transform: translateY(0);
+    }
   }
 
   &.sub {

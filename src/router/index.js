@@ -114,7 +114,7 @@ const routes = [
     {
         path: '/notification/settings',
         name: 'NotificationSettings',
-        component: () => import('@/components/NotificationSettings.vue'),
+        component: () => import('@/views/user/NotificationSettings.vue'),
         meta: { title: '通知设置', requiresAuth: true }
     },
     {
@@ -257,6 +257,13 @@ const routes = [
                 name: 'ForumSearch',
                 component: () => import('@/views/forum/ForumSearch.vue'),
                 meta: { title: '搜索', requiresAuth: false }
+            },
+            {
+                // 7.8: 论坛通知中心（仅展示 module=forum 的通知）
+                path: 'notification',
+                name: 'ForumNotification',
+                component: () => import('@/views/forum/ForumNotification.vue'),
+                meta: { title: '论坛通知', requiresAuth: true }
             }
         ]
     },

@@ -282,9 +282,11 @@ const previewContent = computed(() => {
   return c.length > 120 ? c.slice(0, 120) + '...' : c
 })
 
-// ────────── 编辑模式加载 ──────────
+// ────────── 编辑模式 / AI识别预填加载 ──────────
+// 7.8: 编辑模式与"从识别页分享"模式都从 query 读预填字段，
+// 二者结构完全一致(title/content/images/tags), recognitionId 仅在分享模式存在。
 onMounted(() => {
-  if (isEdit.value) {
+  if (isEdit.value || recognitionId.value) {
     const { title, content, images, tags } = route.query
     if (title) form.value.title = title
     if (content) form.value.content = content

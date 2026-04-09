@@ -522,9 +522,17 @@ function openVideoInNewTab() {
   }
 }
 
-/** 跳转论坛 */
+/**
+ * 跳转论坛
+ * 7.8: 课程 → 论坛跨模块联动
+ *   优先取课程第一个 tag 作为论坛筛选条件，让讨论页直接定位相关话题。
+ *   ForumList.vue 在 onMounted 读取 ?tag=xxx 自动 setCurrentTag。
+ */
 function goToForum() {
-  const target = router.resolve({ name: 'ForumList', query: { courseId: course.value.id } })
+  if (!course.value) return
+  const tags = parseTags(course.value.tags)
+  const query = tags.length > 0 ? { tag: tags[0] } : {}
+  const target = router.resolve({ name: 'ForumList', query })
   if (target.matched.length > 0) {
     router.push(target)
   } else {
