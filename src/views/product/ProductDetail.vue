@@ -342,12 +342,40 @@
           </el-tab-pane>
         </el-tabs>
       </div>
+
+      <!-- 🆕 8.2 相关商品推荐: 基于内容相似度(tags×0.5+category×0.3+price×0.2) -->
+      <div v-if="similarProducts.length > 0" class="similar-section">
+        <div class="section-header">
+          <h3>相关商品</h3>
+          <span class="algo-tip">基于商品特征推荐</span>
+        </div>
+        <div class="similar-scroll">
+          <div
+              v-for="item in similarProducts"
+              :key="'sim-' + item.id"
+              class="similar-card"
+              @click="handleSimilarClick(item)"
+          >
+            <div class="card-image">
+              <img :src="item.mainImage" :alt="item.productName" />
+            </div>
+            <div class="card-info">
+              <h4>{{ item.productName }}</h4>
+              <div class="card-price">
+                <span class="price">¥{{ item.price }}</span>
+                <span v-if="item.originalPrice && item.originalPrice > item.price" class="original">¥{{ item.originalPrice }}</span>
+              </div>
+              <span class="card-sales">已售{{ item.sales || 0 }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus' // 【改动2】加 ElMessageBox
 import { ShoppingCart, StarFilled, Star, WarnTriangleFilled } from '@element-plus/icons-vue' // 【改动2】加 WarnTriangleFilled
@@ -357,6 +385,8 @@ import { addToCart as addToCartApi } from '@/api/cart'
 import { getToken } from '@/utils/auth'
 // 🆕 收藏 API
 import { checkFavorite, toggleFavorite } from '@/api/favorite'
+// 🆕 8.2 推荐 API：浏览埋点、相似商品、点击上报
+import { logProductBrowse, getSimilarProducts, recordRecommendClick } from '@/api/recommend'
 
 const route = useRoute()
 const router = useRouter()
@@ -382,6 +412,9 @@ const sortType = ref(1)            // 1=最新, 2=点赞最多, 3=评分最高, 
 // 🆕 收藏状态
 const isFavorited = ref(false)
 const favoriteLoading = ref(false)
+
+// 🆕 8.2 相关商品推荐列表
+const similarProducts = ref([])
 
 // 加载商品详情
 const loadProductDetail = async () => {
@@ -698,13 +731,71 @@ const handleToggleFavorite = async () => {
   }
 }
 
-onMounted(() => {
+// 🆕 8.2 加载相似商品推荐
+const loadSimilarProducts = async () => {
+  try {
+    const res = await getSimilarProducts(route.params.id, { limit: 10 })
+    similarProducts.value = res.data || []
+  } catch (error) {
+    // 推荐加载失败不影响主流程，静默降级
+    console.warn('加载相关商品推荐失败:', error)
+    similarProducts.value = []
+  }
+}
+
+// 🆕 8.2 点击相似商品卡片：先上报点击再跳转
+// 注意：字段必须与后端 RecommendClickDTO 一致：recommendType + targetId
+const handleSimilarClick = (item) => {
+  // fire-and-forget 上报推荐点击（不阻塞跳转）
+  try {
+    recordRecommendClick({
+      recommendType: 'product',
+      targetId: item.id
+    })
+  } catch (e) {
+    // 上报失败不影响跳转
+  }
+  router.push(`/product/${item.id}`)
+}
+
+// 🆕 8.2 抽出统一的初始化函数，供首次挂载和路由参数变化复用
+// （点击"相关商品"跳转同一路由 /product/:id 时，组件实例会被复用，onMounted 不会再触发，
+//  必须通过 watch route.params.id 手动触发刷新）
+const initProductPage = () => {
   loadProductDetail()
-  // 🆕 已登录则同步收藏状态
   if (getToken()) {
     checkFavoriteStatus()
   }
+  // 🆕 8.2 加载相似商品推荐
+  loadSimilarProducts()
+  // 🆕 8.2 浏览埋点：记录用户浏览行为用于推荐（失败静默，try-catch 包裹）
+  try {
+    if (getToken()) {
+      logProductBrowse({
+        productId: route.params.id,
+        source: 'detail'
+      })
+    }
+  } catch (e) {
+    // 埋点失败不影响页面展示
+  }
+}
+
+onMounted(() => {
+  initProductPage()
 })
+
+// 🆕 8.2 监听路由参数变化：点击相关商品跳转到同一路由不同 id 时，刷新所有数据
+watch(
+  () => route.params.id,
+  (newId, oldId) => {
+    if (newId && newId !== oldId) {
+      // 回到页面顶部，避免停留在底部相关商品区
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      initProductPage()
+    }
+  }
+)
 </script>
 
 <style scoped lang="scss">
@@ -1120,6 +1211,127 @@ onMounted(() => {
       display: flex;
       justify-content: center;
       padding: 30px 0;
+    }
+  }
+}
+
+/* ==================== 🆕 8.2 相关商品推荐区 ==================== */
+.similar-section {
+  background: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  margin-top: 20px;
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+
+    h3 {
+      font-size: 20px;
+      margin: 0;
+    }
+
+    .algo-tip {
+      font-size: 12px;
+      color: #909399;
+      background: #f0f2f5;
+      padding: 2px 10px;
+      border-radius: 10px;
+    }
+  }
+
+  /* 横向滚动容器 */
+  .similar-scroll {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+
+    /* 自定义滚动条样式 */
+    &::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #dcdfe6;
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: #f5f7fa;
+    }
+  }
+
+  .similar-card {
+    flex-shrink: 0;
+    width: 180px;
+    border: 1px solid #e4e7ed;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-color: #409EFF;
+    }
+
+    .card-image {
+      width: 100%;
+      height: 180px;
+      overflow: hidden;
+      background: #f5f7fa;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s;
+      }
+
+      &:hover img {
+        transform: scale(1.05);
+      }
+    }
+
+    .card-info {
+      padding: 10px 12px;
+
+      h4 {
+        font-size: 13px;
+        margin: 0 0 8px 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #303133;
+      }
+
+      .card-price {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        margin-bottom: 4px;
+
+        .price {
+          font-size: 16px;
+          color: #f56c6c;
+          font-weight: bold;
+        }
+
+        .original {
+          font-size: 12px;
+          color: #c0c4cc;
+          text-decoration: line-through;
+        }
+      }
+
+      .card-sales {
+        font-size: 12px;
+        color: #909399;
+      }
     }
   }
 }

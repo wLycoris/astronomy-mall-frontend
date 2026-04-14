@@ -127,6 +127,39 @@
           </el-button>
         </el-empty>
       </div>
+
+      <!-- 🆕 8.2 为你推荐区块：基于购物车内容进行个性化推荐 -->
+      <div v-if="cartRecommendProducts.length > 0" class="cart-recommend-section">
+        <div class="section-header">
+          <h3>为你推荐</h3>
+          <span class="algo-tip">根据购物车商品推荐</span>
+        </div>
+        <div class="recommend-grid">
+          <div
+            v-for="item in cartRecommendProducts"
+            :key="'rec-' + item.id"
+            class="recommend-card"
+            @click="handleRecommendClick(item)"
+          >
+            <div class="card-image">
+              <img :src="item.mainImage" :alt="item.productName" />
+            </div>
+            <div class="card-info">
+              <h4>{{ item.productName }}</h4>
+              <!-- 推荐理由标签 -->
+              <span v-if="item.recommendReason" class="reason-tag">{{ item.recommendReason }}</span>
+              <div class="card-price">
+                <span class="price">¥{{ item.price }}</span>
+                <span
+                  v-if="item.originalPrice && item.originalPrice > item.price"
+                  class="original"
+                >¥{{ item.originalPrice }}</span>
+              </div>
+              <span class="card-sales">已售{{ item.sales || 0 }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -144,10 +177,14 @@ import {
   batchRemove,
   clearCart
 } from '@/api/cart'
+// 🆕 8.2 推荐 API：购物车推荐、点击上报
+import { getCartRecommend, recordRecommendClick } from '@/api/recommend'
 
 const router = useRouter()
 
 const cartList = ref([])
+// 🆕 8.2 购物车推荐商品列表
+const cartRecommendProducts = ref([])
 
 // 是否全选
 const isAllSelected = computed(() => {
@@ -274,8 +311,37 @@ const handleCheckout = () => {
   router.push('/order/checkout')
 }
 
+// 🆕 8.2 加载购物车推荐商品（基于购物车内容，TTL=10min 短缓存）
+const loadCartRecommend = async () => {
+  try {
+    const res = await getCartRecommend({ limit: 10 })
+    cartRecommendProducts.value = res.data || []
+  } catch (error) {
+    // 推荐加载失败不影响购物车主流程，静默降级
+    console.warn('加载购物车推荐失败:', error)
+    cartRecommendProducts.value = []
+  }
+}
+
+// 🆕 8.2 点击推荐商品卡片：先上报点击再跳转
+const handleRecommendClick = (item) => {
+  // fire-and-forget 上报推荐点击（不阻塞跳转）
+  // 注意：字段必须与后端 RecommendClickDTO 一致：recommendType + targetId
+  try {
+    recordRecommendClick({
+      recommendType: 'product',
+      targetId: item.id
+    })
+  } catch (e) {
+    // 上报失败不影响跳转
+  }
+  router.push(`/product/${item.id}`)
+}
+
 onMounted(() => {
   loadCartList()
+  // 🆕 8.2 加载购物车推荐
+  loadCartRecommend()
 })
 </script>
 
@@ -434,5 +500,139 @@ onMounted(() => {
   padding: 100px 0;
   border-radius: 4px;
   text-align: center;
+}
+
+/* ==================== 🆕 8.2 购物车推荐区 ==================== */
+.cart-recommend-section {
+  background: white;
+  border-radius: 4px;
+  padding: 24px;
+  margin-top: 20px;
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+
+    h3 {
+      font-size: 18px;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .algo-tip {
+      font-size: 12px;
+      color: #909399;
+      background: #f0f2f5;
+      padding: 2px 10px;
+      border-radius: 10px;
+    }
+  }
+
+  /* 5列网格布局 */
+  .recommend-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+  }
+
+  .recommend-card {
+    border: 1px solid #e4e7ed;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-color: #409EFF;
+    }
+
+    .card-image {
+      width: 100%;
+      height: 180px;
+      overflow: hidden;
+      background: #f5f7fa;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s;
+      }
+
+      &:hover img {
+        transform: scale(1.05);
+      }
+    }
+
+    .card-info {
+      padding: 10px 12px;
+
+      h4 {
+        font-size: 13px;
+        margin: 0 0 6px 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #303133;
+      }
+
+      .reason-tag {
+        display: inline-block;
+        font-size: 11px;
+        color: #e6a23c;
+        background: #fdf6ec;
+        padding: 1px 8px;
+        border-radius: 3px;
+        margin-bottom: 6px;
+      }
+
+      .card-price {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        margin-bottom: 4px;
+
+        .price {
+          font-size: 16px;
+          color: #f56c6c;
+          font-weight: bold;
+        }
+
+        .original {
+          font-size: 12px;
+          color: #c0c4cc;
+          text-decoration: line-through;
+        }
+      }
+
+      .card-sales {
+        font-size: 12px;
+        color: #909399;
+      }
+    }
+  }
+}
+
+/* 响应式：小屏幕网格列数调整 */
+@media (max-width: 1200px) {
+  .cart-recommend-section .recommend-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 992px) {
+  .cart-recommend-section .recommend-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .cart-recommend-section .recommend-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 </style>

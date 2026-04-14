@@ -222,6 +222,39 @@
       </div>
     </div>
 
+    <!-- 🆕 8.2 猜你喜欢: 基于推荐算法的个性化推荐区块 -->
+    <div class="guess-like-section" v-if="guessLikeProducts.length > 0">
+      <div class="section-header">
+        <h2>🎯 猜你喜欢</h2>
+        <span class="algo-tip" v-if="isLoggedIn">基于你的浏览和兴趣推荐</span>
+        <span class="algo-tip" v-else>热门商品推荐</span>
+      </div>
+      <div class="product-grid">
+        <div
+            v-for="item in guessLikeProducts"
+            :key="'gl-' + item.id"
+            class="product-card guess-card"
+            @click="handleGuessClick(item)"
+        >
+          <div class="product-image">
+            <img :src="item.mainImage" :alt="item.productName">
+            <!-- 推荐原因标签 -->
+            <div class="tags">
+              <el-tag type="warning" size="small" effect="dark">{{ item.reason || '推荐' }}</el-tag>
+            </div>
+          </div>
+          <div class="product-info">
+            <h4>{{ item.productName }}</h4>
+            <div class="price-section">
+              <span class="price">¥{{ item.price }}</span>
+              <span v-if="item.originalPrice && item.originalPrice > item.price" class="original-price">¥{{ item.originalPrice }}</span>
+              <span class="sales">已售{{ item.sales || 0 }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 底部 -->
     <footer class="footer">
       <p>{{ copyright }}</p>
@@ -238,6 +271,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getRecommendProducts } from '@/api/product'
 import { getCartList } from '@/api/cart'
 import { getBasicSetting } from '@/api/admin/setting'  // 🆕
+import { getHomeRecommend, recordRecommendClick } from '@/api/recommend'  // 🆕 8.2 推荐系统
 import ApodCard from '@/components/ApodCard.vue'
 import {
   Grid, Picture, Reading, ChatDotRound, ShoppingCart,
@@ -259,6 +293,7 @@ const userStore = useUserStore()
 // ========================================
 const loading = ref(false)
 const recommendProducts = ref([])
+const guessLikeProducts = ref([])  // 🆕 8.2 猜你喜欢推荐列表
 const cartCount = ref(0)
 const mallName = ref('天文器材商城')                          // 🆕
 const copyright = ref('© 2025 天文器材商城 - 探索宇宙的起点') // 🆕
@@ -315,6 +350,29 @@ const loadBasicSetting = async () => {
   } catch (e) {
     // 读取失败保持默认值
   }
+}
+
+// 🆕 8.2 加载猜你喜欢推荐
+const loadGuessLike = async () => {
+  try {
+    const res = await getHomeRecommend({ limit: 10 })
+    guessLikeProducts.value = res.data || []
+  } catch (error) {
+    // 推荐加载失败静默处理，不影响首页其他内容
+    console.warn('加载猜你喜欢失败:', error)
+    guessLikeProducts.value = []
+  }
+}
+
+// 🆕 8.2 点击推荐商品卡片: 先回写推荐点击，再跳转详情页
+const handleGuessClick = async (item) => {
+  // 异步回写推荐点击（失败静默，不阻塞跳转）
+  try {
+    if (isLoggedIn.value) {
+      recordRecommendClick({ recommendType: 'product', targetId: item.id })
+    }
+  } catch (e) { /* 静默 */ }
+  router.push(`/product/${item.id}`)
 }
 
 // 跳转方法
@@ -412,6 +470,7 @@ onMounted(async () => {
   if (isLoggedIn.value) loadCartCount()
   loadRecommendProducts()
   loadBasicSetting()
+  loadGuessLike()  // 🆕 8.2 首页加载猜你喜欢（登录/未登录都调用，后端自动区分）
 })
 </script>
 
@@ -711,6 +770,88 @@ onMounted(async () => {
   }
 }
 
+/* 🆕 8.2 猜你喜欢区块 */
+.guess-like-section {
+  max-width: 1400px;
+  margin: 0 auto 60px;
+  padding: 0 20px;
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    h2 { font-size: 28px; color: #303133; }
+    .algo-tip {
+      font-size: 14px;
+      color: #909399;
+      background: rgba(64, 158, 255, 0.08);
+      padding: 4px 12px;
+      border-radius: 12px;
+    }
+  }
+
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    min-height: 100px;
+  }
+
+  .guess-card {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    border: 1px solid transparent;
+
+    &:hover {
+      box-shadow: 0 8px 20px rgba(64, 158, 255, 0.15);
+      transform: translateY(-5px);
+      border-color: rgba(64, 158, 255, 0.3);
+    }
+
+    .product-image {
+      position: relative;
+      width: 100%;
+      height: 200px;
+      overflow: hidden;
+
+      img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+      &:hover img { transform: scale(1.05); }
+      .tags { position: absolute; top: 8px; left: 8px; }
+    }
+
+    .product-info {
+      padding: 12px;
+
+      h4 {
+        font-size: 14px;
+        margin-bottom: 8px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        min-height: 40px;
+        line-height: 20px;
+      }
+
+      .price-section {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        flex-wrap: wrap;
+        .price { font-size: 18px; color: #f56c6c; font-weight: bold; }
+        .original-price { font-size: 12px; color: #c0c4cc; text-decoration: line-through; }
+        .sales { font-size: 12px; color: #909399; margin-left: auto; }
+      }
+    }
+  }
+}
+
 .footer {
   background: #303133;
   color: #fff;
@@ -725,6 +866,7 @@ onMounted(async () => {
   .quick-entry { grid-template-columns: repeat(3, 1fr); }
   .user-center .user-entry,
   .recommend-section .product-grid { grid-template-columns: repeat(3, 1fr); }
+  .guess-like-section .product-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 768px) {
@@ -741,6 +883,7 @@ onMounted(async () => {
   /* 快捷入口5列 → 2列（小屏幕） */
   .quick-entry,
   .user-center .user-entry,
-  .recommend-section .product-grid { grid-template-columns: repeat(2, 1fr); }
+  .recommend-section .product-grid,
+  .guess-like-section .product-grid { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
