@@ -43,6 +43,13 @@
             <el-badge v-if="unreadCount.course > 0" :value="unreadCount.course" type="danger" class="tab-badge" />
           </template>
         </el-tab-pane>
+        <!-- 🆕 8.4: 推荐Tab — 展示降价推荐 + 课程推荐通知 -->
+        <el-tab-pane name="recommend">
+          <template #label>
+            <span>推荐</span>
+            <el-badge v-if="unreadCount.recommend > 0" :value="unreadCount.recommend" type="danger" class="tab-badge" />
+          </template>
+        </el-tab-pane>
         <el-tab-pane name="system">
           <template #label>
             <span>系统</span>
@@ -322,12 +329,13 @@ const jumpFromDetail = () => {
 // 🆕 模块标签的颜色类型
 const moduleTagType = (m) => {
   switch (m) {
-    case 'mall':     return 'primary'
-    case 'forum':    return 'success'
-    case 'course':   return 'danger'
-    case 'location': return 'info'
-    case 'system':   return 'warning'
-    default:         return 'info'
+    case 'mall':      return 'primary'
+    case 'forum':     return 'success'
+    case 'course':    return 'danger'
+    case 'location':  return 'info'
+    case 'recommend': return 'warning'   // 🆕 8.4: 推荐模块标签颜色
+    case 'system':    return 'warning'
+    default:          return 'info'
   }
 }
 
