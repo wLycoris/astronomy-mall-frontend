@@ -48,7 +48,17 @@
       <!-- 加载更多触发器 -->
       <div ref="loadMoreRef" class="load-more">
         <span v-if="loadingMore">加载中...</span>
-        <span v-else-if="noMore && postList.length > 0">已经到底啦~</span>
+        <template v-else-if="noMore && postList.length > 0">
+          <!-- 推荐 Tab 触底：显示「刷新一批」按钮（重新打乱推荐序列） -->
+          <div v-if="isRecommendTab" class="bottom-recommend-cta">
+            <span class="hint">已经到底啦，给你换一批新鲜推荐 ~</span>
+            <el-button type="primary" round size="small" @click="refreshRecommend">
+              <el-icon class="refresh-icon"><Refresh /></el-icon>
+              刷新一批
+            </el-button>
+          </div>
+          <span v-else>已经到底啦~</span>
+        </template>
       </div>
     </div>
 
@@ -65,7 +75,11 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
+import { Refresh } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { getPostList } from '@/api/forum'
+// 🆕 8.3.4 跨模块联动：帖子个性化推荐（直接植入"推荐"Tab，无需新增 Tab）
+import { getPostRecommend } from '@/api/recommend'
 import PostWaterfall from './PostWaterfall.vue'
 import ForumDetail from './ForumDetail.vue'
 
@@ -75,8 +89,13 @@ const loading = ref(false)
 const loadingMore = ref(false)
 const noMore = ref(false)
 const pageNum = ref(1)
-const pageSize = 20
+// 🆕 8.3.4 推荐 Tab 用大页（瀑布流体验更好），其他 Tab 沿用 20
+const RECOMMEND_PAGE_SIZE = 50
+const NORMAL_PAGE_SIZE = 20
 const total = ref(0)
+// 触底「刷新一批」时使用的轮次种子，让推荐序列每次都打乱（依赖后端浏览埋点更新画像即可，
+// 这里只是把页码归 1 重新拉取最新排序结果）
+const recommendRound = ref(0)
 
 // ────────── Tab状态 ──────────
 const currentTab = ref('all')
@@ -127,6 +146,15 @@ const emptyText = computed(() => {
   return '暂无帖子，成为第一个发帖的人吧！'
 })
 
+// 是否处于「推荐」模式：推荐 Tab + 没选标签
+const isRecommendTab = computed(() =>
+  currentTab.value === 'all' && !currentTag.value
+)
+// 当前应使用的 pageSize
+const currentPageSize = computed(() =>
+  isRecommendTab.value ? RECOMMEND_PAGE_SIZE : NORMAL_PAGE_SIZE
+)
+
 // ────────── 加载帖子列表 ──────────
 const fetchPosts = async (reset = false) => {
   if (reset) {
@@ -142,23 +170,68 @@ const fetchPosts = async (reset = false) => {
   }
 
   try {
-    const res = await getPostList({
-      tab: currentTab.value,
-      tag: currentTag.value || undefined,
-      pageNum: pageNum.value,
-      pageSize
-    })
-    const data = res.data
-    if (data) {
-      const list = data.list || []
-      if (reset) {
-        postList.value = list
-      } else {
-        postList.value.push(...list)
+    // 🆕 8.3.4 智能分流（重构 v8.58）:
+    //   - 「推荐」Tab + 无 tag 筛选 → 调用 getPostRecommend（综合分排序，分页 50/页）
+    //     用户滑到底显示「刷新一批」按钮，点击重新拉取（依靠后端浏览埋点更新画像）
+    //   - 其余情况（关注/热门/有 tag 筛选）→ 沿用 getPostList（普通分页 20/页）
+    if (isRecommendTab.value) {
+      try {
+        const res = await getPostRecommend({
+          pageNum: pageNum.value,
+          pageSize: RECOMMEND_PAGE_SIZE
+        })
+        const data = res.data || {}
+        const list = data.list || []
+        if (reset) {
+          postList.value = list
+        } else {
+          postList.value.push(...list)
+        }
+        total.value = data.total || 0
+        if (postList.value.length >= total.value || list.length < RECOMMEND_PAGE_SIZE) {
+          noMore.value = true
+        }
+      } catch (err) {
+        console.warn('[ForumList] 推荐接口失败，降级到普通列表:', err)
+        // 降级：走原有 getPostList 保证可用性
+        const res = await getPostList({
+          tab: 'all',
+          pageNum: pageNum.value,
+          pageSize: NORMAL_PAGE_SIZE
+        })
+        const data = res.data
+        if (data) {
+          const list = data.list || []
+          if (reset) {
+            postList.value = list
+          } else {
+            postList.value.push(...list)
+          }
+          total.value = data.total || 0
+          if (postList.value.length >= total.value || list.length < NORMAL_PAGE_SIZE) {
+            noMore.value = true
+          }
+        }
       }
-      total.value = data.total || 0
-      if (postList.value.length >= total.value || list.length < pageSize) {
-        noMore.value = true
+    } else {
+      const res = await getPostList({
+        tab: currentTab.value,
+        tag: currentTag.value || undefined,
+        pageNum: pageNum.value,
+        pageSize: NORMAL_PAGE_SIZE
+      })
+      const data = res.data
+      if (data) {
+        const list = data.list || []
+        if (reset) {
+          postList.value = list
+        } else {
+          postList.value.push(...list)
+        }
+        total.value = data.total || 0
+        if (postList.value.length >= total.value || list.length < NORMAL_PAGE_SIZE) {
+          noMore.value = true
+        }
       }
     }
   } catch (err) {
@@ -167,6 +240,16 @@ const fetchPosts = async (reset = false) => {
     loading.value = false
     loadingMore.value = false
   }
+}
+
+// 🆕 8.3.4 「刷新一批」：把推荐 Tab 置回第一页重新排序
+//   后端会基于最新浏览画像 + hot_score 重新排，并随机化部分序号
+const refreshRecommend = async () => {
+  recommendRound.value++
+  await fetchPosts(true)
+  // 滚回顶部，让用户看到新一批
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+  ElMessage.success('已为你换一批新鲜推荐')
 }
 
 // ────────── Tab/Tag切换 ──────────
@@ -309,6 +392,40 @@ onUnmounted(() => {
   padding: 24px 0 40px;
   font-size: 13px;
   color: #bbb;
+}
+
+/* 🆕 8.3.4 推荐 Tab 触底「刷新一批」按钮 */
+.bottom-recommend-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 0;
+
+  .hint {
+    font-size: 13px;
+    color: #999;
+  }
+
+  :deep(.el-button) {
+    padding: 10px 26px;
+    font-size: 14px;
+    background: #ff2442;
+    border-color: #ff2442;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #ff3a55;
+      border-color: #ff3a55;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 36, 66, 0.28);
+    }
+  }
+
+  .refresh-icon {
+    margin-right: 4px;
+    vertical-align: -2px;
+  }
 }
 
 /* 响应式 */

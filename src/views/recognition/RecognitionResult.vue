@@ -226,6 +226,81 @@
       </div>
     </div>
 
+    <!-- ============================================================
+      🆕 8.3.1 跨模块联动: 推荐相关课程
+      根据 machine_tags 英文 → 中文映射后去匹配 course.tags
+      仅 status=1 识别成功时显示
+    ============================================================ -->
+    <div v-if="detail && detail.status === 1" class="recommend-section course-recommend-section">
+      <div class="recommend-header">
+        <span class="recommend-title">📚 推荐相关课程</span>
+        <span v-if="courseRecommendLoading" class="recommend-hint">
+          <el-icon class="rotating" size="14"><Loading /></el-icon> 匹配中...
+        </span>
+        <span v-else-if="courseRecommendList.length > 0" class="recommend-hint">
+          学习这些课程，更深入了解你识别到的天体
+        </span>
+        <el-button
+            v-if="courseRecommendList.length > 0"
+            text
+            size="small"
+            class="recommend-more-btn"
+            @click="router.push('/course')"
+        >查看全部课程 →</el-button>
+      </div>
+
+      <!-- 加载骨架 -->
+      <div v-if="courseRecommendLoading" class="recommend-scroll">
+        <div v-for="i in 4" :key="i" class="product-card skeleton-card">
+          <div class="skeleton-img"></div>
+          <div class="skeleton-line long"></div>
+          <div class="skeleton-line short"></div>
+        </div>
+      </div>
+
+      <!-- 课程横滑卡片 -->
+      <div v-else-if="courseRecommendList.length > 0" class="recommend-scroll">
+        <div
+            v-for="course in courseRecommendList"
+            :key="course.id"
+            class="product-card course-card"
+            @click="goCourse(course.id)"
+        >
+          <!-- 课程封面 -->
+          <div class="product-img-wrap">
+            <img
+                v-if="course.cover"
+                :src="course.cover"
+                :alt="course.title"
+                class="product-img"
+                @error="e => e.target.style.display='none'"
+            />
+            <div v-else class="product-img-placeholder">📖</div>
+          </div>
+
+          <!-- 课程信息 -->
+          <div class="product-info">
+            <p class="product-name">{{ course.title }}</p>
+            <p class="course-meta">
+              <span class="course-badge">{{ course.difficultyText || '课程' }}</span>
+              <span v-if="course.chapterCount" class="course-chapters">共 {{ course.chapterCount }} 章</span>
+            </p>
+            <p class="product-reason">{{ course.subtitle || '点击查看详情' }}</p>
+          </div>
+
+          <el-button type="primary" size="small" class="product-btn" @click.stop="goCourse(course.id)">
+            去学习
+          </el-button>
+        </div>
+      </div>
+
+      <!-- 空态 -->
+      <div v-else class="recommend-empty">
+        <p>暂无匹配课程</p>
+        <el-button type="primary" plain size="small" @click="router.push('/courses')">浏览全部课程</el-button>
+      </div>
+    </div>
+
     <!-- 识别中 -->
     <div v-else-if="detail && detail.status === 0" class="still-processing">
       <div class="processing-card">
@@ -245,6 +320,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
 import { getRecognitionResult, getRecognitionRecommend } from '@/api/recognition'
+// 🆕 8.3.1 跨模块联动：AI识别 → 课程推荐
+import { getRecognitionCourseRecommend } from '@/api/recommend'
 
 const route  = useRoute()
 const router = useRouter()
@@ -258,6 +335,10 @@ const imageError      = ref(false)
 // ⭐ 4.4 新增
 const recommendLoading = ref(false)
 const recommendList    = ref([])
+
+// 🆕 8.3.1 推荐课程（独立 loading + 列表，与推荐器材并行拉取）
+const courseRecommendLoading = ref(false)
+const courseRecommendList    = ref([])
 
 // ============================================================
 // 计算属性
@@ -297,8 +378,11 @@ async function fetchDetail() {
     const res = await getRecognitionResult(recognitionId.value)
     detail.value = res.data
     if (!detail.value?.resultImageUrl) imageLoading.value = false
-    // ⭐ 识别成功后异步加载推荐器材，不阻塞页面渲染
-    if (detail.value?.status === 1) fetchRecommend()
+    // ⭐ 识别成功后异步加载推荐内容，不阻塞页面渲染
+    if (detail.value?.status === 1) {
+      fetchRecommend()             // 推荐器材（4.4）
+      fetchCourseRecommend()       // 🆕 8.3.1 推荐课程
+    }
   } catch (err) {
     ElMessage.error('加载识别结果失败，请重试')
     console.error('[RecognitionResult] 加载失败:', err)
@@ -321,6 +405,21 @@ async function fetchRecommend() {
   }
 }
 
+// 🆕 8.3.1: 加载推荐课程（machine_tags → course.tags）
+// 失败不影响页面，静默降级
+async function fetchCourseRecommend() {
+  courseRecommendLoading.value = true
+  try {
+    const res = await getRecognitionCourseRecommend(recognitionId.value, { limit: 6 })
+    courseRecommendList.value = res.data || []
+  } catch (err) {
+    console.warn('[RecognitionResult] 加载推荐课程失败:', err)
+    courseRecommendList.value = []
+  } finally {
+    courseRecommendLoading.value = false
+  }
+}
+
 // ============================================================
 // 图片处理
 // ============================================================
@@ -337,6 +436,11 @@ function retryImage() {
 // ============================================================
 function goProduct(productId) {
   router.push(`/product/${productId}`)
+}
+
+// 🆕 8.3.1: 跳转课程详情
+function goCourse(courseId) {
+  router.push(`/course/${courseId}`)
 }
 
 // ============================================================
@@ -756,6 +860,37 @@ async function handleShare() {
   flex-direction: column;
   align-items: center;
   gap: 12px;
+}
+
+/* ============================================================ */
+/* 🆕 8.3.1 推荐课程区（复用 .recommend-section 样式 + 课程专属）  */
+/* ============================================================ */
+.course-recommend-section {
+  margin-top: 32px;
+}
+
+.course-card .product-img-wrap {
+  background: rgba(20, 40, 70, 0.8);
+}
+
+.course-meta {
+  font-size: 0.72rem;
+  color: #6a8ab0;
+  margin: 0 0 4px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.course-badge {
+  background: rgba(80, 130, 200, 0.18);
+  color: #a0c8e0;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.course-chapters {
+  color: #4a6a8a;
 }
 
 /* ============================================================ */

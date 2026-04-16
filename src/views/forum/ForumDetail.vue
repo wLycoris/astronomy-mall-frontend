@@ -238,6 +238,8 @@ import { getPostDetail, getCommentList, addComment, deleteComment, likeComment, 
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
+// 🆕 8.3.4 跨模块联动：帖子浏览埋点 → 帖子个性化推荐
+import { logPostBrowse } from '@/api/recommend'
 
 const props = defineProps({
   postId: { type: Number, required: true }
@@ -473,6 +475,16 @@ const handleCollectPost = async () => {
 // ══════ 生命周期 ══════
 onMounted(async () => {
   document.body.style.overflow = 'hidden'
+
+  // 🆕 8.3.4 帖子浏览埋点（异步、不阻塞、失败静默）
+  // Redis 30 分钟去重，同一用户同一帖子 30 分钟内只埋一次
+  // 埋点数据用于 ForumList "推荐" Tab 的个性化推荐算法
+  if (props.postId) {
+    logPostBrowse({ postId: props.postId }).catch(err => {
+      console.warn('[ForumDetail] 帖子浏览埋点失败:', err)
+    })
+  }
+
   try {
     const res = await getPostDetail(props.postId)
     post.value = res.data

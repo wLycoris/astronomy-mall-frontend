@@ -117,6 +117,7 @@ import { Clock, CreditCard, Iphone, Wallet, InfoFilled, CircleCheck, WarningFill
 import { createPayment, simulatePayment, getPaymentByOrderId } from '@/api/payment'
 import { getPaymentSetting } from '@/api/admin/setting'
 import { getWallet } from '@/api/wallet'
+import { getOrderDetail } from '@/api/order'
 
 const route  = useRoute()
 const router = useRouter()
@@ -124,13 +125,17 @@ const router = useRouter()
 const orderId     = ref(null)
 const orderNo     = ref('')
 const orderAmount = ref(0)
+const orderCreateTime = ref(null)  // 🆕 订单创建时间，用于计算剩余超时时间
 
 const selectedPaymentType = ref(1)
 const loading             = ref(false)
-const countdown           = ref(900)
+// 🆕 默认 30 分钟（原来 15 分钟对下单-支付的用户体验偏短）
+const countdown           = ref(30 * 60)
 const paymentId           = ref(null)
 const paymentTime         = ref('')
 const showSuccessDialog   = ref(false)
+const walletLoaded        = ref(false)   // 🆕 钱包是否已加载完，未加载完时不做余额判断
+const pageReady           = ref(false)   // 🆕 页面所有初始化完成才允许点击支付
 
 let timer = null
 
@@ -143,20 +148,35 @@ const ALL_METHODS = [
 
 // ── 钱包余额 ─────────────────────────────────────────────
 const walletBalance = ref(0)
-const balanceEnough = computed(() => walletBalance.value >= orderAmount.value)
-const shortfallAmount = computed(() => Math.max(0, orderAmount.value - walletBalance.value).toFixed(2))
+// 🔧 修复：钱包未加载完时不判断余额（避免初始化阶段的误报）
+const balanceEnough = computed(() => {
+  if (!walletLoaded.value) return true  // 还没加载完 → 乐观地假设够
+  return Number(walletBalance.value) >= Number(orderAmount.value)
+})
+const shortfallAmount = computed(() => Math.max(0, Number(orderAmount.value) - Number(walletBalance.value)).toFixed(2))
 const paymentTypeName = computed(() => ALL_METHODS.find(m => m.id === selectedPaymentType.value)?.name || '在线支付')
 
 const loadWallet = async () => {
   try {
     const res = await getWallet()
-    if (res.code === 200) walletBalance.value = Number(res.data.balance || 0)
-  } catch (e) { walletBalance.value = 0 }
+    if (res && res.code === 200 && res.data) {
+      // 后端 balance 是 BigDecimal，JSON 可能序列化为字符串或数字
+      const raw = res.data.balance
+      walletBalance.value = raw == null ? 0 : Number(raw)
+      if (isNaN(walletBalance.value)) walletBalance.value = 0
+    }
+  } catch (e) {
+    console.warn('[PaymentPage] 钱包加载失败:', e)
+    walletBalance.value = 0
+  } finally {
+    walletLoaded.value = true
+  }
 }
 
 const goRecharge = () => router.push({ path: '/user/wallet', query: { tab: 'recharge' } })
 
 const formatTime = (seconds) => {
+  if (seconds < 0) seconds = 0
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
   return `${mins}:${secs.toString().padStart(2, '0')}`
@@ -174,6 +194,20 @@ const startCountdown = () => {
   }, 1000)
 }
 
+/**
+ * 🆕 基于订单真实创建时间计算剩余超时秒数
+ *    countdown = max(0, timeoutTotalSec - (now - createTime))
+ *    这样关闭再进来不会每次都给满 30 分钟，符合真实电商超时规则
+ */
+const computeCountdownFromOrder = (timeoutMinutes) => {
+  if (!orderCreateTime.value) return timeoutMinutes * 60
+  const createdMs = new Date(orderCreateTime.value).getTime()
+  if (isNaN(createdMs)) return timeoutMinutes * 60
+  const elapsedSec = Math.floor((Date.now() - createdMs) / 1000)
+  const remain = timeoutMinutes * 60 - elapsedSec
+  return Math.max(0, remain)
+}
+
 const createPaymentOrder = async () => {
   const res = await createPayment({
     orderId:       orderId.value,
@@ -185,11 +219,18 @@ const createPaymentOrder = async () => {
 }
 
 const handlePay = async () => {
-  // 余额支付：点确认时再刷新余额，防止停留期间余额已被消耗
+  if (!pageReady.value) {
+    ElMessage.info('页面正在加载，请稍候')
+    return
+  }
+
+  // 余额支付：先确保最新余额，再做判断
   if (selectedPaymentType.value === 3) {
     await loadWallet()
     if (!balanceEnough.value) {
-      ElMessage.error(`余额不足，当前 ¥${walletBalance.value.toFixed(2)}，请先充值`)
+      ElMessage.error(
+        `余额不足，当前 ¥${Number(walletBalance.value).toFixed(2)}，需 ¥${Number(orderAmount.value).toFixed(2)}，请先充值`
+      )
       return
     }
   }
@@ -198,7 +239,7 @@ const handlePay = async () => {
   try {
     if (!paymentId.value) await createPaymentOrder()
 
-    // 后端 simulatePaymentSuccess：
+    // 后端 simulatePaymentSuccess:
     //   type=3 → PaymentServiceImpl 调 BalanceService.changeBalance() 真实扣款
     //   type=1/2 → 模拟支付宝/微信
     await simulatePayment(paymentId.value)
@@ -211,7 +252,8 @@ const handlePay = async () => {
     ElMessage.success('支付成功')
     showSuccessDialog.value = true
   } catch (error) {
-    ElMessage.error(error.message || '支付失败，请重试')
+    // error.message 已在 request 拦截器 toast 过，这里不重复 toast
+    console.warn('[PaymentPage] 支付失败:', error)
   } finally {
     loading.value = false
   }
@@ -224,35 +266,75 @@ onMounted(async () => {
   orderId.value     = Number(route.query.orderId)
   orderAmount.value = Number(route.query.amount)
 
-  if (!orderId.value || !orderAmount.value) {
+  if (!orderId.value || !orderAmount.value || isNaN(orderAmount.value)) {
     ElMessage.error('订单信息不完整')
     router.push('/order/list')
     return
   }
 
+  // ────────── 1. 拉取支付配置（支付方式 + 超时） ──────────
+  let timeoutMinutes = 30
   try {
     const res = await getPaymentSetting()
-    const s = res.data
+    const s = res.data || {}
     paymentMethods.value = ALL_METHODS.filter(m => s[m.settingKey] === true || s[m.settingKey] === 'true')
+    if (paymentMethods.value.length === 0) paymentMethods.value = ALL_METHODS
     if (paymentMethods.value.length > 0) selectedPaymentType.value = paymentMethods.value[0].id
-    if (s.payTimeoutMinutes) countdown.value = Number(s.payTimeoutMinutes) * 60
+    if (s.payTimeoutMinutes && Number(s.payTimeoutMinutes) > 0) {
+      timeoutMinutes = Number(s.payTimeoutMinutes)
+    }
   } catch (e) {
+    console.warn('[PaymentPage] 支付配置加载失败，使用默认值')
     paymentMethods.value = ALL_METHODS
   }
 
+  // ────────── 2. 拉取订单真实创建时间（用于倒计时基准） ──────────
+  try {
+    const orderRes = await getOrderDetail(orderId.value)
+    if (orderRes && orderRes.code === 200 && orderRes.data) {
+      orderCreateTime.value = orderRes.data.createTime
+      // 兜底：如果后端返回的 paymentAmount 与 query 不一致，以后端为准防篡改
+      if (orderRes.data.paymentAmount != null) {
+        const backendAmount = Number(orderRes.data.paymentAmount)
+        if (!isNaN(backendAmount) && backendAmount > 0) {
+          orderAmount.value = backendAmount
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[PaymentPage] 订单详情加载失败:', e)
+  }
+  countdown.value = computeCountdownFromOrder(timeoutMinutes)
+  if (countdown.value <= 0) {
+    ElMessage.warning('订单已超时，请重新下单')
+    router.push('/order/list')
+    return
+  }
+
+  // ────────── 3. 拉取钱包余额 ──────────
   await loadWallet()
 
-  getPaymentByOrderId(orderId.value).then(res => {
-    if (res.data?.status === 1) {
+  // ────────── 4. 查询已有支付记录（首次进入可能为 null，不再 toast） ──────────
+  try {
+    const res = await getPaymentByOrderId(orderId.value)
+    const pay = res?.data
+    if (pay && pay.status === 1) {
       ElMessage.info('该订单已支付')
       router.push(`/order/detail/${orderId.value}`)
-    } else if (res.data?.status === 0) {
-      paymentId.value           = res.data.id
-      orderNo.value             = res.data.orderNo
-      selectedPaymentType.value = res.data.paymentType
+      return
+    } else if (pay && pay.status === 0) {
+      // 复用未完成的支付记录，避免重复 createPayment
+      paymentId.value           = pay.id
+      orderNo.value             = pay.orderNo
+      selectedPaymentType.value = pay.paymentType
     }
-  }).catch(() => {})
+    // res.data === null → 首次进入，正常，不提示
+  } catch (e) {
+    // 已被全局拦截器 toast，这里只记录
+    console.warn('[PaymentPage] 查询已有支付记录失败:', e)
+  }
 
+  pageReady.value = true
   startCountdown()
 })
 

@@ -374,11 +374,66 @@
       </div>
     </div>
 
+    <!-- ============================================================
+      🆕 8.3.2 跨模块联动: 完课 → 推荐下一门课程
+      触发条件：completedCount === chapterCount 且不是 APOD/火星车课
+    ============================================================ -->
+    <el-dialog
+        v-model="completionDialogVisible"
+        title="🎉 恭喜你完成了这门课程！"
+        width="640px"
+        :close-on-click-modal="false"
+        class="completion-dialog"
+    >
+      <div class="completion-content">
+        <p class="completion-desc">
+          📚 学完了「{{ course?.title }}」，继续深入探索这些方向？
+        </p>
+
+        <!-- 加载中 -->
+        <div v-if="nextCourseLoading" class="next-course-loading">
+          <el-skeleton :rows="2" animated />
+        </div>
+
+        <!-- 推荐课程列表 -->
+        <div v-else-if="nextCourseList.length > 0" class="next-course-grid">
+          <div
+              v-for="nc in nextCourseList"
+              :key="nc.id"
+              class="next-course-card"
+              @click="goToNextCourse(nc.id)"
+          >
+            <div class="next-course-cover">
+              <img v-if="nc.cover" :src="nc.cover" :alt="nc.title" />
+              <div v-else class="next-course-cover-placeholder">📖</div>
+            </div>
+            <div class="next-course-info">
+              <p class="next-course-title">{{ nc.title }}</p>
+              <p class="next-course-meta">
+                <span class="next-course-badge">{{ nc.difficultyText || '课程' }}</span>
+                <span v-if="nc.chapterCount" class="next-course-chapters">{{ nc.chapterCount }} 章</span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 空态 -->
+        <div v-else class="next-course-empty">
+          <p>🌟 暂无相关推荐课程</p>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="completionDialogVisible = false">稍后再看</el-button>
+        <el-button type="primary" @click="goToAllCourses">浏览全部课程</el-button>
+      </template>
+    </el-dialog>
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed, reactive, onMounted } from 'vue'
+import { ref, computed, reactive, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
@@ -387,6 +442,8 @@ import {
 import { getCourseDetail, getCourseChapter, toggleCourseFavorite, getCourseReviews, submitReview, getMyReview, updateCourseReview } from '@/api/course'
 import { useUserStore } from '@/stores/user'
 import { getToken } from '@/utils/auth'
+// 🆕 8.3.2 跨模块联动：完课 → 下一门课程推荐
+import { getNextCourseRecommend } from '@/api/recommend'
 
 const route = useRoute()
 const router = useRouter()
@@ -399,6 +456,13 @@ const contentLoading = ref(false)
 const course = ref(null)
 const currentChapterId = ref(null)
 const currentChapter = ref(null)
+
+// 🆕 8.3.2 完课弹窗状态
+const completionDialogVisible = ref(false)
+const nextCourseLoading       = ref(false)
+const nextCourseList          = ref([])
+// 防止同一次会话内重复弹出（loadChapter 会多次触发 watch）
+const hasShownCompletionDialog = ref(false)
 
 // ======================== 计算属性 ========================
 
@@ -552,6 +616,88 @@ function parseTags(tagsStr) {
 function difficultyTagType(difficulty) {
   const map = { 1: 'success', 2: 'warning', 3: 'danger' }
   return map[difficulty] || 'info'
+}
+
+// ======================== 🆕 8.3.2 完课检测与推荐 ========================
+
+/**
+ * 监听已完成章节数变化
+ * 当 completedCount === chapterCount 且课程有章节 → 触发完课弹窗
+ *
+ * 🆕 v8.58 防重复弹：localStorage 按 用户+课程 记录已弹过，
+ *   之后再进这门课只要 completedCount 没从 < total 跨到 >= total（即"刚完课那一刻"），
+ *   就不会再弹（即使重新登录/换浏览器都不再弹，一次见即终身不扰）。
+ *
+ * 注意排除:
+ *  - APOD 课程 (isApodCourse=1) 和火星车课程 (isMarsCourse=1)
+ *    这两类章节每天自动递增，永远不会"真的"完课
+ *  - 未登录用户（登录后才能累积已完成章节）
+ *  - 同一会话已弹过的（hasShownCompletionDialog）
+ *  - 历史已弹过的（localStorage completionDialogShown:{userId}:{courseId}）
+ */
+function completionDialogStorageKey() {
+  const uid = userStore.userInfo?.id || 'anon'
+  const cid = course.value?.id || route.params.id
+  return `completionDialogShown:${uid}:${cid}`
+}
+watch(completedCount, async (newVal, oldVal) => {
+  if (!course.value) return
+  if (hasShownCompletionDialog.value) return
+  if (!isLogin.value) return
+  if (course.value.isApodCourse === 1 || course.value.isMarsCourse === 1) return
+
+  const total = course.value.chapterCount || 0
+  if (total <= 0 || newVal < total) return
+
+  // 💡 只有在「刚好跨过完课线」那一刻才弹，已经完课再进入不弹
+  // oldVal 可能是 undefined（首次进页面就已完成）→ 此时检查 localStorage
+  const storageKey = completionDialogStorageKey()
+  const alreadyShown = localStorage.getItem(storageKey) === '1'
+  if (alreadyShown) {
+    hasShownCompletionDialog.value = true  // 防止后续再次触发
+    return
+  }
+
+  // 到这里说明: 是"从未完课 → 刚刚完课"的真实瞬间
+  hasShownCompletionDialog.value = true
+  localStorage.setItem(storageKey, '1')
+  await fetchNextCourseRecommend()
+  completionDialogVisible.value = true
+})
+
+/** 拉取下一门课程推荐 */
+async function fetchNextCourseRecommend() {
+  if (!course.value) return
+  nextCourseLoading.value = true
+  try {
+    const res = await getNextCourseRecommend(course.value.id, { limit: 4 })
+    nextCourseList.value = res.data || []
+  } catch (err) {
+    console.warn('[CourseDetail] 下一门课程推荐加载失败:', err)
+    nextCourseList.value = []
+  } finally {
+    nextCourseLoading.value = false
+  }
+}
+
+/** 跳转下一门课程（关闭弹窗） */
+async function goToNextCourse(courseId) {
+  if (!courseId) {
+    ElMessage.warning('课程信息缺失')
+    return
+  }
+  completionDialogVisible.value = false
+  // 同一 CourseDetail 组件切换 :id 不会自动重载，需要主动刷新数据
+  await router.push(`/course/${courseId}`)
+  await loadCourseDetail()
+  // 滚到顶部
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+/** 跳转全部课程列表 */
+function goToAllCourses() {
+  completionDialogVisible.value = false
+  router.push('/course')
 }
 
 // ======================== 5.6 评价方法 ========================
@@ -1302,6 +1448,107 @@ onMounted(() => {
   }
   .header-cover {
     display: none;
+  }
+}
+
+/* ============================================================ */
+/* 🆕 8.3.2 完课推荐弹窗                                        */
+/* ============================================================ */
+.completion-content {
+  padding: 10px 4px 4px;
+}
+.completion-desc {
+  color: #444;
+  margin: 0 0 16px;
+  font-size: 14px;
+}
+.next-course-loading {
+  padding: 10px 0;
+}
+.next-course-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.next-course-card {
+  display: flex;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+  background: #fafbfc;
+}
+.next-course-card:hover {
+  border-color: #409eff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.15);
+}
+.next-course-cover {
+  width: 80px;
+  height: 60px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #eef2f8;
+}
+.next-course-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.next-course-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #aaa;
+}
+.next-course-info {
+  flex: 1;
+  min-width: 0;
+}
+.next-course-title {
+  font-size: 13px;
+  color: #333;
+  margin: 0 0 6px;
+  font-weight: 500;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.next-course-meta {
+  font-size: 11px;
+  color: #666;
+  margin: 0;
+  display: flex;
+  gap: 6px;
+}
+.next-course-badge {
+  background: #ecf5ff;
+  color: #409eff;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+.next-course-chapters {
+  color: #999;
+}
+.next-course-empty {
+  text-align: center;
+  padding: 24px;
+  color: #999;
+  font-size: 14px;
+}
+@media (max-width: 640px) {
+  .next-course-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

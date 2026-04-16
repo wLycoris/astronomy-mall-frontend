@@ -113,9 +113,11 @@ export function getSpotEquipmentRecommend(spotId, params) {
 }
 
 // ============================================================
-// ⑨ 帖子个性化推荐（8.0 ✅）
+// ⑨ 帖子个性化推荐（8.3 ✅ 升级为分页排序版）
 // ============================================================
-// ForumList "为你推荐" Tab，基于浏览历史的帖子 tags 推荐
+// ForumList "推荐" Tab：召回所有候选 → 综合分排序 → 分页切片
+// 入参: { pageNum, pageSize }（默认 1 / 50）
+// 返回: { list, total, pageNum, pageSize }
 export function getPostRecommend(params) {
   return request({
     url: '/recommend/post/recommend',

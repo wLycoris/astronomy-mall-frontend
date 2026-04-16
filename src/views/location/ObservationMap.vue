@@ -294,6 +294,38 @@
           </div>
         </div>
 
+        <!-- 🆕 8.3.3 跨模块联动: 签到成功后展示适合该观测点的器材 -->
+        <div v-if="checkinDone && spotEquipmentList.length > 0" class="spot-equipment-panel">
+          <div class="spot-equipment-title">
+            <span>🔭 适合该观测点的器材</span>
+            <span class="spot-equipment-hint">根据海拔 / 光污染 / 常见观测对象智能匹配</span>
+          </div>
+          <div class="spot-equipment-scroll">
+            <div
+                v-for="prod in spotEquipmentList"
+                :key="prod.id"
+                class="spot-equip-card"
+                @click="goToProduct(prod.id)"
+            >
+              <div class="spot-equip-img">
+                <img v-if="prod.mainImage" :src="prod.mainImage" :alt="prod.productName" />
+                <div v-else class="spot-equip-placeholder">🔭</div>
+              </div>
+              <div class="spot-equip-info">
+                <p class="spot-equip-name">{{ prod.productName }}</p>
+                <p class="spot-equip-price">¥{{ Number(prod.price || 0).toFixed(2) }}</p>
+                <p class="spot-equip-reason">{{ prod.reason || '适合该观测点' }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 签到后器材加载中 -->
+        <div v-else-if="checkinDone && spotEquipmentLoading" class="spot-equipment-panel">
+          <div class="spot-equipment-title">🔭 正在匹配适合的器材...</div>
+          <el-skeleton :rows="2" animated />
+        </div>
+
         <!-- 评分 -->
         <div class="rating-panel">
           <div class="rating-panel-title">评分</div>
@@ -339,6 +371,8 @@ import {
 import { useUserStore } from '@/stores/user'
 import { getNearbySpots, getSpotDetail, submitRating as apiSubmitRating, getWeather, getTonightCondition, checkin as apiCheckin } from '@/api/location.js'
 import { regionOptions } from '@/utils/regionData'
+// 🆕 8.3.3 跨模块联动：签到 → 推荐适合器材
+import { getSpotEquipmentRecommend } from '@/api/recommend'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -457,6 +491,10 @@ const spotWeatherLoading = ref(false)
 const checkinSubmitting = ref(false)
 const checkinDone       = ref(false)
 const checkinResult     = ref({})   // { todayCheckinCount, weather, moonPhaseName }
+
+// 🆕 8.3.3 签到后器材推荐
+const spotEquipmentLoading = ref(false)
+const spotEquipmentList    = ref([])
 
 // 签到缓存 key: checkin_{spotId}_{yyyy-MM-dd}
 function getCheckinCacheKey(spotId) {
@@ -655,6 +693,9 @@ function onCardClick(spot) {
 async function openDialog(spot) {
   dialogVisible.value = true; detailLoading.value = true; ratingInput.value = 0; ratingEditing.value = false
   spotWeather.value = null; checkinDone.value = false; checkinResult.value = {}  // 重置天气和签到状态
+  // 🆕 8.3.3 重置器材推荐状态（切换观测点时防止旧数据残留）
+  spotEquipmentList.value = []
+  spotEquipmentLoading.value = false
   try {
     const res = await getSpotDetail(spot.id)
     detailSpot.value = res.data
@@ -670,12 +711,15 @@ async function openDialog(spot) {
         moonPhaseName: detailSpot.value.checkinMoonPhase || '',
         todayCheckinCount: detailSpot.value.todayCheckinCount || 0
       }
+      // 🆕 8.3.3 已签到 → 直接拉取器材推荐
+      fetchSpotEquipmentRecommend(spot.id)
     } else {
       // 兜底：从 localStorage 恢复（未登录时）
       const cached = loadCheckinCache(spot.id)
       if (cached) {
         checkinDone.value = true
         checkinResult.value = cached
+        fetchSpotEquipmentRecommend(spot.id)
       }
     }
     // 6.2: 弹窗打开后按需懒加载该观测点的天气
@@ -683,7 +727,14 @@ async function openDialog(spot) {
   } catch { ElMessage.error('加载观测点详情失败'); dialogVisible.value = false }
   finally { detailLoading.value = false }
 }
-function onDialogClose() { detailSpot.value = null; ratingInput.value = 0; selectedSpotId.value = null }
+function onDialogClose() {
+  detailSpot.value = null
+  ratingInput.value = 0
+  selectedSpotId.value = null
+  // 🆕 8.3.3 关闭时清理器材推荐状态
+  spotEquipmentList.value = []
+  spotEquipmentLoading.value = false
+}
 
 // ── 评分 ──
 async function doSubmitRating() {
@@ -766,17 +817,46 @@ async function doCheckin() {
       detailSpot.value.totalCheckinCount = (detailSpot.value.totalCheckinCount || 0) + 1
     }
     ElMessage.success('签到成功！')
+    // 🆕 8.3.3 签到成功后异步拉取适合器材推荐
+    fetchSpotEquipmentRecommend(detailSpot.value.id)
   } catch (e) {
     const msg = e?.response?.data?.message || '签到失败'
     // 如果是"今日已签到"，标记为已签到状态
     if (msg.includes('已') && msg.includes('签到')) {
       checkinDone.value = true
       checkinResult.value = {}
+      // 🆕 8.3.3 今日已签到也要拉取推荐
+      if (detailSpot.value) fetchSpotEquipmentRecommend(detailSpot.value.id)
     }
     ElMessage.warning(msg)
   } finally {
     checkinSubmitting.value = false
   }
+}
+
+/**
+ * 🆕 8.3.3: 签到成功后（或今日已签到时）拉取适合该观测点的器材推荐
+ * 根据观测点海拔/光污染等级做规则前置过滤 + tags Jaccard 排序
+ * 失败静默降级，不影响签到流程
+ */
+async function fetchSpotEquipmentRecommend(spotId) {
+  if (!spotId) return
+  spotEquipmentLoading.value = true
+  spotEquipmentList.value = []
+  try {
+    const res = await getSpotEquipmentRecommend(spotId, { limit: 6 })
+    spotEquipmentList.value = res.data || []
+  } catch (err) {
+    console.warn('[ObservationMap] 器材推荐加载失败:', err)
+    spotEquipmentList.value = []
+  } finally {
+    spotEquipmentLoading.value = false
+  }
+}
+
+/** 🆕 8.3.3: 跳转商品详情 */
+function goToProduct(productId) {
+  router.push(`/product/${productId}`)
 }
 
 // 星级数组（用于v-for渲染星星）
@@ -1206,4 +1286,104 @@ function bortleLevelDesc(l) {
 .checkin-done-info { display: flex; flex-direction: column; gap: 2px; }
 .checkin-done-title { font-size: 14px; font-weight: 600; color: #67c23a; }
 .checkin-done-meta { font-size: 12px; color: #888; }
+
+/* ============================================================ */
+/* 🆕 8.3.3 签到后器材推荐面板                                   */
+/* ============================================================ */
+.spot-equipment-panel {
+  background: #252529;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-top: 10px;
+}
+.spot-equipment-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: #e0eaff;
+  font-size: 14px;
+  font-weight: 600;
+}
+.spot-equipment-hint {
+  font-weight: normal;
+  color: #8a9cb0;
+  font-size: 12px;
+}
+.spot-equipment-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(91, 141, 238, 0.3) transparent;
+}
+.spot-equipment-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+.spot-equipment-scroll::-webkit-scrollbar-thumb {
+  background: rgba(91, 141, 238, 0.3);
+  border-radius: 2px;
+}
+.spot-equip-card {
+  flex-shrink: 0;
+  width: 140px;
+  background: rgba(20, 28, 48, 0.9);
+  border: 1px solid rgba(91, 141, 238, 0.15);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.spot-equip-card:hover {
+  border-color: rgba(91, 141, 238, 0.5);
+  transform: translateY(-2px);
+}
+.spot-equip-img {
+  width: 100%;
+  height: 90px;
+  background: rgba(8, 12, 26, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.spot-equip-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.spot-equip-placeholder {
+  font-size: 24px;
+  color: #2a3a5a;
+}
+.spot-equip-info {
+  padding: 8px 10px 10px;
+}
+.spot-equip-name {
+  font-size: 12px;
+  color: #c8d6e8;
+  margin: 0 0 4px;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 32px;
+}
+.spot-equip-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f59e0b;
+  margin: 0 0 3px;
+}
+.spot-equip-reason {
+  font-size: 11px;
+  color: #6a8ab0;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 </style>
