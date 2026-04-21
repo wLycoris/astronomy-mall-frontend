@@ -1,5 +1,27 @@
 <template>
   <div class="forum-manage">
+    <section class="admin-page-hero tone-violet">
+      <div class="admin-page-copy">
+        <span class="admin-page-kicker">COMMUNITY OPS</span>
+        <h2>论坛管理</h2>
+        <p>处理帖子审核、帖子状态、评论治理和社区数据统计，让社区内容保持干净可控。</p>
+      </div>
+      <div class="admin-page-metrics">
+        <div class="admin-metric-card warning">
+          <span>待审核</span>
+          <strong>{{ pendingCount }}</strong>
+        </div>
+        <div class="admin-metric-card">
+          <span>帖子总量</span>
+          <strong>{{ stats.totalPostCount || manageTotal }}</strong>
+        </div>
+        <div class="admin-metric-card success">
+          <span>评论总量</span>
+          <strong>{{ stats.totalCommentCount || commentTotal }}</strong>
+        </div>
+      </div>
+    </section>
+
     <!-- ====================================================== -->
     <!-- 顶部 Tab 切换：审核 / 管理 / 评论 / 统计                  -->
     <!-- ====================================================== -->
@@ -21,7 +43,7 @@
           </span>
         </template>
 
-        <el-card class="filter-card" shadow="never">
+        <el-card class="filter-card admin-panel-card" shadow="never">
           <el-form inline>
             <el-form-item label="关键词">
               <el-input
@@ -41,7 +63,7 @@
           </el-form>
         </el-card>
 
-        <el-card class="table-card" shadow="never">
+        <el-card class="table-card admin-panel-card" shadow="never">
           <div class="table-header">
             <el-tag type="warning">待审核 {{ auditTotal }} 条</el-tag>
           </div>
@@ -134,7 +156,7 @@
           </span>
         </template>
 
-        <el-card class="filter-card" shadow="never">
+        <el-card class="filter-card admin-panel-card" shadow="never">
           <el-form inline>
             <el-form-item label="状态">
               <el-select
@@ -168,7 +190,7 @@
           </el-form>
         </el-card>
 
-        <el-card class="table-card" shadow="never">
+        <el-card class="table-card admin-panel-card" shadow="never">
           <div class="table-header">
             <el-tag type="info">共 {{ manageTotal }} 条</el-tag>
           </div>
@@ -284,7 +306,7 @@
           </span>
         </template>
 
-        <el-card class="filter-card" shadow="never">
+        <el-card class="filter-card admin-panel-card" shadow="never">
           <el-form inline>
             <el-form-item label="帖子ID">
               <el-input
@@ -313,7 +335,7 @@
           </el-form>
         </el-card>
 
-        <el-card class="table-card" shadow="never">
+        <el-card class="table-card admin-panel-card" shadow="never">
           <div class="table-header">
             <el-tag type="info">共 {{ commentTotal }} 条评论</el-tag>
           </div>
@@ -466,7 +488,7 @@
             <el-col :span="14">
               <el-card class="chart-card" shadow="never">
                 <template #header>
-                  <span class="chart-title">📈 近7天发帖+评论趋势</span>
+                  <span class="chart-title">近7天发帖与评论趋势</span>
                 </template>
                 <div ref="trendChartRef" class="chart-box"></div>
               </el-card>
@@ -474,7 +496,7 @@
             <el-col :span="10">
               <el-card class="chart-card" shadow="never">
                 <template #header>
-                  <span class="chart-title">📊 帖子状态分布</span>
+                  <span class="chart-title">帖子状态分布</span>
                 </template>
                 <div ref="statusChartRef" class="chart-box"></div>
               </el-card>
@@ -958,20 +980,23 @@ onUnmounted(() => {
 }
 
 .forum-tabs {
-  /* 顶部 tab 整体在深紫色背景上，需要把文字和分隔线调亮 */
   :deep(.el-tabs__header) {
     margin-bottom: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 0 14px;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.68);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
   :deep(.el-tabs__nav-wrap)::after {
-    background-color: rgba(255, 255, 255, 0.15); /* 底部那条横线 */
+    background-color: transparent;
   }
 
   :deep(.el-tabs__item) {
     font-size: 15px;
     padding: 0 24px;
-    color: rgba(255, 255, 255, 0.65); /* 未选中：半透明白 */
+    color: #cbd5e1;
     transition: color .2s;
 
     &:hover {
@@ -979,13 +1004,13 @@ onUnmounted(() => {
     }
 
     &.is-active {
-      color: #67c5ff; /* 选中：亮蓝，与主题一致 */
-      font-weight: 600;
+      color: #ffffff;
+      font-weight: 800;
     }
   }
 
   :deep(.el-tabs__active-bar) {
-    background-color: #67c5ff; /* 滑动下划线 */
+    background-color: #facc15;
     height: 3px;
     border-radius: 2px;
   }
@@ -1013,11 +1038,10 @@ onUnmounted(() => {
 /* ── 筛选 + 表格卡片 ── */
 .filter-card {
   margin-bottom: 12px;
-  border: 1px solid #ebeef5;
 }
 
 .table-card {
-  border: 1px solid #ebeef5;
+  margin-bottom: 16px;
 }
 
 .table-header {
@@ -1166,7 +1190,8 @@ onUnmounted(() => {
 .stat-pink   { background: linear-gradient(135deg, #ec4899, #f472b6); }
 
 .chart-card {
-  border: 1px solid #ebeef5;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
 
   .chart-title {
     font-weight: 600;
@@ -1176,5 +1201,11 @@ onUnmounted(() => {
   .chart-box {
     height: 320px;
   }
+}
+
+:deep(.el-table th.el-table__cell) {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 800;
 }
 </style>

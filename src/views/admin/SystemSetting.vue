@@ -2,18 +2,27 @@
   <div class="setting-page">
 
     <!-- 顶部标题 -->
-    <div class="page-hero">
-      <div class="hero-left">
-        <div class="hero-icon">⚙️</div>
-        <div>
-          <h1 class="hero-title">系统设置</h1>
-          <p class="hero-sub">管理商城基础配置、运费、支付、SEO 等系统参数</p>
+    <section class="admin-page-hero tone-amber">
+      <div class="admin-page-copy">
+        <span class="admin-page-kicker">SYSTEM CONTROL</span>
+        <h2>系统设置</h2>
+        <p>管理商城基础配置、运费、支付、SEO、注册与维护模式，所有修改都会影响前台运行策略。</p>
+      </div>
+      <div class="admin-page-metrics">
+        <div class="admin-metric-card">
+          <span>当前面板</span>
+          <strong>{{ activeSettingLabel }}</strong>
+        </div>
+        <div class="admin-metric-card" :class="{ success: anyPaymentEnabled, danger: !anyPaymentEnabled }">
+          <span>支付通道</span>
+          <strong>{{ anyPaymentEnabled ? '可用' : '关闭' }}</strong>
+        </div>
+        <div class="admin-metric-card" :class="{ danger: maintenanceForm.maintenanceMode }">
+          <span>维护模式</span>
+          <strong>{{ maintenanceForm.maintenanceMode ? '开启' : '关闭' }}</strong>
         </div>
       </div>
-      <div class="hero-badge" v-if="maintenanceForm.maintenanceMode">
-        <span class="badge-dot"></span>维护模式运行中
-      </div>
-    </div>
+    </section>
 
     <div class="setting-body">
 
@@ -36,7 +45,7 @@
         <!-- 基础设置 -->
         <div v-show="activeTab === 'basic'" class="setting-panel">
           <div class="panel-header">
-            <div class="ph-icon">🏪</div>
+            <div class="ph-icon">基础</div>
             <div><h2>基础设置</h2><p>商城名称、联系方式与法律信息</p></div>
           </div>
           <el-form ref="basicFormRef" :model="basicForm" :rules="basicRules" label-position="top" class="s-form">
@@ -75,7 +84,7 @@
         <!-- 运费设置 -->
         <div v-show="activeTab === 'freight'" class="setting-panel">
           <div class="panel-header">
-            <div class="ph-icon">🚚</div>
+            <div class="ph-icon">运费</div>
             <div><h2>运费设置</h2><p>默认运费规则与包邮条件</p></div>
           </div>
           <el-form ref="freightFormRef" :model="freightForm" :rules="freightRules" label-position="top" class="s-form">
@@ -110,7 +119,7 @@
         <!-- 支付设置 -->
         <div v-show="activeTab === 'payment'" class="setting-panel">
           <div class="panel-header">
-            <div class="ph-icon">💳</div>
+            <div class="ph-icon">支付</div>
             <div><h2>支付设置</h2><p>支付方式开关与超时策略</p></div>
           </div>
           <el-form ref="paymentFormRef" :model="paymentForm" :rules="paymentRules" label-position="top" class="s-form">
@@ -132,7 +141,7 @@
                 <el-switch v-model="paymentForm.balanceEnabled" />
               </div>
             </div>
-            <div v-if="!anyPaymentEnabled" class="alert-bar">⚠️ 至少需要开启一种支付方式</div>
+            <div v-if="!anyPaymentEnabled" class="alert-bar">至少需要开启一种支付方式</div>
             <div class="field-section">超时策略</div>
             <div class="form-row-3">
               <el-form-item label="支付超时时间" prop="payTimeoutMinutes">
@@ -157,7 +166,7 @@
         <!-- SEO设置 -->
         <div v-show="activeTab === 'seo'" class="setting-panel">
           <div class="panel-header">
-            <div class="ph-icon">🔍</div>
+            <div class="ph-icon">SEO</div>
             <div><h2>SEO 设置</h2><p>影响搜索引擎收录，建议认真填写</p></div>
           </div>
           <el-form ref="seoFormRef" :model="seoForm" :rules="seoRules" label-position="top" class="s-form">
@@ -182,7 +191,7 @@
         <!-- 注册设置 -->
         <div v-show="activeTab === 'register'" class="setting-panel">
           <div class="panel-header">
-            <div class="ph-icon">👤</div>
+            <div class="ph-icon">注册</div>
             <div><h2>注册设置</h2><p>控制用户注册方式与默认信息</p></div>
           </div>
           <el-form label-position="top" class="s-form">
@@ -226,7 +235,7 @@
         <!-- 维护模式 -->
         <div v-show="activeTab === 'maintenance'" class="setting-panel">
           <div class="panel-header">
-            <div class="ph-icon">🛠️</div>
+            <div class="ph-icon">维护</div>
             <div><h2>维护模式</h2><p>开启后普通用户将看到维护提示页面</p></div>
           </div>
           <div class="status-card" :class="maintenanceForm.maintenanceMode ? 'status-on' : 'status-off'">
@@ -264,7 +273,7 @@
     <!-- 二次确认弹窗 -->
     <el-dialog v-model="maintenanceConfirmVisible" title="确认开启维护模式" width="420px" align-center append-to-body>
       <div class="confirm-wrap">
-        <div class="confirm-emoji">⚠️</div>
+        <div class="confirm-emoji">风险确认</div>
         <p>开启后普通用户将<strong>无法浏览商品、下单和支付</strong>，管理员后台不受影响。</p>
         <p style="color:#9ca3af">请确认已提前通知用户，是否继续？</p>
       </div>
@@ -280,7 +289,6 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Setting } from '@element-plus/icons-vue'
 import {
   getBasicSetting,       updateBasicSetting,
   getFreightSetting,     updateFreightSetting,
@@ -300,7 +308,7 @@ const menuItems  = [
   { key: 'register',    label: '注册设置' },
   { key: 'maintenance', label: '维护模式'  },
 ]
-const navIcons = { basic:'🏪', freight:'🚚', payment:'💳', seo:'🔍', register:'👤', maintenance:'🛠️' }
+const navIcons = { basic:'01', freight:'02', payment:'03', seo:'04', register:'05', maintenance:'06' }
 const saving    = ref(false)
 const maintenanceConfirmVisible = ref(false)
 const basicFormRef   = ref(null)
@@ -325,6 +333,7 @@ const paymentRules  = {
 const seoRules = { seoTitle: [{ required:true, message:'网站标题不能为空', trigger:'blur' }] }
 
 const anyPaymentEnabled = computed(() => paymentForm.alipayEnabled || paymentForm.wechatEnabled || paymentForm.balanceEnabled)
+const activeSettingLabel = computed(() => menuItems.find(item => item.key === activeTab.value)?.label || '基础设置')
 
 const handleMenuSelect = (key) => { activeTab.value = key; loadCurrentTab(key) }
 
@@ -383,7 +392,7 @@ const onLogoError = (e) => { e.target.src = 'https://cube.elemecdn.com/0/88/03b0
 
 <style scoped>
 /* ── 页面 ── */
-.setting-page { padding: 28px 30px; min-height: 100%; background: #f4f6f9; }
+.setting-page { padding: 0; min-height: 100%; background: transparent; }
 
 /* ── 顶部 ── */
 .page-hero { display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; }
@@ -410,7 +419,8 @@ const onLogoError = (e) => { e.target.src = 'https://cube.elemecdn.com/0/88/03b0
 .setting-nav {
   width:190px; flex-shrink:0; background:#fff;
   border-radius:14px; padding:10px 8px;
-  box-shadow:0 1px 3px rgba(0,0,0,.07), 0 4px 12px rgba(0,0,0,.04);
+  border: 1px solid #e5e7eb;
+  box-shadow:0 14px 30px rgba(15,23,42,.06);
 }
 .nav-item {
   display:flex; align-items:center; gap:9px;
@@ -420,13 +430,13 @@ const onLogoError = (e) => { e.target.src = 'https://cube.elemecdn.com/0/88/03b0
   position:relative;
 }
 .nav-item:hover { background:#f8fafc; color:#1e293b; }
-.nav-item.active { background:#eef2ff; color:#3b5bdb; font-weight:600; }
+.nav-item.active { background:#f8f2e7; color:#8a5a1f; font-weight:600; }
 .nav-item.active::before {
   content:''; position:absolute; left:0; top:50%;
   transform:translateY(-50%); width:3px; height:18px;
-  background:#3b5bdb; border-radius:0 3px 3px 0;
+  background:#d6a64f; border-radius:0 3px 3px 0;
 }
-.nav-icon  { font-size:16px; width:22px; text-align:center; }
+.nav-icon  { font-size:11px; width:24px; text-align:center; font-weight:800; color:#a16207; }
 .nav-label { flex:1; }
 .nav-danger-dot {
   width:7px; height:7px; border-radius:50%;
@@ -437,7 +447,8 @@ const onLogoError = (e) => { e.target.src = 'https://cube.elemecdn.com/0/88/03b0
 .setting-main { flex:1; min-width:0; }
 .setting-panel {
   background:#fff; border-radius:14px; padding:28px 32px;
-  box-shadow:0 1px 3px rgba(0,0,0,.07), 0 4px 12px rgba(0,0,0,.04);
+  border: 1px solid #e5e7eb;
+  box-shadow:0 14px 30px rgba(15,23,42,.06);
 }
 
 /* ── 面板标题 ── */
@@ -447,9 +458,9 @@ const onLogoError = (e) => { e.target.src = 'https://cube.elemecdn.com/0/88/03b0
   border-bottom:1.5px solid #f1f5f9;
 }
 .ph-icon {
-  width:42px; height:42px; border-radius:11px; background:#f0f4ff;
+  width:42px; height:42px; border-radius:11px; background:#111827;
   display:flex; align-items:center; justify-content:center;
-  font-size:20px; flex-shrink:0;
+  color:#f3c96b; font-size:12px; font-weight:800; flex-shrink:0;
 }
 .panel-header h2 { margin:0 0 3px; font-size:17px; font-weight:700; color:#1e293b; }
 .panel-header p  { margin:0; font-size:13px; color:#94a3b8; }
@@ -564,7 +575,19 @@ const onLogoError = (e) => { e.target.src = 'https://cube.elemecdn.com/0/88/03b0
 
 /* ── 弹窗确认 ── */
 .confirm-wrap { text-align:center; padding:6px 0 2px; }
-.confirm-emoji { font-size:36px; margin-bottom:10px; }
+.confirm-emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 16px;
+  margin-bottom: 10px;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 13px;
+  font-weight: 800;
+}
 .confirm-wrap p { margin:6px 0; font-size:14px; color:#475569; line-height:1.7; }
 
 /* ── 响应式 ── */

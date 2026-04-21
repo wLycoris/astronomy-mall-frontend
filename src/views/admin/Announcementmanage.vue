@@ -1,8 +1,29 @@
 <template>
   <div class="announcement-manage">
+    <section class="admin-page-hero tone-violet">
+      <div class="admin-page-copy">
+        <span class="admin-page-kicker">PUBLIC NOTICE</span>
+        <h2>系统公告</h2>
+        <p>发布面向全站用户的公告，并跟踪发送人数、已读人数和优先级状态。</p>
+      </div>
+      <div class="admin-page-metrics">
+        <div class="admin-metric-card">
+          <span>公告总数</span>
+          <strong>{{ total }}</strong>
+        </div>
+        <div class="admin-metric-card warning">
+          <span>当页重要</span>
+          <strong>{{ importantNoticeCount }}</strong>
+        </div>
+        <div class="admin-metric-card danger">
+          <span>当页紧急</span>
+          <strong>{{ urgentNoticeCount }}</strong>
+        </div>
+      </div>
+    </section>
 
     <!-- 搜索筛选区 -->
-    <el-card class="search-card" shadow="never">
+    <el-card class="search-card admin-panel-card" shadow="never">
       <el-form :model="queryForm" inline>
 
         <el-form-item label="关键词">
@@ -49,11 +70,14 @@
     </el-card>
 
     <!-- 公告列表表格 -->
-    <el-card shadow="never" class="table-card">
+    <el-card shadow="never" class="table-card admin-panel-card">
 
       <!-- 表格头：标题 + 发布按钮 -->
       <div class="table-toolbar">
-        <span class="toolbar-title">公告列表</span>
+        <div>
+          <span class="admin-card-title">公告列表</span>
+          <span class="admin-card-subtitle">高优先级公告会同步到用户通知中心</span>
+        </div>
         <el-button type="primary" @click="openCreateDialog">
           <el-icon><Plus /></el-icon>
           发布新公告
@@ -163,7 +187,7 @@
     <!-- 创建公告弹窗 -->
     <el-dialog
         v-model="createDialogVisible"
-        title="📢 发布新公告"
+        title="发布新公告"
         width="660px"
         align-center
         append-to-body
@@ -309,7 +333,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Refresh, View, Delete } from '@element-plus/icons-vue'
 import {
@@ -330,6 +354,9 @@ const loading   = ref(false)
 const tableData = ref([])
 const total     = ref(0)
 const dateRange = ref([])
+
+const importantNoticeCount = computed(() => tableData.value.filter(item => item.priority === 1).length)
+const urgentNoticeCount = computed(() => tableData.value.filter(item => item.priority === 2).length)
 
 const queryForm = reactive({
   pageNum:   1,

@@ -4,9 +4,30 @@
 <!-- ============================================ -->
 <template>
   <div class="user-manage">
+    <section class="admin-page-hero tone-amber">
+      <div class="admin-page-copy">
+        <span class="admin-page-kicker">ACCOUNT CENTER</span>
+        <h2>用户管理</h2>
+        <p>查看和筛选用户账号，处理启用、禁用、角色调整与用户详情信息。</p>
+      </div>
+      <div class="admin-page-metrics">
+        <div class="admin-metric-card">
+          <span>用户总数</span>
+          <strong>{{ pagination.total }}</strong>
+        </div>
+        <div class="admin-metric-card success">
+          <span>当页启用</span>
+          <strong>{{ pageStats.active }}</strong>
+        </div>
+        <div class="admin-metric-card warning">
+          <span>当页管理员</span>
+          <strong>{{ pageStats.admin }}</strong>
+        </div>
+      </div>
+    </section>
 
     <!-- ==================== 搜索筛选区 ==================== -->
-    <el-card class="search-card" shadow="never">
+    <el-card class="search-card admin-panel-card" shadow="never">
       <el-form :model="searchForm" inline>
 
         <el-form-item label="关键词">
@@ -66,25 +87,25 @@
     <!-- ==================== 统计卡片 ==================== -->
     <el-row :gutter="16" class="stats-row">
       <el-col :span="6">
-        <el-card shadow="never" class="stat-card">
+        <el-card shadow="never" class="stat-card admin-panel-card">
           <div class="stat-value">{{ pagination.total }}</div>
           <div class="stat-label">用户总数</div>
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="never" class="stat-card">
+        <el-card shadow="never" class="stat-card admin-panel-card">
           <div class="stat-value active">{{ pageStats.active }}</div>
           <div class="stat-label">当页启用</div>
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="never" class="stat-card">
+        <el-card shadow="never" class="stat-card admin-panel-card">
           <div class="stat-value danger">{{ pageStats.disabled }}</div>
           <div class="stat-label">当页禁用</div>
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card shadow="never" class="stat-card">
+        <el-card shadow="never" class="stat-card admin-panel-card">
           <div class="stat-value warning">{{ pageStats.admin }}</div>
           <div class="stat-label">当页管理员</div>
         </el-card>
@@ -92,7 +113,13 @@
     </el-row>
 
     <!-- ==================== 用户列表 ==================== -->
-    <el-card shadow="never">
+    <el-card class="user-table-card admin-panel-card" shadow="never">
+      <div class="admin-toolbar-header">
+        <div>
+          <span class="admin-card-title">用户列表</span>
+          <span class="admin-card-subtitle">头像、联系方式、角色、状态和注册时间一屏查看</span>
+        </div>
+      </div>
       <el-table v-loading="loading" :data="tableData" stripe style="width: 100%">
 
         <!-- 用户信息列（头像 + 昵称 + 用户名） -->
@@ -557,9 +584,10 @@ onMounted(() => fetchList())
 
 <style scoped>
 /* ===== 整体布局 ===== */
-.user-manage { padding: 16px; }
+.user-manage { padding: 0; }
 .search-card { margin-bottom: 16px; }
 .stats-row   { margin-bottom: 16px; }
+.user-table-card { margin-top: 0; }
 
 /* ===== 统计卡片 ===== */
 .stat-card   { text-align: center; padding: 8px 0; }
@@ -577,6 +605,12 @@ onMounted(() => fetchList())
 
 /* ===== 分页 ===== */
 .pagination-wrap { display: flex; justify-content: flex-end; margin-top: 16px; }
+
+:deep(.el-table th.el-table__cell) {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 800;
+}
 
 /* ===== 详情抽屉 ===== */
 .detail-wrap    { padding: 0 4px 40px; }

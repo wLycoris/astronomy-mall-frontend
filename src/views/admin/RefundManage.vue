@@ -4,6 +4,28 @@
 <!-- ============================================ -->
 <template>
   <div class="refund-manage">
+    <section class="commerce-hero refund-hero">
+      <div class="hero-copy">
+        <span class="hero-kicker">AFTERSALE REVIEW</span>
+        <h2>退款审核</h2>
+        <p>集中审核退款申请、查看订单与支付信息，降低售后处理遗漏。</p>
+      </div>
+      <div class="hero-metrics">
+        <div class="metric-card">
+          <span>退款记录</span>
+          <strong>{{ total }}</strong>
+        </div>
+        <div class="metric-card warning">
+          <span>本页待审核</span>
+          <strong>{{ pendingRefundCount }}</strong>
+        </div>
+        <div class="metric-card danger">
+          <span>退款失败</span>
+          <strong>{{ failedRefundCount }}</strong>
+        </div>
+      </div>
+    </section>
+
     <!-- 搜索区域 -->
     <el-card class="search-card" shadow="never">
       <el-form :model="queryForm" inline>
@@ -43,7 +65,16 @@
     </el-card>
 
     <!-- 表格区域 -->
-    <el-card shadow="never" style="margin-top:16px">
+    <el-card shadow="never" class="table-card">
+      <template #header>
+        <div class="card-header">
+          <div>
+            <span class="card-title">退款申请列表</span>
+            <small>优先处理待审核和退款失败的记录</small>
+          </div>
+        </div>
+      </template>
+
       <el-table
           v-loading="loading"
           :data="tableData"
@@ -61,7 +92,7 @@
         </el-table-column>
         <el-table-column label="退款金额" prop="refundAmount" min-width="110" align="right">
           <template #default="{ row }">
-            <span class="text-danger">¥{{ row.refundAmount }}</span>
+            <span class="amount-text">¥{{ row.refundAmount }}</span>
           </template>
         </el-table-column>
         <el-table-column label="退款原因" prop="refundReason" min-width="150" show-overflow-tooltip />
@@ -123,7 +154,7 @@
         <el-descriptions title="退款信息" :column="2" border class="detail-section">
           <el-descriptions-item label="退款单号" :span="2">{{ detailData.refundNo }}</el-descriptions-item>
           <el-descriptions-item label="退款金额">
-            <span class="text-danger">¥{{ detailData.refundAmount }}</span>
+            <span class="amount-text">¥{{ detailData.refundAmount }}</span>
           </el-descriptions-item>
           <el-descriptions-item label="退款类型">{{ detailData.refundTypeDesc }}</el-descriptions-item>
           <el-descriptions-item label="退款原因" :span="2">{{ detailData.refundReason }}</el-descriptions-item>
@@ -198,7 +229,7 @@
     <el-dialog v-model="approveDialogVisible" title="审核通过确认" width="420px">
       <el-form :model="approveForm" label-width="80px">
         <el-form-item label="退款金额">
-          <span class="text-danger" style="font-size:18px;font-weight:bold">
+          <span class="amount-text large">
             ¥{{ currentRefund?.refundAmount }}
           </span>
         </el-form-item>
@@ -265,6 +296,8 @@ const loading = ref(false)
 const tableData = ref([])
 const total = ref(0)
 const dateRange = ref([])
+const pendingRefundCount = computed(() => tableData.value.filter(item => item.status === 0).length)
+const failedRefundCount = computed(() => tableData.value.filter(item => item.status === 4).length)
 
 const queryForm = reactive({
   pageNum: 1,
@@ -425,8 +458,122 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.refund-manage {
+  padding: 18px;
+  color: #111827;
+}
+
+.commerce-hero {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background:
+      linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.88)),
+      radial-gradient(circle at 90% 20%, rgba(220, 38, 38, 0.2), transparent 32%);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
+}
+
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.hero-kicker {
+  color: #fca5a5;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+}
+
+.hero-copy h2 {
+  margin: 8px 0 6px;
+  color: #f8fafc;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.hero-copy p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(96px, 1fr));
+  gap: 10px;
+  min-width: 360px;
+}
+
+.metric-card {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.metric-card span {
+  display: block;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 8px;
+  color: #f8fafc;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.metric-card.warning strong {
+  color: #facc15;
+}
+
+.metric-card.danger strong {
+  color: #fb7185;
+}
+
 .search-card {
-  margin-bottom: 0;
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+}
+
+.table-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-title {
+  display: block;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.card-header small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
 }
 
 .pagination-wrapper {
@@ -435,13 +582,17 @@ onMounted(() => {
   margin-top: 16px;
 }
 
-.text-danger {
-  color: #f56c6c;
-  font-weight: bold;
+.text-gray {
+  color: #64748b;
 }
 
-.text-gray {
-  color: #909399;
+.amount-text {
+  color: #b45309;
+  font-weight: 800;
+}
+
+.amount-text.large {
+  font-size: 18px;
 }
 
 /* 详情抽屉 */
@@ -483,10 +634,10 @@ onMounted(() => {
 .section-title {
   font-size: 14px;
   font-weight: bold;
-  color: #303133;
+  color: #111827;
   margin-bottom: 10px;
   padding-left: 8px;
-  border-left: 3px solid #409eff;
+  border-left: 3px solid #0f172a;
 }
 
 .product-cell {
@@ -502,4 +653,39 @@ onMounted(() => {
   border-top: 1px solid #ebeef5;
   margin-top: 8px;
 }
-</style>plate>
+
+:deep(.el-card__header) {
+  border-bottom-color: #e5e7eb;
+  background: #fafafa;
+}
+
+:deep(.el-form--inline .el-form-item) {
+  margin-right: 14px;
+  margin-bottom: 12px;
+}
+
+:deep(.el-table) {
+  --el-table-border-color: #e5e7eb;
+  --el-table-header-bg-color: #f8fafc;
+  color: #334155;
+}
+
+:deep(.el-table th.el-table__cell) {
+  color: #475569;
+  font-weight: 800;
+}
+
+:deep(.el-table__row:hover > td.el-table__cell) {
+  background: #f8fafc;
+}
+
+@media (max-width: 1100px) {
+  .commerce-hero {
+    flex-direction: column;
+  }
+
+  .hero-metrics {
+    min-width: 0;
+  }
+}
+</style>

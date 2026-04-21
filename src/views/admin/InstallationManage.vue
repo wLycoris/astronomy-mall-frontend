@@ -1,8 +1,29 @@
 <template>
   <div class="installation-manage">
+    <section class="admin-page-hero tone-green">
+      <div class="admin-page-copy">
+        <span class="admin-page-kicker">SERVICE DISPATCH</span>
+        <h2>安装预约管理</h2>
+        <p>集中处理用户上门安装请求，核对订单、地址和期望时间后安排工程师履约。</p>
+      </div>
+      <div class="admin-page-metrics">
+        <div class="admin-metric-card">
+          <span>预约总数</span>
+          <strong>{{ total }}</strong>
+        </div>
+        <div class="admin-metric-card warning">
+          <span>当页待确认</span>
+          <strong>{{ pendingInstallCount }}</strong>
+        </div>
+        <div class="admin-metric-card success">
+          <span>当页已确认</span>
+          <strong>{{ confirmedInstallCount }}</strong>
+        </div>
+      </div>
+    </section>
 
     <!-- ── 筛选栏 ─────────────────────────── -->
-    <el-card class="filter-card" shadow="never">
+    <el-card class="filter-card admin-panel-card" shadow="never">
       <el-form :model="queryForm" inline>
         <el-form-item label="状态">
           <el-select v-model="queryForm.status" placeholder="全部状态" clearable style="width:130px">
@@ -30,7 +51,13 @@
     </el-card>
 
     <!-- ── 数据表格 ─────────────────────────── -->
-    <el-card shadow="never" style="margin-top: 16px">
+    <el-card class="table-card admin-panel-card" shadow="never">
+      <div class="admin-toolbar-header">
+        <div>
+          <span class="admin-card-title">预约记录</span>
+          <span class="admin-card-subtitle">根据用户状态快速确认、取消或查看安装详情</span>
+        </div>
+      </div>
       <el-table :data="tableData" v-loading="loading" border stripe>
         <el-table-column prop="id"          label="预约ID"    width="80" />
         <el-table-column label="用户"        width="120">
@@ -221,7 +248,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getInstallationList,
@@ -233,6 +260,9 @@ import {
 const loading   = ref(false)
 const tableData = ref([])
 const total     = ref(0)
+
+const pendingInstallCount = computed(() => tableData.value.filter(item => item.status === 0).length)
+const confirmedInstallCount = computed(() => tableData.value.filter(item => item.status === 1).length)
 
 const queryForm = reactive({
   pageNum:   1,
@@ -377,11 +407,18 @@ onMounted(fetchList)
 </script>
 
 <style scoped>
-.installation-manage { padding: 20px; }
+.installation-manage { padding: 0; }
 .filter-card { margin-bottom: 0; }
+.table-card { margin-top: 16px; }
 .pagination {
   margin-top: 16px;
   display: flex;
   justify-content: flex-end;
+}
+
+:deep(.el-table th.el-table__cell) {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 800;
 }
 </style>

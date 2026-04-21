@@ -4,6 +4,27 @@
 <!-- ============================================ -->
 <template>
   <div class="category-manage">
+    <section class="commerce-hero category-hero">
+      <div class="hero-copy">
+        <span class="hero-kicker">CATEGORY ARCHIVE</span>
+        <h2>分类管理</h2>
+        <p>维护商品分类层级、展示状态与排序权重，让前台筛选入口更清楚。</p>
+      </div>
+      <div class="hero-metrics">
+        <div class="metric-card">
+          <span>全部分类</span>
+          <strong>{{ categoryTotal }}</strong>
+        </div>
+        <div class="metric-card">
+          <span>一级分类</span>
+          <strong>{{ levelOneCount }}</strong>
+        </div>
+        <div class="metric-card">
+          <span>当前显示</span>
+          <strong>{{ shownCategoryCount }}</strong>
+        </div>
+      </div>
+    </section>
 
     <!-- ===== 搜索/筛选栏 ===== -->
     <el-card class="filter-card" shadow="never">
@@ -55,7 +76,10 @@
     <el-card class="table-card" shadow="never">
       <template #header>
         <div class="card-header">
-          <span>分类列表</span>
+          <div>
+            <span class="card-title">分类列表</span>
+            <small>按树形层级维护分类，排序值越大越靠前</small>
+          </div>
           <el-button type="primary" :icon="Plus" @click="handleAdd(null)">
             新增一级分类
           </el-button>
@@ -292,6 +316,20 @@ import {
 
 const categoryTree = ref([])
 const loading = ref(false)
+const flattenCategories = computed(() => {
+  const result = []
+  const walk = (nodes = []) => {
+    nodes.forEach(node => {
+      result.push(node)
+      if (node.children && node.children.length) walk(node.children)
+    })
+  }
+  walk(categoryTree.value)
+  return result
+})
+const categoryTotal = computed(() => flattenCategories.value.length)
+const levelOneCount = computed(() => flattenCategories.value.filter(item => item.level === 1).length)
+const shownCategoryCount = computed(() => flattenCategories.value.filter(item => item.isShow === 1).length)
 
 // ============================================================
 // 搜索筛选
@@ -579,23 +617,116 @@ function formatTime(val) {
 
 <style scoped>
 .category-manage {
-  padding: 16px;
+  padding: 18px;
+  color: #111827;
+}
+
+.commerce-hero {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background:
+      linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.88)),
+      radial-gradient(circle at 90% 20%, rgba(6, 182, 212, 0.22), transparent 32%);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
+}
+
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.hero-kicker {
+  color: #7dd3fc;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+}
+
+.hero-copy h2 {
+  margin: 8px 0 6px;
+  color: #f8fafc;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.hero-copy p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(96px, 1fr));
+  gap: 10px;
+  min-width: 360px;
+}
+
+.metric-card {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.metric-card span {
+  display: block;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 8px;
+  color: #f8fafc;
+  font-size: 24px;
+  line-height: 1;
 }
 
 /* ======================== 筛选栏 ======================== */
 .filter-card {
   margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
 }
 
 /* ======================== 表格卡片 ======================== */
 .table-card {
-  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
+}
+
+.card-title {
+  display: block;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.card-header small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
 }
 
 /* ======================== 分类名称列 ======================== */
@@ -617,16 +748,51 @@ function formatTime(val) {
 
 .level1-name {
   font-weight: 600;
-  color: #303133;
+  color: #111827;
 }
 
 .level2-name {
   font-weight: 400;
-  color: #606266;
+  color: #475569;
+}
+
+:deep(.el-card__header) {
+  border-bottom-color: #e5e7eb;
+  background: #fafafa;
+}
+
+:deep(.el-form--inline .el-form-item) {
+  margin-right: 14px;
+  margin-bottom: 12px;
+}
+
+:deep(.el-table) {
+  --el-table-border-color: #e5e7eb;
+  --el-table-header-bg-color: #f8fafc;
+  color: #334155;
+}
+
+:deep(.el-table th.el-table__cell) {
+  color: #475569;
+  font-weight: 800;
+}
+
+:deep(.el-table__row:hover > td.el-table__cell) {
+  background: #f8fafc;
 }
 
 /* ======================== 操作按钮间距 ======================== */
 :deep(.el-table .el-button + .el-button) {
   margin-left: 4px;
+}
+
+@media (max-width: 1100px) {
+  .commerce-hero {
+    flex-direction: column;
+  }
+
+  .hero-metrics {
+    min-width: 0;
+  }
 }
 </style>

@@ -1,7 +1,29 @@
 <template>
   <div class="admin-recycling">
+    <section class="admin-page-hero tone-green">
+      <div class="admin-page-copy">
+        <span class="admin-page-kicker">AFTERMARKET FLOW</span>
+        <h2>二手回收管理</h2>
+        <p>审核用户提交的器材回收申请，完成报价、取件安排和回收款发放的后台闭环。</p>
+      </div>
+      <div class="admin-page-metrics">
+        <div class="admin-metric-card">
+          <span>回收单总数</span>
+          <strong>{{ total }}</strong>
+        </div>
+        <div class="admin-metric-card warning">
+          <span>当页待审核</span>
+          <strong>{{ pendingRecycleCount }}</strong>
+        </div>
+        <div class="admin-metric-card success">
+          <span>当页履约中</span>
+          <strong>{{ activeRecycleCount }}</strong>
+        </div>
+      </div>
+    </section>
+
     <!-- 搜索栏 -->
-    <el-card class="search-card" shadow="never">
+    <el-card class="search-card admin-panel-card" shadow="never">
       <el-form :model="query" inline>
         <el-form-item label="状态">
           <el-select v-model="query.status" placeholder="全部状态" clearable style="width:130px">
@@ -30,7 +52,13 @@
     </el-card>
 
     <!-- 数据表格 -->
-    <el-card shadow="never" style="margin-top:12px">
+    <el-card class="table-card admin-panel-card" shadow="never">
+      <div class="admin-toolbar-header">
+        <div>
+          <span class="admin-card-title">回收申请</span>
+          <span class="admin-card-subtitle">报价、拒绝、安排取件和完成回收都在这里处理</span>
+        </div>
+      </div>
       <el-table
           v-loading="loading"
           :data="list"
@@ -293,7 +321,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Picture } from '@element-plus/icons-vue'
 import {
@@ -308,6 +336,9 @@ import {
 const loading = ref(false)
 const list = ref([])
 const total = ref(0)
+
+const pendingRecycleCount = computed(() => list.value.filter(item => item.status === 0).length)
+const activeRecycleCount = computed(() => list.value.filter(item => [2, 3].includes(item.status)).length)
 
 const query = reactive({
   pageNum: 1,
@@ -482,7 +513,7 @@ const handleComplete = async (row) => {
   const amount = row.assessedPrice ? `¥${Number(row.assessedPrice).toFixed(2)}` : '未知金额'
   await ElMessageBox.confirm(
       `确认完成回收？将向用户发放 ${amount} 回收款到其钱包，此操作不可撤销！`,
-      '⚠️ 确认完成回收',
+      '确认完成回收',
       {
         confirmButtonText: '确认发放',
         cancelButtonText: '取消',
@@ -515,7 +546,7 @@ onMounted(loadList)
 
 <style scoped>
 .admin-recycling {
-  padding: 20px;
+  padding: 0;
 }
 
 .page-title {
@@ -529,6 +560,10 @@ onMounted(loadList)
 
 .search-card {
   margin-bottom: 0;
+}
+
+.table-card {
+  margin-top: 16px;
 }
 
 .pagination {
@@ -548,7 +583,13 @@ onMounted(loadList)
 
 .price-text {
   font-weight: bold;
-  color: #67c23a;
+  color: #8a5a1f;
+}
+
+:deep(.el-table th.el-table__cell) {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 800;
 }
 
 .detail-body {

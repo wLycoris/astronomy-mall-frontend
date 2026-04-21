@@ -1,5 +1,26 @@
 <template>
   <div class="page-container">
+    <section class="admin-page-hero tone-violet">
+      <div class="admin-page-copy">
+        <span class="admin-page-kicker">MESSAGE TEMPLATE</span>
+        <h2>通知模板</h2>
+        <p>维护订单、课程、论坛等模块的系统通知文案，让自动推送保持清晰一致。</p>
+      </div>
+      <div class="admin-page-metrics">
+        <div class="admin-metric-card">
+          <span>模板总数</span>
+          <strong>{{ templateTotal }}</strong>
+        </div>
+        <div class="admin-metric-card success">
+          <span>已启用</span>
+          <strong>{{ templateEnabledCount }}</strong>
+        </div>
+        <div class="admin-metric-card warning">
+          <span>覆盖模块</span>
+          <strong>{{ templateModuleCount }}</strong>
+        </div>
+      </div>
+    </section>
 
     <el-skeleton v-if="loading" :rows="8" animated />
 
@@ -11,7 +32,7 @@
       >
         <!-- 模块标题 -->
         <div class="module-hd">
-          <span class="mod-icon">{{ getModuleIcon(moduleLabel) }}</span>
+          <span class="mod-icon">{{ moduleLabel.slice(0, 1) }}</span>
           <span class="mod-name">{{ moduleLabel }}</span>
           <el-tag size="small" type="info" style="margin-left:8px">{{ templates.length }} 个模板</el-tag>
           <span class="mod-stat">
@@ -158,12 +179,18 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTemplateList, updateTemplate, updateTemplateStatus, resetTemplate } from '@/api/admin/notification'
 
 const loading          = ref(false)
 const groupedTemplates = ref({})
+
+const templateTotal = computed(() => Object.values(groupedTemplates.value).reduce((sum, templates) => sum + templates.length, 0))
+const templateEnabledCount = computed(() => Object.values(groupedTemplates.value).reduce((sum, templates) => {
+  return sum + templates.filter(t => t.enabled === 1).length
+}, 0))
+const templateModuleCount = computed(() => Object.keys(groupedTemplates.value).length)
 
 // 编辑
 const editVisible = ref(false)
@@ -300,13 +327,32 @@ function getModuleIcon(label) {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 2px solid rgba(255,255,255,0.1);
+  margin: 2px 0 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
-.mod-icon { font-size: 16px; }
-.mod-name { font-size: 15px; font-weight: 600; color: #e5e7eb; }
-.mod-stat { margin-left: auto; font-size: 12px; color: #9ca3af; }
+.module-hd :deep(.el-tag) {
+  border-color: rgba(250, 204, 21, 0.28);
+  background: rgba(250, 204, 21, 0.1);
+  color: #fde68a;
+}
+.mod-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: rgba(125, 211, 252, 0.12);
+  color: #7dd3fc;
+  font-size: 13px;
+  font-weight: 900;
+}
+.mod-name { font-size: 15px; font-weight: 800; color: #f8fafc; }
+.mod-stat { margin-left: auto; font-size: 12px; color: #dbeafe; font-weight: 700; }
 
 /* 模板卡片 */
 .tmpl-card { height: 100%; transition: opacity .2s; }

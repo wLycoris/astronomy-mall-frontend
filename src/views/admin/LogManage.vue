@@ -1,8 +1,29 @@
 <template>
   <div class="log-manage">
+    <section class="admin-page-hero tone-amber">
+      <div class="admin-page-copy">
+        <span class="admin-page-kicker">AUDIT TRAIL</span>
+        <h2>操作日志</h2>
+        <p>追踪管理员关键操作、执行耗时、IP 地址和成功失败状态，便于审计与问题排查。</p>
+      </div>
+      <div class="admin-page-metrics">
+        <div class="admin-metric-card">
+          <span>日志总数</span>
+          <strong>{{ total }}</strong>
+        </div>
+        <div class="admin-metric-card success">
+          <span>当页成功</span>
+          <strong>{{ successLogCount }}</strong>
+        </div>
+        <div class="admin-metric-card danger">
+          <span>当页失败</span>
+          <strong>{{ failedLogCount }}</strong>
+        </div>
+      </div>
+    </section>
 
     <!-- 筛选栏 -->
-    <el-card class="filter-card" shadow="never">
+    <el-card class="filter-card admin-panel-card" shadow="never">
       <el-form :model="queryForm" inline>
 
         <el-form-item label="操作类型">
@@ -58,9 +79,12 @@
     </el-card>
 
     <!-- 列表 -->
-    <el-card class="table-card" shadow="never">
+    <el-card class="table-card admin-panel-card" shadow="never">
       <div class="table-header">
-        <el-tag type="info">共 {{ total }} 条日志</el-tag>
+        <div>
+          <span class="admin-card-title">日志列表</span>
+          <span class="admin-card-subtitle">按操作类型、管理员、状态和时间范围筛选审计记录</span>
+        </div>
       </div>
 
       <el-table
@@ -192,7 +216,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { getLogList, getLogDetail, exportLog } from '@/api/admin/log'
@@ -205,6 +229,9 @@ const logList     = ref([])
 const total       = ref(0)
 const dateRange   = ref(null)
 const exportLoading = ref(false)
+
+const successLogCount = computed(() => logList.value.filter(item => item.status === 1).length)
+const failedLogCount = computed(() => logList.value.filter(item => item.status === 0).length)
 
 const queryForm = reactive({
   pageNum:   1,
@@ -328,9 +355,9 @@ const formatJson = (str) => {
 </script>
 
 <style scoped>
-.log-manage { padding: 16px; }
+.log-manage { padding: 0; }
 .filter-card { margin-bottom: 16px; }
-.table-header { margin-bottom: 12px; }
+.table-header { margin-bottom: 14px; }
 .pagination-wrap { margin-top: 16px; display: flex; justify-content: flex-end; }
 
 .time-fast   { color: #67c23a; font-weight: bold; }
@@ -361,4 +388,10 @@ const formatJson = (str) => {
   overflow-y: auto;
 }
 .code-box pre { margin: 0; font-family: inherit; font-size: inherit; }
+
+:deep(.el-table th.el-table__cell) {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 800;
+}
 </style>

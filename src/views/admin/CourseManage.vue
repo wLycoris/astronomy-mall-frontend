@@ -1,11 +1,32 @@
 <template>
   <div class="course-manage">
+    <section class="admin-page-hero tone-violet">
+      <div class="admin-page-copy">
+        <span class="admin-page-kicker">LEARNING OPS</span>
+        <h2>课程管理</h2>
+        <p>管理视频课、书本课和 APOD 章节导入，控制课程发布状态与内容结构。</p>
+      </div>
+      <div class="admin-page-metrics">
+        <div class="admin-metric-card">
+          <span>课程总数</span>
+          <strong>{{ pagination.total }}</strong>
+        </div>
+        <div class="admin-metric-card success">
+          <span>当页已发布</span>
+          <strong>{{ publishedCourseCount }}</strong>
+        </div>
+        <div class="admin-metric-card warning">
+          <span>当页 APOD</span>
+          <strong>{{ apodCourseCount }}</strong>
+        </div>
+      </div>
+    </section>
 
     <!-- ========== 顶部：APOD 同步面板 ========== -->
-    <el-card class="apod-sync-card" shadow="never">
+    <el-card class="apod-sync-card admin-panel-card" shadow="never">
       <template #header>
         <div class="card-header">
-          <span>🌌 NASA APOD 历史数据批量同步</span>
+          <span>NASA APOD 历史数据批量同步</span>
           <el-tooltip content="逐日调用 NASA API 导入历史天文图片为书本课章节，已存在日期自动跳过" placement="top">
             <el-icon class="tip-icon"><QuestionFilled /></el-icon>
           </el-tooltip>
@@ -32,13 +53,19 @@
           {{ apodSyncing ? '同步中...' : '一键批量导入' }}
         </el-button>
         <span v-if="apodLastResult" class="apod-result-tip">
-          ✅ 本次新增 {{ apodLastResult }} 条章节
+          本次新增 {{ apodLastResult }} 条章节
         </span>
       </div>
     </el-card>
 
     <!-- ========== 主体：课程列表 + 章节抽屉 ========== -->
-    <el-card shadow="never" style="margin-top: 16px;">
+    <el-card class="course-list-card admin-panel-card" shadow="never">
+      <div class="admin-toolbar-header">
+        <div>
+          <span class="admin-card-title">课程列表</span>
+          <span class="admin-card-subtitle">维护课程基础信息、章节结构和上下架状态</span>
+        </div>
+      </div>
 
       <!-- 搜索 + 新增工具栏 -->
       <div class="toolbar">
@@ -484,6 +511,9 @@ const loading = ref(false)
 const courseList = ref([])
 const pagination = reactive({ pageNum: 1, pageSize: 10, total: 0 })
 const searchForm = reactive({ keyword: '', type: null, status: null })
+
+const publishedCourseCount = computed(() => courseList.value.filter(item => item.status === 1).length)
+const apodCourseCount = computed(() => courseList.value.filter(item => item.isApodCourse === 1).length)
 
 const fetchCourseList = async () => {
   loading.value = true
@@ -1053,12 +1083,16 @@ onBeforeUnmount(() => {
   padding: 0;
 }
 
+.course-list-card {
+  margin-top: 16px;
+}
+
 /* ===== APOD 同步面板 ===== */
 .apod-sync-card :deep(.el-card__header) {
   padding: 12px 16px;
-  background: linear-gradient(135deg, #0d1b4b, #1a2d6e);
-  color: #e0e8ff;
-  border-radius: 8px 8px 0 0;
+  background: #111827;
+  color: #f8fafc;
+  border-radius: 12px 12px 0 0;
 }
 .card-header {
   display: flex;
@@ -1079,8 +1113,14 @@ onBeforeUnmount(() => {
 }
 .apod-result-tip {
   margin-left: 16px;
-  color: #67c23a;
+  color: #8a5a1f;
   font-size: 13px;
+}
+
+:deep(.el-table th.el-table__cell) {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 800;
 }
 
 /* ===== 工具栏 ===== */

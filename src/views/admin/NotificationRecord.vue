@@ -1,8 +1,29 @@
 <template>
   <div class="page-container">
+    <section class="admin-page-hero tone-violet">
+      <div class="admin-page-copy">
+        <span class="admin-page-kicker">MESSAGE TRACE</span>
+        <h2>通知记录</h2>
+        <p>查看系统推送给用户的通知明细，支持按模块、类型、已读状态和优先级追踪。</p>
+      </div>
+      <div class="admin-page-metrics">
+        <div class="admin-metric-card">
+          <span>记录总数</span>
+          <strong>{{ total }}</strong>
+        </div>
+        <div class="admin-metric-card warning">
+          <span>当页未读</span>
+          <strong>{{ unreadRecordCount }}</strong>
+        </div>
+        <div class="admin-metric-card danger">
+          <span>当页紧急</span>
+          <strong>{{ urgentRecordCount }}</strong>
+        </div>
+      </div>
+    </section>
 
     <!-- ===== 筛选区 ===== -->
-    <el-card class="filter-card" shadow="never">
+    <el-card class="filter-card admin-panel-card" shadow="never">
       <el-form inline :model="queryForm">
         <el-form-item label="用户ID">
           <el-input v-model.number="queryForm.userId" placeholder="精确匹配" clearable style="width:120px" />
@@ -55,7 +76,7 @@
     </el-card>
 
     <!-- ===== 列表 Tab / 统计 Tab ===== -->
-    <el-card shadow="never" style="margin-top:16px">
+    <el-card class="record-card admin-panel-card" shadow="never">
       <el-tabs v-model="activeTab" @tab-click="onTabChange">
 
         <!-- ── 记录列表 ── -->
@@ -230,6 +251,8 @@ const readRate = computed(() => {
   if (!t) return 0
   return Math.round((stats.value.readCount / t) * 1000) / 10
 })
+const unreadRecordCount = computed(() => tableData.value.filter(item => item.isRead === 0).length)
+const urgentRecordCount = computed(() => tableData.value.filter(item => item.priority === 2).length)
 
 // ECharts
 const pieRef  = ref(null)
@@ -356,6 +379,7 @@ function priorityTagType(p) {
 
 <style scoped>
 .page-container { padding: 0; }
+.record-card { margin-top: 16px; }
 .filter-card :deep(.el-card__body) { padding: 16px 20px 4px; }
 
 .toolbar {
@@ -377,4 +401,10 @@ function priorityTagType(p) {
 }
 .stat-num  { font-size: 26px; font-weight: 700; }
 .stat-lbl  { font-size: 12px; color: #909399; margin-top: 4px; }
+
+:deep(.el-table th.el-table__cell) {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 800;
+}
 </style>

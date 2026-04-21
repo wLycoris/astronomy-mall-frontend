@@ -1,7 +1,29 @@
 <template>
   <div class="order-manage">
+    <section class="commerce-hero order-hero">
+      <div class="hero-copy">
+        <span class="hero-kicker">ORDER CONTROL</span>
+        <h2>订单管理</h2>
+        <p>跟踪支付、发货、物流与取消流程，优先处理待发货和运输中的订单。</p>
+      </div>
+      <div class="hero-metrics">
+        <div class="metric-card">
+          <span>订单总量</span>
+          <strong>{{ total }}</strong>
+        </div>
+        <div class="metric-card warning">
+          <span>本页待发货</span>
+          <strong>{{ pendingShipCount }}</strong>
+        </div>
+        <div class="metric-card">
+          <span>本页实收</span>
+          <strong>¥{{ pageAmountTotal }}</strong>
+        </div>
+      </div>
+    </section>
+
     <!-- 搜索栏 -->
-    <el-card class="search-card">
+    <el-card class="search-card" shadow="never">
       <el-form :model="queryForm" inline>
         <el-form-item label="订单编号">
           <el-input
@@ -89,7 +111,16 @@
     </el-card>
 
     <!-- 订单列表 -->
-    <el-card class="table-card">
+    <el-card class="table-card" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <div>
+            <span class="card-title">订单列表</span>
+            <small>当前筛选 {{ orderList.length }} 条，注意待发货和取消订单</small>
+          </div>
+        </div>
+      </template>
+
       <el-table
           v-loading="loading"
           :data="orderList"
@@ -103,7 +134,7 @@
         <el-table-column prop="receiverPhone" label="联系电话" width="120" />
         <el-table-column prop="paymentAmount" label="实付金额" width="100" align="right">
           <template #default="{ row }">
-            <span style="color: #f56c6c; font-weight: bold">¥{{ row.paymentAmount }}</span>
+            <span class="amount-text">¥{{ row.paymentAmount }}</span>
           </template>
         </el-table-column>
         <el-table-column prop="statusName" label="订单状态" width="90" align="center">
@@ -404,7 +435,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, ElNotification } from 'element-plus'
 import { Search, Refresh, Download } from '@element-plus/icons-vue'
 import {
@@ -422,6 +453,11 @@ const loading = ref(false)
 const orderList = ref([])
 const total = ref(0)
 const dateRange = ref([])
+const pendingShipCount = computed(() => orderList.value.filter(item => item.status === 1).length)
+const pageAmountTotal = computed(() => {
+  const totalAmount = orderList.value.reduce((sum, item) => sum + Number(item.paymentAmount || 0), 0)
+  return totalAmount.toFixed(2)
+})
 
 // 查询表单
 const queryForm = reactive({
@@ -728,15 +764,123 @@ onMounted(() => {
 
 <style scoped>
 .order-manage {
-  padding: 20px;
+  padding: 18px;
+  color: #111827;
+}
+
+.commerce-hero {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background:
+      linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.88)),
+      radial-gradient(circle at 90% 20%, rgba(37, 99, 235, 0.22), transparent 32%);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
+}
+
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.hero-kicker {
+  color: #93c5fd;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+}
+
+.hero-copy h2 {
+  margin: 8px 0 6px;
+  color: #f8fafc;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.hero-copy p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(96px, 1fr));
+  gap: 10px;
+  min-width: 360px;
+}
+
+.metric-card {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.metric-card span {
+  display: block;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 8px;
+  color: #f8fafc;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.metric-card.warning strong {
+  color: #facc15;
 }
 
 .search-card {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
 }
 
 .table-card {
   margin-bottom: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-title {
+  display: block;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.card-header small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.amount-text {
+  color: #b45309;
+  font-weight: 800;
 }
 
 .pagination {
@@ -748,5 +892,40 @@ onMounted(() => {
 .detail-container {
   max-height: 600px;
   overflow-y: auto;
+}
+
+:deep(.el-card__header) {
+  border-bottom-color: #e5e7eb;
+  background: #fafafa;
+}
+
+:deep(.el-form--inline .el-form-item) {
+  margin-right: 14px;
+  margin-bottom: 12px;
+}
+
+:deep(.el-table) {
+  --el-table-border-color: #e5e7eb;
+  --el-table-header-bg-color: #f8fafc;
+  color: #334155;
+}
+
+:deep(.el-table th.el-table__cell) {
+  color: #475569;
+  font-weight: 800;
+}
+
+:deep(.el-table__row:hover > td.el-table__cell) {
+  background: #f8fafc;
+}
+
+@media (max-width: 1100px) {
+  .commerce-hero {
+    flex-direction: column;
+  }
+
+  .hero-metrics {
+    min-width: 0;
+  }
 }
 </style>

@@ -1,5 +1,27 @@
 <template>
   <div class="review-manage">
+    <section class="commerce-hero review-hero">
+      <div class="hero-copy">
+        <span class="hero-kicker">REVIEW OPERATIONS</span>
+        <h2>评价管理</h2>
+        <p>审核评价内容、维护商家回复与置顶状态，让商品口碑展示更可信。</p>
+      </div>
+      <div class="hero-metrics">
+        <div class="metric-card">
+          <span>评价总量</span>
+          <strong>{{ total }}</strong>
+        </div>
+        <div class="metric-card warning">
+          <span>本页待审核</span>
+          <strong>{{ pendingCount }}</strong>
+        </div>
+        <div class="metric-card">
+          <span>本页置顶</span>
+          <strong>{{ topCount }}</strong>
+        </div>
+      </div>
+    </section>
+
     <!-- ====================================================== -->
     <!-- 筛选栏                                                  -->
     <!-- ====================================================== -->
@@ -77,6 +99,10 @@
     <!-- ====================================================== -->
     <el-card class="table-card" shadow="never">
       <div class="table-header">
+        <div>
+          <span class="card-title">评价列表</span>
+          <small>关注待审核、置顶和需要商家回复的评价</small>
+        </div>
         <div class="stats">
           <el-tag type="info">共 {{ total }} 条评价</el-tag>
           <el-tag type="warning" class="ml-8" v-if="pendingCount > 0">
@@ -402,6 +428,7 @@ const queryForm = reactive({
 })
 
 const pendingCount = computed(() => reviewList.value.filter(r => r.status === 2).length)
+const topCount = computed(() => reviewList.value.filter(r => r.isTop === 1).length)
 
 const loadReviewList = async () => {
   loading.value = true
@@ -582,11 +609,97 @@ const handleDelete = async (id) => {
 
 <style scoped>
 .review-manage {
-  padding: 16px;
+  padding: 18px;
+  color: #111827;
+}
+
+.commerce-hero {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background:
+      linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.88)),
+      radial-gradient(circle at 90% 20%, rgba(192, 132, 47, 0.22), transparent 32%);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
+}
+
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.hero-kicker {
+  color: #f7c76f;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+}
+
+.hero-copy h2 {
+  margin: 8px 0 6px;
+  color: #f8fafc;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.hero-copy p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(96px, 1fr));
+  gap: 10px;
+  min-width: 360px;
+}
+
+.metric-card {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.metric-card span {
+  display: block;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 8px;
+  color: #f8fafc;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.metric-card.warning strong {
+  color: #facc15;
 }
 
 .filter-card {
   margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+}
+
+.table-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
 }
 
 .table-header {
@@ -594,6 +707,20 @@ const handleDelete = async (id) => {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
+}
+
+.card-title {
+  display: block;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.table-header small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
 }
 
 .stats { display: flex; align-items: center; gap: 8px; }
@@ -608,7 +735,7 @@ const handleDelete = async (id) => {
 }
 .product-name {
   font-size: 13px;
-  color: #303133;
+  color: #111827;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -628,7 +755,7 @@ const handleDelete = async (id) => {
 }
 .content-text {
   font-size: 13px;
-  color: #606266;
+  color: #475569;
   line-height: 1.5;
   word-break: break-all;
 }
@@ -642,9 +769,9 @@ const handleDelete = async (id) => {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: #409eff;
+  color: #2563eb;
   font-size: 12px;
-  background: #ecf5ff;
+  background: #eff6ff;
   padding: 2px 8px;
   border-radius: 4px;
   overflow: hidden;
@@ -667,16 +794,16 @@ const handleDelete = async (id) => {
 }
 .section-title {
   font-weight: 600;
-  color: #303133;
+  color: #111827;
   font-size: 14px;
   margin-bottom: 8px;
   padding-left: 8px;
-  border-left: 3px solid #409eff;
+  border-left: 3px solid #0f172a;
 }
 .review-content {
-  color: #606266;
+  color: #475569;
   line-height: 1.6;
-  background: #f5f7fa;
+  background: #f8fafc;
   padding: 10px 12px;
   border-radius: 4px;
   word-break: break-all;
@@ -703,7 +830,7 @@ const handleDelete = async (id) => {
 }
 
 .original-review {
-  background: #f5f7fa;
+  background: #f8fafc;
   padding: 10px 12px;
   border-radius: 4px;
   margin-bottom: 12px;
@@ -715,5 +842,40 @@ const handleDelete = async (id) => {
 }
 .existing-reply {
   margin-bottom: 12px;
+}
+
+:deep(.el-card__header) {
+  border-bottom-color: #e5e7eb;
+  background: #fafafa;
+}
+
+:deep(.el-form--inline .el-form-item) {
+  margin-right: 14px;
+  margin-bottom: 12px;
+}
+
+:deep(.el-table) {
+  --el-table-border-color: #e5e7eb;
+  --el-table-header-bg-color: #f8fafc;
+  color: #334155;
+}
+
+:deep(.el-table th.el-table__cell) {
+  color: #475569;
+  font-weight: 800;
+}
+
+:deep(.el-table__row:hover > td.el-table__cell) {
+  background: #f8fafc;
+}
+
+@media (max-width: 1100px) {
+  .commerce-hero {
+    flex-direction: column;
+  }
+
+  .hero-metrics {
+    min-width: 0;
+  }
 }
 </style>

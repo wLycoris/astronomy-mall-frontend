@@ -1,5 +1,26 @@
 <template>
   <div class="admin-course-review">
+    <section class="admin-page-hero tone-violet">
+      <div class="admin-page-copy">
+        <span class="admin-page-kicker">COURSE FEEDBACK</span>
+        <h2>课程评价</h2>
+        <p>集中查看课程学习反馈，按课程、用户和星级筛选，及时清理无效评价。</p>
+      </div>
+      <div class="admin-page-metrics">
+        <div class="admin-metric-card">
+          <span>总评价数</span>
+          <strong>{{ stats.total }}</strong>
+        </div>
+        <div class="admin-metric-card success">
+          <span>本周新增</span>
+          <strong>{{ stats.thisWeek }}</strong>
+        </div>
+        <div class="admin-metric-card warning">
+          <span>平均评分</span>
+          <strong>{{ Number(stats.avgRating || 0).toFixed(1) }}</strong>
+        </div>
+      </div>
+    </section>
 
     <!-- ===== 顶部统计卡片 ===== -->
     <el-row :gutter="20" class="stats-row" v-loading="statsLoading">
@@ -28,14 +49,14 @@
             <template #prefix>
               <el-icon color="#f59e0b"><StarFilled /></el-icon>
             </template>
-            <template #suffix>⭐</template>
+            <template #suffix>分</template>
           </el-statistic>
         </el-card>
       </el-col>
     </el-row>
 
     <!-- ===== 搜索栏 ===== -->
-    <el-card shadow="never" class="search-card">
+    <el-card shadow="never" class="search-card admin-panel-card">
       <el-form :model="searchForm" inline>
         <!-- 课程名称关键词 -->
         <el-form-item label="课程名称">
@@ -75,7 +96,13 @@
     </el-card>
 
     <!-- ===== 评价表格 ===== -->
-    <el-card shadow="never" class="table-card">
+    <el-card shadow="never" class="table-card admin-panel-card">
+      <div class="admin-toolbar-header">
+        <div>
+          <span class="admin-card-title">评价记录</span>
+          <span class="admin-card-subtitle">查看评价内容、星级、点赞数和发布时间</span>
+        </div>
+      </div>
       <el-table
           v-loading="tableLoading"
           :data="tableData"
@@ -323,7 +350,7 @@ onMounted(() => {
 
 <style scoped>
 .admin-course-review {
-  padding: 20px;
+  padding: 0;
 }
 
 /* ===== 统计卡片 ===== */
@@ -332,18 +359,25 @@ onMounted(() => {
 }
 .stat-card {
   text-align: center;
-  border-radius: 8px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
 }
 
 /* ===== 搜索栏 ===== */
 .search-card {
   margin-bottom: 16px;
-  border-radius: 8px;
+  border-radius: 12px;
 }
 
 /* ===== 表格 ===== */
 .table-card {
-  border-radius: 8px;
+  border-radius: 12px;
+}
+
+:deep(.el-table th.el-table__cell) {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 800;
 }
 
 /* 课程标题 */

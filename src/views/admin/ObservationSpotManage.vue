@@ -1,8 +1,35 @@
 <template>
   <div class="spot-manage">
+    <section class="admin-page-hero tone-green">
+      <div class="admin-page-copy">
+        <span class="admin-page-kicker">OBSERVING NETWORK</span>
+        <h2>观测点管理</h2>
+        <p>维护可观测地点的坐标、光害等级和签到数据，方便用户查找适合拍摄与观测的地点。</p>
+      </div>
+      <div class="admin-page-metrics">
+        <div class="admin-metric-card">
+          <span>观测点总数</span>
+          <strong>{{ pagination.total }}</strong>
+        </div>
+        <div class="admin-metric-card success">
+          <span>当页有评分</span>
+          <strong>{{ ratedSpotCount }}</strong>
+        </div>
+        <div class="admin-metric-card warning">
+          <span>当页签到数</span>
+          <strong>{{ pageCheckinTotal }}</strong>
+        </div>
+      </div>
+    </section>
 
     <!-- ========== 搜索 + 操作工具栏 ========== -->
-    <el-card shadow="never">
+    <el-card class="admin-panel-card" shadow="never">
+      <div class="admin-toolbar-header">
+        <div>
+          <span class="admin-card-title">观测点列表</span>
+          <span class="admin-card-subtitle">按名称、省份或城市筛选，也可以新增地图坐标点</span>
+        </div>
+      </div>
       <div class="toolbar">
         <div class="toolbar-left">
           <!-- 关键词搜索 -->
@@ -68,7 +95,7 @@
         </el-table-column>
         <el-table-column label="评分" width="100" align="center">
           <template #default="{ row }">
-            <span v-if="row.ratingCount > 0">⭐ {{ Number(row.rating).toFixed(1) }} ({{ row.ratingCount }})</span>
+            <span v-if="row.ratingCount > 0">{{ Number(row.rating).toFixed(1) }} ({{ row.ratingCount }})</span>
             <span v-else style="color: #999;">暂无</span>
           </template>
         </el-table-column>
@@ -211,7 +238,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, nextTick } from 'vue'
+import { ref, reactive, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, Plus } from '@element-plus/icons-vue'
 import { getAdminSpotList, addSpot, updateSpot, deleteSpot, getSpotStats } from '@/api/admin/location'
@@ -222,6 +249,9 @@ const loading = ref(false)
 const spotList = ref([])
 const searchForm = reactive({ keyword: '', province: '', city: '' })
 const pagination = reactive({ pageNum: 1, pageSize: 10, total: 0 })
+
+const ratedSpotCount = computed(() => spotList.value.filter(item => Number(item.ratingCount || 0) > 0).length)
+const pageCheckinTotal = computed(() => spotList.value.reduce((sum, item) => sum + Number(item.checkinCount || 0), 0))
 
 /** 加载观测点列表 */
 const loadSpots = async () => {
@@ -484,6 +514,12 @@ loadSpots()
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+}
+
+:deep(.el-table th.el-table__cell) {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 800;
 }
 
 /* ===== 新增/编辑弹窗布局 ===== */

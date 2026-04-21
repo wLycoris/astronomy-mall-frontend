@@ -5,6 +5,28 @@
 
 <template>
   <div class="product-manage">
+    <section class="commerce-hero">
+      <div class="hero-copy">
+        <span class="hero-kicker">MERCHANDISE OPERATIONS</span>
+        <h2>商品管理</h2>
+        <p>维护商品资料、上下架状态、批量导入导出与库存调整，让商品库保持清晰可控。</p>
+      </div>
+      <div class="hero-metrics">
+        <div class="metric-card">
+          <span>商品总数</span>
+          <strong>{{ pagination.total }}</strong>
+        </div>
+        <div class="metric-card">
+          <span>本页上架</span>
+          <strong>{{ visibleOnlineCount }}</strong>
+        </div>
+        <div class="metric-card warning">
+          <span>低库存</span>
+          <strong>{{ visibleLowStockCount }}</strong>
+        </div>
+      </div>
+    </section>
+
     <!-- 搜索区域 -->
     <el-card class="search-card" shadow="never">
       <el-form :model="searchForm" inline>
@@ -39,6 +61,7 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch">
+            <el-icon><Search /></el-icon>
             搜索
           </el-button>
           <el-button @click="handleReset">
@@ -49,17 +72,19 @@
     </el-card>
 
     <!-- 表格区域 -->
-    <el-card class="table-card" shadow="never" style="margin-top: 20px;">
+    <el-card class="table-card" shadow="never">
       <template #header>
         <div class="card-header">
-          <span>商品列表</span>
           <div>
+            <span class="card-title">商品列表</span>
+            <small>当前筛选 {{ tableData.length }} 条，已选 {{ selectedIds.length }} 条</small>
+          </div>
+          <div class="header-actions">
             <!-- 🆕 批量操作按钮 -->
             <el-button
                 type="success"
                 :disabled="selectedIds.length === 0"
                 @click="handleBatchOnline"
-                style="margin-right: 10px;"
             >
               批量上架 ({{ selectedIds.length }})
             </el-button>
@@ -67,7 +92,6 @@
                 type="warning"
                 :disabled="selectedIds.length === 0"
                 @click="handleBatchOffline"
-                style="margin-right: 10px;"
             >
               批量下架 ({{ selectedIds.length }})
             </el-button>
@@ -78,18 +102,18 @@
                 :show-file-list="false"
                 :before-upload="beforeUpload"
                 accept=".xlsx,.xls"
-                style="display: inline-block; margin-right: 10px;"
+                class="inline-upload"
             >
               <el-button type="success">
                 <el-icon><Upload /></el-icon> 批量导入
               </el-button>
             </el-upload>
 
-            <el-button type="warning" @click="handleExport" style="margin-right: 10px;">
+            <el-button type="warning" @click="handleExport">
               <el-icon><Download /></el-icon> 批量导出
             </el-button>
 
-            <el-button type="info" @click="handleDownloadTemplate" style="margin-right: 10px;">
+            <el-button type="info" @click="handleDownloadTemplate">
               <el-icon><Document /></el-icon> 下载模板
             </el-button>
 
@@ -97,7 +121,7 @@
               <el-icon><Warning /></el-icon>
               库存预警
             </el-button>
-            <el-button type="primary" @click="handleAdd" style="margin-left: 10px;">
+            <el-button type="primary" @click="handleAdd">
               新增商品
             </el-button>
           </div>
@@ -132,11 +156,18 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="productName" label="商品名称" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="productName" label="商品名称" min-width="220" show-overflow-tooltip>
+          <template #default="{ row }">
+            <div class="product-name-cell">
+              <strong>{{ row.productName }}</strong>
+              <span v-if="row.brand">{{ row.brand }}</span>
+            </div>
+          </template>
+        </el-table-column>
 
         <el-table-column prop="price" label="价格" width="110" align="center">
           <template #default="{ row }">
-            <span style="color: #f56c6c; font-weight: 600;">¥{{ row.price }}</span>
+            <span class="amount-text">¥{{ row.price }}</span>
           </template>
         </el-table-column>
 
@@ -185,7 +216,7 @@
       </el-table>
 
       <!-- 分页 -->
-      <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+      <div class="pagination-wrap">
         <el-pagination
             v-model:current-page="pagination.pageNum"
             v-model:page-size="pagination.pageSize"
@@ -515,7 +546,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
-import { Upload, Download, Document } from '@element-plus/icons-vue'
+import { Upload, Download, Document, Search, Warning } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import {
   getProductList,
@@ -556,6 +587,8 @@ const pagination = reactive({
 
 // 表格数据
 const tableData = ref([])
+const visibleOnlineCount = computed(() => tableData.value.filter(item => item.status === 1).length)
+const visibleLowStockCount = computed(() => tableData.value.filter(item => Number(item.stock) < 10).length)
 
 // 分类列表
 const categories = ref([])
@@ -1069,12 +1102,196 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .product-manage {
-  padding: 20px;
+  padding: 18px;
+  color: #111827;
+}
+
+.commerce-hero {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background:
+      linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.88)),
+      radial-gradient(circle at 90% 20%, rgba(6, 182, 212, 0.22), transparent 32%);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
+}
+
+.hero-copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.hero-kicker {
+  color: #7dd3fc;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+}
+
+.hero-copy h2 {
+  margin: 8px 0 6px;
+  color: #f8fafc;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.hero-copy p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.hero-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(96px, 1fr));
+  gap: 10px;
+  min-width: 360px;
+}
+
+.metric-card {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.metric-card span {
+  display: block;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 8px;
+  color: #f8fafc;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.metric-card.warning strong {
+  color: #facc15;
+}
+
+.search-card,
+.table-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
+}
+
+.search-card {
+  margin-bottom: 16px;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
+}
+
+.card-title {
+  display: block;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.card-header small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-upload {
+  display: inline-block;
+}
+
+.header-actions :deep(.el-button + .el-button),
+.header-actions :deep(.el-button) {
+  margin-left: 0;
+}
+
+.product-name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.product-name-cell strong {
+  color: #111827;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.product-name-cell span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.amount-text {
+  color: #b45309;
+  font-weight: 800;
+}
+
+.pagination-wrap {
+  margin-top: 18px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+:deep(.el-card__header) {
+  border-bottom-color: #e5e7eb;
+  background: #fafafa;
+}
+
+:deep(.el-form--inline .el-form-item) {
+  margin-right: 14px;
+  margin-bottom: 12px;
+}
+
+:deep(.el-table) {
+  --el-table-border-color: #e5e7eb;
+  --el-table-header-bg-color: #f8fafc;
+  color: #334155;
+}
+
+:deep(.el-table th.el-table__cell) {
+  color: #475569;
+  font-weight: 800;
+}
+
+:deep(.el-table__row:hover > td.el-table__cell) {
+  background: #f8fafc;
+}
+
+@media (max-width: 1100px) {
+  .commerce-hero {
+    flex-direction: column;
+  }
+
+  .hero-metrics {
+    min-width: 0;
+  }
 }
 </style>
