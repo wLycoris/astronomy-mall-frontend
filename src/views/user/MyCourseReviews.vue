@@ -2,8 +2,12 @@
   <div class="my-course-reviews">
 
     <div class="page-header">
-      <h2 class="page-title">我的课程评价</h2>
-      <span class="page-total" v-if="total > 0">共 {{ total }} 条</span>
+      <div>
+        <div class="section-kicker">COURSE NOTES</div>
+        <h2 class="page-title">我的课程评价</h2>
+        <p class="page-subtitle">整理你给课程留下的评分和学习感受。</p>
+      </div>
+      <span class="page-total" v-if="total > 0">{{ total }} 条评价</span>
     </div>
 
     <div v-loading="loading">
@@ -12,8 +16,12 @@
           v-if="!loading && list.length === 0"
           description="还没有评价过任何课程"
           :image-size="100"
+          class="empty-state"
       >
-        <el-button type="primary" @click="$router.push('/course')">去看看课程</el-button>
+        <template #image>
+          <div class="empty-icon">NOTE</div>
+        </template>
+        <el-button class="primary-action" @click="$router.push('/course')">去看看课程</el-button>
       </el-empty>
 
       <!-- 评价列表 -->
@@ -31,7 +39,7 @@
                 class="cover-img"
             >
               <template #error>
-                <div class="cover-fallback">🔭</div>
+                <div class="cover-fallback">课程</div>
               </template>
             </el-image>
           </div>
@@ -60,6 +68,7 @@
             <div class="review-actions">
               <el-button
                   size="small"
+                  class="secondary-action"
                   @click="openEdit(item)"
               >编辑评价</el-button>
               <el-button
@@ -92,6 +101,7 @@
         title="编辑评价"
         width="480px"
         :close-on-click-modal="false"
+        class="course-review-dialog"
     >
       <div class="edit-form">
         <div class="edit-stars-row">
@@ -120,6 +130,7 @@
         <el-button @click="editVisible = false">取消</el-button>
         <el-button
             type="primary"
+            class="dialog-primary"
             :loading="editLoading"
             :disabled="editForm.rating === 0"
             @click="submitEdit"
@@ -154,7 +165,7 @@ const editHover    = ref(0)
 const editCourseId = ref(null)
 const editForm     = reactive({ rating: 0, content: '' })
 
-const ratingHintMap = { 1: '很差', 2: '较差', 3: '一般', 4: '不错', 5: '非常棒！' }
+const ratingHintMap = { 1: '很差', 2: '较差', 3: '一般', 4: '不错', 5: '非常棒' }
 
 // ======================== 方法 ========================
 
@@ -224,173 +235,343 @@ onMounted(() => {
 
 <style scoped>
 .my-course-reviews {
-  padding: 0 4px;
+  min-height: 420px;
+  color: #172033;
 }
 
 .page-header {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-bottom: 20px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid #f0f0f0;
-}
-.page-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1a1a2e;
-  margin: 0;
-}
-.page-total {
-  font-size: 13px;
-  color: #999;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+  padding: 22px 24px;
+  border: 1px solid #e9e1d4;
+  border-radius: 8px;
+  background:
+    radial-gradient(520px 180px at 8% 0%, rgba(199, 165, 114, .13), transparent 64%),
+    linear-gradient(180deg, #fffdfa 0%, #f8f4ec 100%);
+  box-shadow: 0 16px 38px rgba(35, 30, 22, .08);
 }
 
-/* 评价列表 */
+.section-kicker {
+  margin-bottom: 5px;
+  color: #9a6b36;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+}
+
+.page-title {
+  margin: 0;
+  color: #101827;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.page-subtitle {
+  margin: 6px 0 0;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.page-total {
+  color: #8a5f2e;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.primary-action {
+  border: 1px solid #111827;
+  border-radius: 4px;
+  background: #111827;
+  color: #fffdfa;
+  font-weight: 800;
+}
+
+.primary-action:hover {
+  border-color: #9a6b36;
+  background: #9a6b36;
+  color: #fffdfa;
+}
+
+.empty-state {
+  padding: 70px 0;
+  border: 1px solid #ebe3d7;
+  border-radius: 8px;
+  background: #fffdfa;
+}
+
+.empty-icon {
+  width: 112px;
+  height: 112px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 42% 34%, #fff7e0, #f3e9cf 58%, #d7c192 100%);
+  color: #111827;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 1.8px;
+}
+
 .review-list {
   display: flex;
   flex-direction: column;
-  gap: 0;
-}
-.review-card {
-  display: flex;
-  gap: 16px;
-  padding: 18px 0;
-  border-bottom: 1px solid #f5f5f5;
-}
-.review-card:last-child {
-  border-bottom: none;
+  gap: 12px;
 }
 
-/* 左侧封面 */
-.course-cover {
-  flex-shrink: 0;
-  width: 100px;
-  height: 65px;
+.review-card {
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #ebe3d7;
   border-radius: 8px;
+  background: #fffdfa;
+  box-shadow: 0 12px 28px rgba(35, 30, 22, .07);
+  transition: border-color .2s, box-shadow .2s, transform .2s;
+}
+
+.review-card:hover {
+  border-color: rgba(154, 107, 54, .44);
+  box-shadow: 0 16px 34px rgba(35, 30, 22, .11);
+  transform: translateY(-1px);
+}
+
+.course-cover {
+  width: 116px;
+  height: 74px;
   overflow: hidden;
-  background: #1a1a2e;
+  border-radius: 7px;
+  background: #111827;
   cursor: pointer;
 }
+
 .cover-img {
   width: 100%;
   height: 100%;
 }
+
 .cover-fallback {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
-  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  background:
+    radial-gradient(80px 54px at 50% 40%, rgba(247, 236, 210, .22), transparent 65%),
+    #111827;
+  color: #f3e9cf;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 2px;
 }
 
-/* 右侧内容 */
 .review-body {
-  flex: 1;
   min-width: 0;
 }
+
 .review-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
-  gap: 8px;
+  gap: 14px;
+  margin-bottom: 8px;
 }
+
 .course-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
+  flex: 1;
+  color: #111827;
   cursor: pointer;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.45;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  flex: 1;
 }
+
 .course-title:hover {
-  color: #7c3aed;
+  color: #8a5f2e;
 }
+
 .review-date {
+  color: #9aa3b2;
   font-size: 12px;
-  color: #bbb;
+  font-weight: 700;
   flex-shrink: 0;
 }
 
-/* 星级 */
 .review-stars {
   display: flex;
   align-items: center;
   gap: 2px;
-  margin-bottom: 6px;
-}
-.star {
-  font-size: 15px;
-  line-height: 1;
-}
-.star.on  { color: #f59e0b; }
-.star.off { color: #e0e0e0; }
-.rating-num {
-  font-size: 12px;
-  color: #999;
-  margin-left: 4px;
+  margin-bottom: 8px;
 }
 
-/* 评价文字 */
+.star {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.star.on {
+  color: #c28a2e;
+}
+
+.star.off {
+  color: #ded6c9;
+}
+
+.rating-num {
+  margin-left: 6px;
+  color: #8a5f2e;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .review-content {
+  margin: 0 0 12px;
+  color: #4b5563;
   font-size: 13px;
-  color: #555;
-  line-height: 1.6;
-  margin: 0 0 10px;
+  line-height: 1.75;
   word-break: break-word;
 }
+
 .review-content.empty {
-  color: #ccc;
+  color: #a6adba;
   font-style: italic;
 }
 
-/* 操作 */
 .review-actions {
   display: flex;
-  gap: 4px;
+  gap: 8px;
+  align-items: center;
 }
 
-/* 分页 */
+.secondary-action {
+  border-color: #d8caba;
+  color: #172033;
+  font-weight: 700;
+}
+
+.secondary-action:hover {
+  border-color: #9a6b36;
+  color: #8a5f2e;
+  background: #faf6ef;
+}
+
 .pagination-wrapper {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
+  margin-top: 24px;
 }
 
-/* 编辑弹窗 */
+:deep(.el-pagination.is-background .el-pager li.is-active) {
+  background-color: #111827;
+}
+
 .edit-form {
   padding: 4px 0;
 }
+
 .edit-stars-row {
   display: flex;
   align-items: center;
-  gap: 3px;
-  margin-bottom: 14px;
+  gap: 4px;
+  margin-bottom: 16px;
 }
+
 .edit-label {
+  margin-right: 8px;
+  color: #4b5563;
   font-size: 13px;
-  color: #666;
-  margin-right: 6px;
+  font-weight: 700;
 }
+
 .edit-star {
-  font-size: 28px;
-  color: #e0e0e0;
+  color: #ded6c9;
   cursor: pointer;
-  transition: color 0.12s;
+  font-size: 28px;
   line-height: 1;
+  transition: color .12s, transform .12s;
   user-select: none;
 }
-.edit-star.lit {
-  color: #f59e0b;
+
+.edit-star:hover {
+  transform: translateY(-1px);
 }
+
+.edit-star.lit {
+  color: #c28a2e;
+}
+
 .edit-hint {
+  margin-left: 8px;
+  color: #8a5f2e;
   font-size: 12px;
-  color: #f59e0b;
-  margin-left: 6px;
+  font-weight: 800;
+}
+
+:deep(.course-review-dialog) {
+  border-radius: 8px;
+}
+
+:deep(.course-review-dialog .el-dialog__header) {
+  margin: 0;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #ebe3d7;
+  background: #f8f4ec;
+}
+
+:deep(.course-review-dialog .el-dialog__title) {
+  color: #111827;
+  font-weight: 800;
+}
+
+:deep(.course-review-dialog .el-dialog__body) {
+  padding: 22px 24px;
+}
+
+:deep(.course-review-dialog .el-dialog__footer) {
+  padding: 16px 24px 22px;
+  border-top: 1px solid #ebe3d7;
+}
+
+.dialog-primary {
+  border-color: #111827;
+  background: #111827;
+  font-weight: 800;
+}
+
+.dialog-primary:hover {
+  border-color: #9a6b36;
+  background: #9a6b36;
+}
+
+@media (max-width: 720px) {
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .review-card {
+    grid-template-columns: 96px minmax(0, 1fr);
+  }
+
+  .course-cover {
+    width: 96px;
+    height: 62px;
+  }
+
+  .review-top {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
 }
 </style>

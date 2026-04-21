@@ -360,7 +360,7 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .search-page {
   min-height: 100%;
-  background: #fff;
+  background: transparent;
 }
 
 /* ══════ 空白引导状态 ══════ */
@@ -370,74 +370,78 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   padding-top: 140px;
-  color: #ccc;
+  color: #8c95a3;
 
   .empty-icon { font-size: 48px; margin-bottom: 16px; }
-  .empty-text { font-size: 14px; color: #bbb; }
+  .empty-text { font-size: 14px; color: #697386; }
 }
 
 /* ══════ 搜索结果 ══════ */
 .search-results {
-  background: #fff;
+  background: transparent;
 }
 
 /* ── Tab栏（小红书风格：居中 + 红色下划线） ── */
 .result-tabs {
   display: flex;
   justify-content: center;
-  gap: 40px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fff;
+  gap: 12px;
+  width: min(900px, calc(100% - 48px));
+  margin: 18px auto 0;
+  border: 1px solid var(--forum-line, #e7e1d7);
+  border-radius: 8px;
+  background: rgba(255, 253, 250, 0.92);
   position: sticky;
-  top: 56px; /* 紧贴顶部导航 */
+  top: 72px;
   z-index: 50;
+  padding: 8px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 12px 28px rgba(16, 23, 34, 0.06);
 }
 
 .result-tab {
   position: relative;
-  padding: 16px 0;
+  padding: 8px 22px;
   font-size: 15px;
-  color: #999;
+  color: var(--forum-muted, #697386);
   cursor: pointer;
   font-weight: 500;
-  transition: color 0.15s;
+  border-radius: 18px;
+  transition: color 0.15s, background 0.15s;
 
-  &:hover { color: #666; }
+  &:hover {
+    color: var(--forum-ink, #101722);
+    background: #f3efe7;
+  }
 
   .tab-line {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 3px;
-    border-radius: 2px;
-    background: #ff2442;
-    transition: width 0.2s;
+    display: none;
   }
 
   &.active {
-    color: #333;
+    color: #fff;
     font-weight: 700;
-
-    .tab-line { width: 28px; }
+    background: var(--forum-ink, #101722);
   }
 }
 
 /* ── 笔记瀑布流结果 ── */
 .post-results {
-  padding: 20px 24px;
+  width: min(1320px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 20px 0;
   min-height: 400px;
 }
 
 /* ── 用户结果列表 ── */
 .user-results {
-  padding: 12px 24px;
+  padding: 18px 24px;
   min-height: 400px;
 }
 
 .user-list {
-  max-width: 600px;
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 .user-card {
@@ -445,11 +449,18 @@ onUnmounted(() => {
   align-items: center;
   gap: 14px;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  background: var(--forum-card, #fffdfa);
+  border: 1px solid var(--forum-line, #e7e1d7);
+  margin-bottom: 10px;
 
-  &:hover { background: #f8f8f8; }
+  &:hover {
+    background: #fffdfa;
+    border-color: rgba(200, 155, 83, 0.42);
+    transform: translateY(-1px);
+  }
 }
 
 .user-avatar {
@@ -460,7 +471,7 @@ onUnmounted(() => {
   flex-shrink: 0;
 
   &.placeholder {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #101722 0%, #2f6f9f 100%);
     color: #fff;
     font-size: 22px;
     font-weight: 700;
@@ -478,7 +489,7 @@ onUnmounted(() => {
 .user-nickname {
   font-size: 15px;
   font-weight: 600;
-  color: #333;
+  color: var(--forum-ink, #101722);
   display: block;
   margin-bottom: 4px;
 }
@@ -491,8 +502,8 @@ onUnmounted(() => {
 
 .user-level {
   font-size: 11px;
-  color: #f59e0b;
-  background: #fef3c7;
+  color: #8a5d1f;
+  background: #f6ead4;
   padding: 1px 6px;
   border-radius: 8px;
   font-weight: 500;
@@ -500,7 +511,7 @@ onUnmounted(() => {
 
 .user-city {
   font-size: 12px;
-  color: #999;
+  color: var(--forum-muted, #697386);
 }
 
 /* ── 无结果 ── */
@@ -509,11 +520,11 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   padding-top: 80px;
-  color: #ccc;
+  color: #8c95a3;
 
   .no-result-icon { font-size: 40px; margin-bottom: 12px; }
-  p { font-size: 14px; color: #999; margin: 0; }
-  .no-result-tip { font-size: 12px; color: #ccc; margin-top: 4px; }
+  p { font-size: 14px; color: #697386; margin: 0; }
+  .no-result-tip { font-size: 12px; color: #8c95a3; margin-top: 4px; }
 }
 
 /* ── 加载更多 ── */
@@ -523,18 +534,19 @@ onUnmounted(() => {
 
   .loading-text, .end-text {
     font-size: 13px;
-    color: #bbb;
+    color: #8c95a3;
   }
 }
 
 /* ── 话题结果 ── */
 .topic-results {
-  padding: 12px 24px;
+  padding: 18px 24px;
   min-height: 400px;
 }
 
 .topic-list {
-  max-width: 600px;
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 .topic-card {
@@ -542,18 +554,25 @@ onUnmounted(() => {
   align-items: center;
   gap: 14px;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  background: var(--forum-card, #fffdfa);
+  border: 1px solid var(--forum-line, #e7e1d7);
+  margin-bottom: 10px;
 
-  &:hover { background: #f8f8f8; }
+  &:hover {
+    background: #fffdfa;
+    border-color: rgba(200, 155, 83, 0.42);
+    transform: translateY(-1px);
+  }
 }
 
 .topic-icon {
   width: 44px;
   height: 44px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #ff2442 0%, #ff6b81 100%);
+  background: linear-gradient(135deg, #101722 0%, #2f6f9f 100%);
   color: #fff;
   font-size: 22px;
   font-weight: 700;
@@ -571,31 +590,38 @@ onUnmounted(() => {
 .topic-name {
   font-size: 15px;
   font-weight: 600;
-  color: #333;
+  color: var(--forum-ink, #101722);
   display: block;
   margin-bottom: 2px;
 }
 
 .topic-count {
   font-size: 12px;
-  color: #999;
+  color: var(--forum-muted, #697386);
 }
 
 .topic-arrow {
   font-size: 16px;
-  color: #ccc;
+  color: #a8b0ba;
   flex-shrink: 0;
 }
 
 /* ── 关键词高亮 ── */
 :deep(.highlight) {
-  color: #ff2442;
+  color: #d84b5f;
   font-weight: 700;
 }
 
 /* ══════ 响应式 ══════ */
 @media (max-width: 768px) {
-  .post-results { padding: 12px; }
+  .result-tabs {
+    width: calc(100% - 24px);
+    top: 68px;
+  }
+  .post-results {
+    width: calc(100% - 24px);
+    padding: 12px 0;
+  }
   .user-results { padding: 8px 12px; }
   .topic-results { padding: 8px 12px; }
 }

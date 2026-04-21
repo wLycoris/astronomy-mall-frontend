@@ -37,7 +37,7 @@
                     v-for="tag in overview.interestTags.slice(0, 4)"
                     :key="tag"
                     size="small" type="info" effect="plain" class="interest-tag"
-                >🔭 {{ tag }}</el-tag>
+                >{{ tag }}</el-tag>
                 <span v-if="overview.interestTags.length > 4" class="tag-more">
                   +{{ overview.interestTags.length - 4 }}
                 </span>
@@ -168,6 +168,31 @@
         </div>
       </div>
 
+      <!-- ── 常用入口 ──────────────────────────────────────── -->
+      <div class="card quick-actions-card">
+        <div class="card-header">
+          <span class="card-title">常用入口</span>
+          <span class="card-subtitle">把高频功能放在这里，少在侧边栏里找</span>
+        </div>
+        <div class="quick-action-grid">
+          <button
+              v-for="item in quickActions"
+              :key="item.path"
+              class="quick-action-item"
+              type="button"
+              @click="router.push(item.path)"
+          >
+            <span class="quick-icon">
+              <el-icon><component :is="item.icon" /></el-icon>
+            </span>
+            <span class="quick-copy">
+              <span class="quick-title">{{ item.title }}</span>
+              <span class="quick-desc">{{ item.desc }}</span>
+            </span>
+          </button>
+        </div>
+      </div>
+
       <!-- ── 第三行：最近订单预览 ───────────────────────────────── -->
       <div v-if="recentOrders.length" class="card recent-orders-card">
         <div class="card-header">
@@ -183,7 +208,7 @@
           >
             <div class="order-thumb">
               <img v-if="order.firstItemImage" :src="order.firstItemImage" />
-              <span v-else>🔭</span>
+              <span v-else>器材</span>
             </div>
             <div class="order-info">
               <div class="order-no">{{ order.orderNo }}</div>
@@ -214,7 +239,8 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   Location, Calendar, CreditCard, Van, Box,
-  ChatDotRound, RefreshLeft, Refresh, Tools
+  ChatDotRound, RefreshLeft, Refresh, Tools,
+  Search, VideoPlay, EditPen, Star
 } from '@element-plus/icons-vue'
 import { getUserOverview } from '@/api/user/overview'
 import { getWallet } from '@/api/wallet'        // 2.4.4 新增：独立钱包接口
@@ -389,6 +415,15 @@ const orderStatusItems = computed(() => [
   { label: '退款/售后', icon: RefreshLeft,  count: overview.value?.refundingCount      || 0, path: '/order/list',  query: {} },
   { label: '安装预约',  icon: Tools,        count: 0, path: '/user/installation', query: {} }  // ← 新增
 ])
+
+const quickActions = [
+  { title: '收货地址', desc: '管理常用地址', path: '/user/address', icon: Location },
+  { title: '我的钱包', desc: '余额与流水', path: '/user/wallet', icon: CreditCard },
+  { title: '安装预约', desc: '设备安装服务', path: '/user/installation', icon: Tools },
+  { title: '星图识别', desc: '查看识别历史', path: '/user/recognition', icon: Search },
+  { title: '学习记录', desc: '课程进度', path: '/user/course-history', icon: VideoPlay },
+  { title: '社区内容', desc: '帖子与收藏', path: '/user/my-posts', icon: EditPen }
+]
 
 const goOrders = (item) => router.push({ path: item.path, query: item.query })
 const goWallet = (tab)  => router.push({ path: '/user/wallet', query: { tab } })
@@ -769,5 +804,327 @@ const logTypeText = (t) => ({ 1:'充值', 2:'提现', 3:'回收入账', 4:'购�
   .wallet-top-row { flex-wrap: wrap; }
 
   .wallet-log-block { width: 100%; }
+}
+
+/* User overview polish: clearer dashboard and readable account cards. */
+:global(body .overview-page.overview-page) {
+  display: grid !important;
+  gap: 18px !important;
+  color: #111827 !important;
+}
+
+:global(body .overview-page.overview-page .card) {
+  border: 1px solid rgba(21, 26, 34, 0.12) !important;
+  border-radius: 7px !important;
+  background: #fffdfa !important;
+  box-shadow: 0 14px 32px rgba(21, 26, 34, 0.055) !important;
+}
+
+:global(body .overview-page.overview-page .user-info-card) {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 24px !important;
+  align-items: center !important;
+  min-height: 148px !important;
+  padding: 24px 28px !important;
+  background:
+    linear-gradient(135deg, rgba(240, 200, 120, 0.12), transparent 44%),
+    #fffdfa !important;
+}
+
+:global(body .overview-page.overview-page .user-info-left) {
+  align-items: center !important;
+}
+
+:global(body .overview-page.overview-page .user-avatar) {
+  width: 72px !important;
+  height: 72px !important;
+  border: 2px solid rgba(21, 26, 34, 0.12) !important;
+  box-shadow: none !important;
+}
+
+:global(body .overview-page.overview-page .user-name) {
+  color: #111827 !important;
+  font-size: 22px !important;
+  font-weight: 850 !important;
+}
+
+:global(body .overview-page.overview-page .level-tag) {
+  border-color: rgba(156, 107, 53, 0.28) !important;
+  background: #fff8ec !important;
+  color: #8a5a22 !important;
+  font-weight: 750 !important;
+}
+
+:global(body .overview-page.overview-page .sub-item),
+:global(body .overview-page.overview-page .tag-more) {
+  color: #4b5563 !important;
+}
+
+:global(body .overview-page.overview-page .interest-tag) {
+  height: 24px !important;
+  border-color: rgba(21, 26, 34, 0.12) !important;
+  border-radius: 999px !important;
+  background: #f8f5ef !important;
+  color: #374151 !important;
+  font-weight: 650 !important;
+}
+
+:global(body .overview-page.overview-page .tag-add-link),
+:global(body .overview-page.overview-page .card-more) {
+  color: #8a5a22 !important;
+  font-weight: 750 !important;
+  text-decoration: none !important;
+}
+
+:global(body .overview-page.overview-page .user-stats) {
+  align-self: stretch !important;
+  min-width: 330px !important;
+  padding-left: 28px !important;
+  border-left: 1px solid rgba(21, 26, 34, 0.1) !important;
+}
+
+:global(body .overview-page.overview-page .stat-item) {
+  padding: 0 20px !important;
+}
+
+:global(body .overview-page.overview-page .stat-value) {
+  color: #111827 !important;
+  font-size: 24px !important;
+  font-weight: 860 !important;
+}
+
+:global(body .overview-page.overview-page .stat-label) {
+  color: #667085 !important;
+  font-weight: 650 !important;
+}
+
+:global(body .overview-page.overview-page .row-two) {
+  grid-template-columns: minmax(0, 1fr) 360px !important;
+  gap: 18px !important;
+}
+
+:global(body .overview-page.overview-page .card-header) {
+  margin-bottom: 16px !important;
+}
+
+:global(body .overview-page.overview-page .card-title) {
+  color: #111827 !important;
+  font-size: 17px !important;
+  font-weight: 850 !important;
+}
+
+:global(body .overview-page.overview-page .card-subtitle) {
+  color: #667085 !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+}
+
+:global(body .overview-page.overview-page .order-status-grid) {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+:global(body .overview-page.overview-page .status-item) {
+  min-height: 86px !important;
+  padding: 12px 8px !important;
+  border: 1px solid rgba(21, 26, 34, 0.08) !important;
+  border-radius: 6px !important;
+  background: #ffffff !important;
+}
+
+:global(body .overview-page.overview-page .status-item:hover) {
+  border-color: rgba(156, 107, 53, 0.28) !important;
+  background: #fff8ec !important;
+}
+
+:global(body .overview-page.overview-page .status-icon) {
+  color: #111827 !important;
+  font-size: 24px !important;
+}
+
+:global(body .overview-page.overview-page .status-label) {
+  color: #374151 !important;
+  font-weight: 700 !important;
+}
+
+:global(body .overview-page.overview-page .wallet-card) {
+  background:
+    linear-gradient(135deg, rgba(17, 24, 39, 0.035), transparent 48%),
+    #fffdfa !important;
+}
+
+:global(body .overview-page.overview-page .wallet-update-time),
+:global(body .overview-page.overview-page .log-time),
+:global(body .overview-page.overview-page .log-remark) {
+  color: #667085 !important;
+}
+
+:global(body .overview-page.overview-page .balance-label) {
+  color: #4b5563 !important;
+  font-weight: 700 !important;
+}
+
+:global(body .overview-page.overview-page .balance-unit),
+:global(body .overview-page.overview-page .balance-value) {
+  color: #9c4f1e !important;
+}
+
+:global(body .overview-page.overview-page .wallet-actions .el-button) {
+  min-width: 58px !important;
+  height: 30px !important;
+  border-radius: 4px !important;
+  font-weight: 750 !important;
+}
+
+:global(body .overview-page.overview-page .wallet-actions .el-button--primary) {
+  border-color: #111827 !important;
+  background: #111827 !important;
+  color: #fffdfa !important;
+}
+
+:global(body .overview-page.overview-page .wallet-actions .el-button--primary span) {
+  color: #fffdfa !important;
+}
+
+:global(body .overview-page.overview-page .wallet-actions .el-button:not(.el-button--primary) span) {
+  color: #111827 !important;
+}
+
+:global(body .overview-page.overview-page .wallet-divider),
+:global(body .overview-page.overview-page .recent-order-item) {
+  border-color: rgba(21, 26, 34, 0.1) !important;
+}
+
+:global(body .overview-page.overview-page .log-desc),
+:global(body .overview-page.overview-page .order-name) {
+  color: #111827 !important;
+  font-weight: 700 !important;
+}
+
+:global(body .overview-page.overview-page .quick-actions-card) {
+  padding: 20px 22px !important;
+}
+
+:global(body .overview-page.overview-page .quick-action-grid) {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+:global(body .overview-page.overview-page .quick-action-item) {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 72px !important;
+  padding: 12px !important;
+  border: 1px solid rgba(21, 26, 34, 0.1) !important;
+  border-radius: 6px !important;
+  background: #ffffff !important;
+  color: #111827 !important;
+  cursor: pointer !important;
+  text-align: left !important;
+}
+
+:global(body .overview-page.overview-page .quick-action-item:hover) {
+  border-color: rgba(156, 107, 53, 0.3) !important;
+  background: #fff8ec !important;
+}
+
+:global(body .overview-page.overview-page .quick-icon) {
+  display: inline-grid !important;
+  width: 34px !important;
+  height: 34px !important;
+  flex: 0 0 auto !important;
+  place-items: center !important;
+  border-radius: 50% !important;
+  background: #f8f5ef !important;
+  color: #111827 !important;
+  font-size: 17px !important;
+}
+
+:global(body .overview-page.overview-page .quick-copy) {
+  display: grid !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+}
+
+:global(body .overview-page.overview-page .quick-title) {
+  color: #111827 !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+
+:global(body .overview-page.overview-page .quick-desc) {
+  color: #667085 !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+  white-space: nowrap !important;
+}
+
+:global(body .overview-page.overview-page .recent-order-card) {
+  padding: 20px 22px !important;
+}
+
+:global(body .overview-page.overview-page .recent-order-item) {
+  min-height: 64px !important;
+  padding: 12px 0 !important;
+  border-bottom: 1px solid rgba(21, 26, 34, 0.1) !important;
+}
+
+:global(body .overview-page.overview-page .order-thumb) {
+  width: 52px !important;
+  height: 52px !important;
+  border-color: rgba(21, 26, 34, 0.12) !important;
+  background: #f8f5ef !important;
+  color: #8a5a22 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+}
+
+:global(body .overview-page.overview-page .order-no) {
+  color: #667085 !important;
+}
+
+:global(body .overview-page.overview-page .order-amount) {
+  color: #9c4f1e !important;
+  font-weight: 850 !important;
+}
+
+@media (max-width: 1100px) {
+  :global(body .overview-page.overview-page .user-info-card),
+  :global(body .overview-page.overview-page .row-two) {
+    grid-template-columns: 1fr !important;
+  }
+
+  :global(body .overview-page.overview-page .user-stats) {
+    min-width: 0 !important;
+    width: 100% !important;
+    padding: 18px 0 0 !important;
+    border-top: 1px solid rgba(21, 26, 34, 0.1) !important;
+    border-left: 0 !important;
+    justify-content: space-between !important;
+  }
+
+  :global(body .overview-page.overview-page .quick-action-grid) {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  :global(body .overview-page.overview-page .order-status-grid),
+  :global(body .overview-page.overview-page .quick-action-grid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  :global(body .overview-page.overview-page .user-stats) {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  :global(body .overview-page.overview-page .stat-item) {
+    padding: 0 8px !important;
+  }
 }
 </style>

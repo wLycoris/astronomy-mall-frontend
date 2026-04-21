@@ -1,316 +1,382 @@
 <template>
-  <div class="recognition-result-page">
+  <div class="rr">
+    <!-- painterly sky + stars + paper grain -->
+    <div class="sky"></div>
+    <div class="stars"></div>
+    <div class="grain"></div>
 
-    <!-- 顶部返回栏 -->
-    <div class="nav-bar">
-      <el-button text @click="router.push('/recognition')" class="back-btn">← 重新识别</el-button>
-      <span class="nav-title">识别结果</span>
-      <el-button text @click="router.push('/recognition/history')" class="history-btn">历史记录 →</el-button>
+    <!-- topbar -->
+    <header class="topbar">
+      <div class="crumbs">
+        <span class="crumb" @click="router.push('/recognition')">← 重新识别</span>
+      </div>
+      <div class="crumbs crumbs--end">
+        <span class="crumb" @click="router.push('/recognition/history')">识别历史 →</span>
+      </div>
+    </header>
+
+    <!-- loading -->
+    <div v-if="loading" class="phase phase--loading">
+      <div class="orb orb--sm">
+        <div class="orb__halo"></div>
+        <div class="orb__disc"></div>
+      </div>
+      <div class="phase__title">月光正在取回这份档案</div>
+      <div class="phase__en"><em>— retrieving · plate</em></div>
     </div>
 
-    <!-- ============================================================ -->
-    <!-- 加载中 -->
-    <!-- ============================================================ -->
-    <div v-if="loading" class="loading-container">
-      <el-icon class="rotating" size="40" color="#4a9eff"><Loading /></el-icon>
-      <p>加载识别结果...</p>
-    </div>
+    <!-- ═══════════ 识别失败 ═══════════ -->
+    <section v-else-if="detail && detail.status === 2" class="phase phase--fail">
+      <div class="panel panel--fail">
+        <div class="panel__kicker"><em>— unresolved · plate</em></div>
+        <h2 class="panel__title">月亮没能读出这张星图</h2>
+        <p class="panel__reason">{{ detail.failReason || '图片中未能检测到足够的星点信息' }}</p>
 
-    <!-- ============================================================ -->
-    <!-- 识别失败 -->
-    <!-- ============================================================ -->
-    <div v-else-if="detail && detail.status === 2" class="failed-container">
-      <div class="failed-card">
-        <div class="failed-icon">🔭</div>
-        <h2>识别未能成功</h2>
-        <p class="fail-reason">{{ detail.failReason || '图片中未能检测到足够的星点信息' }}</p>
-        <div class="fail-tips">
-          <p>💡 提升识别成功率的建议：</p>
+        <div class="tips">
+          <div class="tips__head">让月亮更容易辨认的建议</div>
           <ul>
-            <li>使用 RAW 格式或高质量 JPEG（≥3MP）</li>
+            <li>使用 RAW 格式或高质量 JPEG（不低于 3 MP）</li>
             <li>确保图片中星点清晰，无严重拖线</li>
             <li>避免地平线、树木等地景遮挡</li>
-            <li>拍摄时间避免满月前后</li>
+            <li>拍摄时间尽量避开满月前后</li>
           </ul>
         </div>
-        <el-button type="primary" @click="router.push('/recognition')">重新上传</el-button>
+
+        <button class="submit" @click="router.push('/recognition')">
+          <span class="submit__en"><em>try · another · plate</em></span>
+          <span class="submit__cn">重新上传</span>
+        </button>
       </div>
-    </div>
+    </section>
 
-    <!-- ============================================================ -->
-    <!-- 识别成功：主内容 -->
-    <!-- ============================================================ -->
-    <div v-else-if="detail && detail.status === 1" class="result-content">
+    <!-- ═══════════ 识别成功 ═══════════ -->
+    <section v-else-if="detail && detail.status === 1" class="phase phase--ok">
 
-      <!-- ========== 左侧：标注图片 ========== -->
-      <div class="image-section">
-        <div class="annotated-image-wrapper">
-          <div v-if="imageLoading" class="image-skeleton">
-            <el-icon class="rotating" size="28" color="#4a6a9a"><Loading /></el-icon>
-            <span>加载标注图片...</span>
-          </div>
-          <img
-              v-show="!imageLoading && !imageError"
-              :src="detail.resultImageUrl"
-              alt="星图标注图"
-              class="annotated-image"
-              @load="imageLoading = false"
-              @error="handleImageError"
-          />
-          <!-- 图片加载失败提示 -->
-          <div v-if="imageError" class="image-error">
-            <span>🌌</span>
-            <p>标注图片加载失败</p>
-            <el-button size="small" @click="retryImage">重试</el-button>
-          </div>
-          <!-- 无标注图片 -->
-          <div v-if="!detail.resultImageUrl && !imageLoading" class="image-error">
-            <span>🌌</span><p>暂无标注图片</p>
+      <!-- dossier head -->
+      <div class="head">
+        <div class="head__kicker"><em>— plate · archive</em></div>
+        <div class="head__row">
+          <div class="head__num">#{{ String(recognitionId).padStart(4, '0') }}</div>
+          <div class="head__sep"></div>
+          <div class="head__meta">
+            <div class="mrow">
+              <span class="mk">识别时间</span>
+              <span class="mv">{{ detail.createTime || '—' }}</span>
+            </div>
+            <div class="mrow">
+              <span class="mk">识别天体</span>
+              <span class="mv">{{ celestialCount }} 个</span>
+            </div>
           </div>
         </div>
-        <p class="image-caption">
-          由 Astrometry.net 生成的标注图像
-          <el-link v-if="detail.resultImageUrl" :href="detail.resultImageUrl" target="_blank" type="primary" size="small">
-            在新标签页打开 ↗
-          </el-link>
-        </p>
+        <div class="head__rule">
+          <span class="dot"></span>
+          <span class="line"></span>
+          <span class="glyph">☾</span>
+          <span class="line"></span>
+          <span class="dot"></span>
+        </div>
       </div>
 
-      <!-- ========== 右侧：识别信息 ========== -->
-      <div class="info-section">
+      <!-- main grid -->
+      <div class="grid">
+        <!-- left: plate -->
+        <div class="plate-wrap">
+          <div class="plate">
+            <div v-if="imageLoading" class="plate__load">
+              <div class="orb orb--xs">
+                <div class="orb__halo"></div>
+                <div class="orb__disc"></div>
+              </div>
+              <span>月光正在点亮标注图</span>
+            </div>
+            <img
+                v-show="!imageLoading && !imageError"
+                :src="detail.resultImageUrl"
+                alt="星图标注图"
+                class="plate__img"
+                @load="imageLoading = false"
+                @error="handleImageError"
+            />
+            <div v-if="imageError" class="plate__err">
+              <div class="plate__err-glyph">✦</div>
+              <p>标注图片加载失败</p>
+              <span class="link link--on" @click="retryImage">重试 →</span>
+            </div>
+            <div v-if="!detail.resultImageUrl && !imageLoading && !imageError" class="plate__err">
+              <div class="plate__err-glyph">✦</div>
+              <p>暂无标注图片</p>
+            </div>
 
-        <!-- ① 坐标信息卡 -->
-        <el-card class="info-card coords-card" shadow="never">
-          <template #header>
-            <span class="card-title">🎯 天球坐标</span>
-            <span class="card-subtitle">赤道坐标系 J2000.0</span>
-          </template>
-          <div class="coords-grid">
-            <div class="coord-item">
-              <span class="coord-label">赤经 RA</span>
-              <!-- ⭐ 优先显示后端格式化值；降级显示前端计算值 -->
-              <span class="coord-value">{{ detail.raFormatted || formatRA(detail.ra) }}</span>
-              <em class="coord-deg">{{ detail.ra != null ? Number(detail.ra).toFixed(4) + '°' : '—' }}</em>
-            </div>
-            <div class="coord-item">
-              <span class="coord-label">赤纬 Dec</span>
-              <span class="coord-value">{{ detail.decFormatted || formatDec(detail.dec) }}</span>
-              <em class="coord-deg">{{ detail.dec != null ? Number(detail.dec).toFixed(4) + '°' : '—' }}</em>
-            </div>
-            <div class="coord-item">
-              <span class="coord-label">视野半径</span>
-              <span class="coord-value">{{ detail.radiusFormatted || (detail.radius != null ? Number(detail.radius).toFixed(3) + '°' : '—') }}</span>
-              <em class="coord-deg">图像覆盖天区范围</em>
-            </div>
-            <div class="coord-item">
-              <span class="coord-label">方向角 PA</span>
-              <span class="coord-value">{{ detail.orientationFormatted || (detail.orientation != null ? Number(detail.orientation).toFixed(2) + '°' : '—') }}</span>
-              <em class="coord-deg">图像上方指向北极偏转量</em>
-            </div>
-          </div>
-        </el-card>
-
-        <!-- ② 天体列表卡 -->
-        <el-card v-if="hasCelestialData" class="info-card objects-card" shadow="never">
-          <template #header>
-            <span class="card-title">⭐ 识别到的天体</span>
-            <el-tag size="small" type="info" style="float:right">共 {{ celestialCount }} 个</el-tag>
-          </template>
-
-          <!-- 有中英文对照数据时（getResult接口） -->
-          <div v-if="detail.celestialObjects && detail.celestialObjects.length > 0" class="objects-bilingual">
-            <div v-for="obj in detail.celestialObjects" :key="obj.en" class="bilingual-tag" :class="`type-${obj.type}`">
-              <span class="tag-zh">{{ obj.zh }}</span>
-              <span class="tag-en">{{ obj.en }}</span>
-              <span class="tag-type">{{ typeLabel(obj.type) }}</span>
+            <div class="plate__tag">
+              <span class="pt-k">档案</span>
+              <span class="pt-v">#{{ String(recognitionId).padStart(4, '0') }}</span>
             </div>
           </div>
-          <div v-else class="objects-list">
-            <el-tag v-for="obj in detail.objectsInField" :key="obj" class="object-tag" type="warning" effect="dark">{{ obj }}</el-tag>
-          </div>
-        </el-card>
 
-        <!-- ③ 机器标签卡 -->
-        <el-card v-if="detail.machineTags && detail.machineTags.length > 0" class="info-card tags-card" shadow="never">
-          <template #header><span class="card-title">🏷️ 天体类型标签</span></template>
-          <div class="tags-list">
-            <el-tag v-for="tag in detail.machineTags" :key="tag" class="machine-tag" type="info" size="small">{{ tag }}</el-tag>
+          <div class="plate-caption">
+            <span><em>— marked by Astrometry.net</em></span>
+            <el-link
+                v-if="detail.resultImageUrl"
+                :href="detail.resultImageUrl"
+                target="_blank"
+                class="plate-caption__link"
+            >
+              在新标签页打开 ↗
+            </el-link>
           </div>
-        </el-card>
+        </div>
 
-        <!-- ④ 分享卡片 -->
-        <el-card class="info-card share-card" shadow="never">
-          <template #header><span class="card-title">📤 分享结果</span></template>
-          <div class="share-area">
-            <p class="share-tip">将识别结果分享给天文爱好者</p>
+        <!-- right: data cards -->
+        <div class="data">
+
+          <!-- ① coords -->
+          <div class="card">
+            <div class="card__head">
+              <div class="card__kicker"><em>celestial · coordinates · J2000</em></div>
+              <h3 class="card__title">天球坐标</h3>
+            </div>
+            <div class="coords">
+              <div class="coord">
+                <div class="coord__k">赤经</div>
+                <div class="coord__v">{{ detail.raFormatted || formatRA(detail.ra) }}</div>
+                <div class="coord__d">{{ detail.ra != null ? Number(detail.ra).toFixed(4) + '°' : '—' }}</div>
+              </div>
+              <div class="coord">
+                <div class="coord__k">赤纬</div>
+                <div class="coord__v">{{ detail.decFormatted || formatDec(detail.dec) }}</div>
+                <div class="coord__d">{{ detail.dec != null ? Number(detail.dec).toFixed(4) + '°' : '—' }}</div>
+              </div>
+              <div class="coord">
+                <div class="coord__k">视野范围</div>
+                <div class="coord__v">
+                  {{ detail.radiusFormatted || (detail.radius != null ? Number(detail.radius).toFixed(3) + '°' : '—') }}
+                </div>
+                <div class="coord__d">图像覆盖</div>
+              </div>
+              <div class="coord">
+                <div class="coord__k">方向角</div>
+                <div class="coord__v">
+                  {{ detail.orientationFormatted || (detail.orientation != null ? Number(detail.orientation).toFixed(2) + '°' : '—') }}
+                </div>
+                <div class="coord__d">相对正北</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ② celestial objects -->
+          <div v-if="hasCelestialData" class="card">
+            <div class="card__head">
+              <div class="card__kicker"><em>bodies · in · field</em></div>
+              <h3 class="card__title">
+                识别到的天体
+                <span class="card__sub">· 共 {{ celestialCount }} 个</span>
+              </h3>
+            </div>
+            <div v-if="detail.celestialObjects && detail.celestialObjects.length > 0" class="objs">
+              <div
+                  v-for="obj in detail.celestialObjects"
+                  :key="obj.en"
+                  class="obj"
+                  :class="`obj--${obj.type}`"
+              >
+                <div class="obj__type">{{ typeLabel(obj.type) }}</div>
+                <div class="obj__zh">{{ obj.zh }}</div>
+                <div class="obj__en"><em>{{ obj.en }}</em></div>
+              </div>
+            </div>
+            <div v-else class="objs">
+              <div v-for="obj in detail.objectsInField" :key="obj" class="obj obj--unknown">
+                <div class="obj__type">天体</div>
+                <div class="obj__zh">{{ obj }}</div>
+                <div class="obj__en"><em>unclassified</em></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ③ tags -->
+          <div v-if="detail.machineTags && detail.machineTags.length > 0" class="card">
+            <div class="card__head">
+              <div class="card__kicker"><em>machine · tags</em></div>
+              <h3 class="card__title">天体类型标签</h3>
+            </div>
+            <div class="chips">
+              <span v-for="tag in detail.machineTags" :key="tag" class="chip">{{ tag }}</span>
+            </div>
+          </div>
+
+          <!-- ④ share -->
+          <div class="card">
+            <div class="card__head">
+              <div class="card__kicker"><em>share · this · plate</em></div>
+              <h3 class="card__title">分享识别结果</h3>
+            </div>
+            <p class="share-desc">将这份观测档案分享给另一位抬头看月亮的人</p>
             <div class="share-actions">
-              <el-button type="primary" plain size="small" @click="handleShare">复制结果文字</el-button>
-              <!-- 7.8: 跨模块联动 - 分享到论坛 -->
-              <el-button type="success" size="small" @click="handleShareToForum">📝 分享到论坛</el-button>
+              <button class="quiet-btn" @click="handleShare">
+                <span class="qb-mark">✧</span>
+                <span>复制文字</span>
+              </button>
+              <button class="quiet-btn quiet-btn--primary" @click="handleShareToForum">
+                <span class="qb-mark">✦</span>
+                <span>分享到论坛 →</span>
+              </button>
             </div>
           </div>
-        </el-card>
-
-      </div>
-    </div>
-
-    <!-- ============================================================
-      ⭐ 4.4 推荐器材区（横向滑动卡片，全宽展示在结果下方）
-      仅 status=1 识别成功时显示
-    ============================================================ -->
-    <div v-if="detail && detail.status === 1" class="recommend-section">
-      <div class="recommend-header">
-        <span class="recommend-title">🔭 推荐观测器材</span>
-        <span v-if="recommendLoading" class="recommend-hint">
-          <el-icon class="rotating" size="14"><Loading /></el-icon> 匹配中...
-        </span>
-        <span v-else-if="recommendList.length > 0" class="recommend-hint">
-          根据识别天体类型智能推荐
-        </span>
-        <el-button
-            v-if="recommendList.length > 0"
-            text
-            size="small"
-            class="recommend-more-btn"
-            @click="router.push('/products')"
-        >查看全部器材 →</el-button>
-      </div>
-
-      <!-- 加载骨架 -->
-      <div v-if="recommendLoading" class="recommend-scroll">
-        <div v-for="i in 4" :key="i" class="product-card skeleton-card">
-          <div class="skeleton-img"></div>
-          <div class="skeleton-line long"></div>
-          <div class="skeleton-line short"></div>
         </div>
       </div>
 
-      <!-- 商品横滑卡片 -->
-      <div v-else-if="recommendList.length > 0" class="recommend-scroll">
-        <div
-            v-for="product in recommendList"
-            :key="product.id"
-            class="product-card"
-            @click="goProduct(product.id)"
-        >
-          <!-- 商品图 -->
-          <div class="product-img-wrap">
-            <img
-                v-if="product.mainImage"
-                :src="product.mainImage"
-                :alt="product.productName"
-                class="product-img"
-                @error="e => e.target.style.display='none'"
-            />
-            <div v-else class="product-img-placeholder">🔭</div>
+      <!-- ═══════════ reel: gear ═══════════ -->
+      <section class="reel">
+        <div class="reel__head">
+          <div class="reel__head-l">
+            <div class="reel__kicker"><em>suggested · equipment</em></div>
+            <h3 class="reel__title">推荐观测器材</h3>
           </div>
-
-          <!-- 商品信息 -->
-          <div class="product-info">
-            <p class="product-name">{{ product.productName }}</p>
-            <p class="product-price">¥{{ formatPrice(product.price) }}</p>
-            <p class="product-reason">{{ product.reason }}</p>
+          <div class="reel__head-r">
+            <span v-if="recommendLoading" class="reel__hint">
+              <span class="pulse"></span> 匹配中
+            </span>
+            <span v-else-if="recommendList.length > 0" class="reel__hint">
+              根据识别天体类型智能推荐
+            </span>
+            <span
+                v-if="!recommendLoading && recommendList.length > 0"
+                class="link link--on"
+                @click="router.push('/products')"
+            >查看全部 →</span>
           </div>
-
-          <!-- 去看看按钮 -->
-          <el-button type="primary" size="small" class="product-btn" @click.stop="goProduct(product.id)">
-            去看看
-          </el-button>
         </div>
-      </div>
 
-      <!-- 无推荐结果（理论上不出现，因为有兜底热销） -->
-      <div v-else class="recommend-empty">
-        <p>暂无推荐器材</p>
-        <el-button type="primary" plain size="small" @click="router.push('/products')">浏览全部器材</el-button>
-      </div>
-    </div>
-
-    <!-- ============================================================
-      🆕 8.3.1 跨模块联动: 推荐相关课程
-      根据 machine_tags 英文 → 中文映射后去匹配 course.tags
-      仅 status=1 识别成功时显示
-    ============================================================ -->
-    <div v-if="detail && detail.status === 1" class="recommend-section course-recommend-section">
-      <div class="recommend-header">
-        <span class="recommend-title">📚 推荐相关课程</span>
-        <span v-if="courseRecommendLoading" class="recommend-hint">
-          <el-icon class="rotating" size="14"><Loading /></el-icon> 匹配中...
-        </span>
-        <span v-else-if="courseRecommendList.length > 0" class="recommend-hint">
-          学习这些课程，更深入了解你识别到的天体
-        </span>
-        <el-button
-            v-if="courseRecommendList.length > 0"
-            text
-            size="small"
-            class="recommend-more-btn"
-            @click="router.push('/course')"
-        >查看全部课程 →</el-button>
-      </div>
-
-      <!-- 加载骨架 -->
-      <div v-if="courseRecommendLoading" class="recommend-scroll">
-        <div v-for="i in 4" :key="i" class="product-card skeleton-card">
-          <div class="skeleton-img"></div>
-          <div class="skeleton-line long"></div>
-          <div class="skeleton-line short"></div>
-        </div>
-      </div>
-
-      <!-- 课程横滑卡片 -->
-      <div v-else-if="courseRecommendList.length > 0" class="recommend-scroll">
-        <div
-            v-for="course in courseRecommendList"
-            :key="course.id"
-            class="product-card course-card"
-            @click="goCourse(course.id)"
-        >
-          <!-- 课程封面 -->
-          <div class="product-img-wrap">
-            <img
-                v-if="course.cover"
-                :src="course.cover"
-                :alt="course.title"
-                class="product-img"
-                @error="e => e.target.style.display='none'"
-            />
-            <div v-else class="product-img-placeholder">📖</div>
+        <div v-if="recommendLoading" class="track">
+          <div v-for="i in 4" :key="i" class="cell skeleton">
+            <div class="sk-img"></div>
+            <div class="sk-line sk-line--l"></div>
+            <div class="sk-line sk-line--s"></div>
           </div>
+        </div>
 
-          <!-- 课程信息 -->
-          <div class="product-info">
-            <p class="product-name">{{ course.title }}</p>
-            <p class="course-meta">
+        <div v-else-if="recommendList.length > 0" class="track">
+          <div
+              v-for="product in recommendList"
+              :key="product.id"
+              class="cell"
+              @click="goProduct(product.id)"
+          >
+            <div class="cell__img">
+              <img
+                  v-if="product.mainImage"
+                  :src="product.mainImage"
+                  :alt="product.productName"
+                  @error="e => e.target.style.display='none'"
+              />
+              <div v-else class="cell__ph">🔭</div>
+              <div class="cell__overlay">
+                <span class="cell__cta">去看看 →</span>
+              </div>
+            </div>
+            <div class="cell__name">{{ product.productName }}</div>
+            <div class="cell__price">¥ {{ formatPrice(product.price) }}</div>
+            <div v-if="product.reason" class="cell__reason">{{ product.reason }}</div>
+          </div>
+        </div>
+
+        <div v-else class="reel__empty">
+          <p><em>— no · matching · gear —</em></p>
+          <span class="link link--on" @click="router.push('/products')">浏览全部器材 →</span>
+        </div>
+      </section>
+
+      <!-- ═══════════ reel: course ═══════════ -->
+      <section class="reel">
+        <div class="reel__head">
+          <div class="reel__head-l">
+            <div class="reel__kicker"><em>related · studies</em></div>
+            <h3 class="reel__title">推荐相关课程</h3>
+          </div>
+          <div class="reel__head-r">
+            <span v-if="courseRecommendLoading" class="reel__hint">
+              <span class="pulse"></span> 匹配中
+            </span>
+            <span v-else-if="courseRecommendList.length > 0" class="reel__hint">
+              深入了解你识别到的天体
+            </span>
+            <span
+                v-if="!courseRecommendLoading && courseRecommendList.length > 0"
+                class="link link--on"
+                @click="router.push('/course')"
+            >查看全部 →</span>
+          </div>
+        </div>
+
+        <div v-if="courseRecommendLoading" class="track">
+          <div v-for="i in 4" :key="i" class="cell skeleton">
+            <div class="sk-img"></div>
+            <div class="sk-line sk-line--l"></div>
+            <div class="sk-line sk-line--s"></div>
+          </div>
+        </div>
+
+        <div v-else-if="courseRecommendList.length > 0" class="track">
+          <div
+              v-for="course in courseRecommendList"
+              :key="course.id"
+              class="cell cell--course"
+              @click="goCourse(course.id)"
+          >
+            <div class="cell__img">
+              <img
+                  v-if="course.cover"
+                  :src="course.cover"
+                  :alt="course.title"
+                  @error="e => e.target.style.display='none'"
+              />
+              <div v-else class="cell__ph">📖</div>
+              <div class="cell__overlay">
+                <span class="cell__cta">去学习 →</span>
+              </div>
+            </div>
+            <div class="cell__name">{{ course.title }}</div>
+            <div class="course-meta">
               <span class="course-badge">{{ course.difficultyText || '课程' }}</span>
               <span v-if="course.chapterCount" class="course-chapters">共 {{ course.chapterCount }} 章</span>
-            </p>
-            <p class="product-reason">{{ course.subtitle || '点击查看详情' }}</p>
+            </div>
+            <div class="cell__reason">{{ course.subtitle || '点击查看详情' }}</div>
           </div>
-
-          <el-button type="primary" size="small" class="product-btn" @click.stop="goCourse(course.id)">
-            去学习
-          </el-button>
         </div>
-      </div>
 
-      <!-- 空态 -->
-      <div v-else class="recommend-empty">
-        <p>暂无匹配课程</p>
-        <el-button type="primary" plain size="small" @click="router.push('/courses')">浏览全部课程</el-button>
-      </div>
-    </div>
+        <div v-else class="reel__empty">
+          <p><em>— no · matching · courses —</em></p>
+          <span class="link link--on" @click="router.push('/courses')">浏览全部课程 →</span>
+        </div>
+      </section>
 
-    <!-- 识别中 -->
-    <div v-else-if="detail && detail.status === 0" class="still-processing">
-      <div class="processing-card">
-        <el-icon class="rotating" size="48" color="#4a9eff"><Loading /></el-icon>
-        <h2>识别尚未完成</h2>
-        <p>正在处理中，请稍候...</p>
-        <el-button type="primary" @click="router.push(`/recognition/waiting?id=${recognitionId}`)">返回等待页</el-button>
-      </div>
-    </div>
+    </section>
 
+    <!-- ═══════════ 识别中 ═══════════ -->
+    <section v-else-if="detail && detail.status === 0" class="phase phase--still">
+      <div class="panel">
+        <div class="orb">
+          <div class="orb__halo"></div>
+          <div class="orb__disc"></div>
+          <div class="orb__ring">
+            <svg viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="56" fill="none"
+                      stroke="rgba(247,236,210,0.85)"
+                      stroke-width="1.4"
+                      stroke-dasharray="24 330"
+                      stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+        <h2 class="panel__title">这份档案还在被月光阅读</h2>
+        <p class="panel__reason">识别尚未完成，稍等片刻。</p>
+        <button class="submit" @click="router.push(`/recognition/waiting?id=${recognitionId}`)">
+          <span class="submit__en"><em>back · to · waiting</em></span>
+          <span class="submit__cn">返回等待页</span>
+        </button>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -318,50 +384,36 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Loading } from '@element-plus/icons-vue'
 import { getRecognitionResult, getRecognitionRecommend } from '@/api/recognition'
-// 🆕 8.3.1 跨模块联动：AI识别 → 课程推荐
 import { getRecognitionCourseRecommend } from '@/api/recommend'
 
-const route  = useRoute()
+const route = useRoute()
 const router = useRouter()
 
-const loading         = ref(true)
-const detail          = ref(null)
-const recognitionId   = ref(null)
-const imageLoading    = ref(true)
-const imageError      = ref(false)
+const loading = ref(true)
+const detail = ref(null)
+const recognitionId = ref(null)
+const imageLoading = ref(true)
+const imageError = ref(false)
 
-// ⭐ 4.4 新增
 const recommendLoading = ref(false)
-const recommendList    = ref([])
+const recommendList = ref([])
 
-// 🆕 8.3.1 推荐课程（独立 loading + 列表，与推荐器材并行拉取）
 const courseRecommendLoading = ref(false)
-const courseRecommendList    = ref([])
+const courseRecommendList = ref([])
 
-// ============================================================
-// 计算属性
-// ============================================================
-
-/** 是否有天体数据（支持两种数据源） */
 const hasCelestialData = computed(() => {
   if (!detail.value) return false
   return (detail.value.celestialObjects && detail.value.celestialObjects.length > 0) ||
-      (detail.value.objectsInField    && detail.value.objectsInField.length    > 0)
+      (detail.value.objectsInField && detail.value.objectsInField.length > 0)
 })
 
-/** 天体数量 */
 const celestialCount = computed(() => {
   if (!detail.value) return 0
   return detail.value.celestialObjects?.length || detail.value.objectsInField?.length || 0
 })
 
-// ============================================================
-// 初始化
-// ============================================================
 onMounted(async () => {
-  // 支持路由参数 (:id) 或查询参数 (?id=)
   const id = route.params.id || route.query.id
   if (!id) {
     ElMessage.error('缺少识别 ID')
@@ -378,10 +430,9 @@ async function fetchDetail() {
     const res = await getRecognitionResult(recognitionId.value)
     detail.value = res.data
     if (!detail.value?.resultImageUrl) imageLoading.value = false
-    // ⭐ 识别成功后异步加载推荐内容，不阻塞页面渲染
     if (detail.value?.status === 1) {
-      fetchRecommend()             // 推荐器材（4.4）
-      fetchCourseRecommend()       // 🆕 8.3.1 推荐课程
+      fetchRecommend()
+      fetchCourseRecommend()
     }
   } catch (err) {
     ElMessage.error('加载识别结果失败，请重试')
@@ -391,7 +442,6 @@ async function fetchDetail() {
   }
 }
 
-// ⭐ 4.4: 加载推荐器材（异步，不影响主内容渲染）
 async function fetchRecommend() {
   recommendLoading.value = true
   try {
@@ -405,8 +455,6 @@ async function fetchRecommend() {
   }
 }
 
-// 🆕 8.3.1: 加载推荐课程（machine_tags → course.tags）
-// 失败不影响页面，静默降级
 async function fetchCourseRecommend() {
   courseRecommendLoading.value = true
   try {
@@ -420,9 +468,6 @@ async function fetchCourseRecommend() {
   }
 }
 
-// ============================================================
-// 图片处理
-// ============================================================
 function handleImageError() { imageLoading.value = false; imageError.value = true }
 function retryImage() {
   imageError.value = false; imageLoading.value = true
@@ -431,45 +476,30 @@ function retryImage() {
   }
 }
 
-// ============================================================
-// 导航
-// ============================================================
-function goProduct(productId) {
-  router.push(`/product/${productId}`)
-}
+function goProduct(productId) { router.push(`/product/${productId}`) }
+function goCourse(courseId) { router.push(`/course/${courseId}`) }
 
-// 🆕 8.3.1: 跳转课程详情
-function goCourse(courseId) {
-  router.push(`/course/${courseId}`)
-}
-
-// ============================================================
-// 坐标格式化（降级计算）
-// ============================================================
 function formatRA(raDeg) {
   if (raDeg == null) return '—'
-  const h  = Math.floor(Number(raDeg) / 15)
+  const h = Math.floor(Number(raDeg) / 15)
   const mT = (Number(raDeg) / 15 - h) * 60
-  const m  = Math.floor(mT)
-  const s  = ((mT - m) * 60).toFixed(1)
-  return `${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m ${String(s).padStart(4,'0')}s`
+  const m = Math.floor(mT)
+  const s = ((mT - m) * 60).toFixed(1)
+  return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${String(s).padStart(4, '0')}s`
 }
 function formatDec(decDeg) {
   if (decDeg == null) return '—'
   const sign = Number(decDeg) >= 0 ? '+' : '−'
-  const abs  = Math.abs(Number(decDeg))
-  const d    = Math.floor(abs)
-  const mT   = (abs - d) * 60
-  const m    = Math.floor(mT)
-  const s    = ((mT - m) * 60).toFixed(1)
-  return `${sign}${String(d).padStart(2,'0')}° ${String(m).padStart(2,'0')}′ ${String(s).padStart(4,'0')}″`
+  const abs = Math.abs(Number(decDeg))
+  const d = Math.floor(abs)
+  const mT = (abs - d) * 60
+  const m = Math.floor(mT)
+  const s = ((mT - m) * 60).toFixed(1)
+  return `${sign}${String(d).padStart(2, '0')}° ${String(m).padStart(2, '0')}′ ${String(s).padStart(4, '0')}″`
 }
 
-// ============================================================
-// 工具方法
-// ============================================================
 function typeLabel(type) {
-  return { nebula:'星云', galaxy:'星系', cluster:'星团', constellation:'星座', unknown:'天体' }[type] || '天体'
+  return { nebula: '星云', galaxy: '星系', cluster: '星团', constellation: '星座', unknown: '天体' }[type] || '天体'
 }
 
 function formatPrice(price) {
@@ -477,26 +507,18 @@ function formatPrice(price) {
   return Number(price).toFixed(2)
 }
 
-// ============================================================
-// 7.8 跨模块联动: 分享识别结果到论坛
-// 将标注图 + 天体列表预填到 ForumPublish.vue
-// ============================================================
 function handleShareToForum() {
   if (!detail.value) return
   const d = detail.value
-
-  // 构造预填标题
   const objectStr = d.celestialObjects?.length
       ? d.celestialObjects.map(o => o.zh || o.en).filter(Boolean).slice(0, 3).join('、')
       : (d.objectsInField?.slice(0, 3).join('、') || '星空')
   const presetTitle = `🌌 我用AI识别到了${objectStr}`
-
-  // 构造预填正文 - 完整天体列表 + 坐标
   const lines = ['📡 通过天文商城AI星图识别系统，我成功识别出以下天体：', '']
   if (d.celestialObjects?.length) {
     d.celestialObjects.forEach((o, i) => {
-      const zh   = o.zh || ''
-      const en   = o.en ? `(${o.en})` : ''
+      const zh = o.zh || ''
+      const en = o.en ? `(${o.en})` : ''
       const type = o.type ? ` - ${typeLabel(o.type)}` : ''
       lines.push(`${i + 1}. ${zh}${en}${type}`)
     })
@@ -504,25 +526,22 @@ function handleShareToForum() {
     d.objectsInField.forEach((o, i) => lines.push(`${i + 1}. ${o}`))
   }
   lines.push('')
-  if (d.raFormatted)  lines.push(`赤经：${d.raFormatted}`)
+  if (d.raFormatted) lines.push(`赤经：${d.raFormatted}`)
   if (d.decFormatted) lines.push(`赤纬：${d.decFormatted}`)
   if (d.radiusFormatted) lines.push(`视野半径：${d.radiusFormatted}`)
   lines.push('')
   lines.push('✨ 一起来探索星空吧！')
   const presetContent = lines.join('\n')
-
-  // 标注图 - 仅传图片URL（ForumPublish 会自动加入图片列表）
   const presetImages = d.resultImageUrl ? [d.resultImageUrl] : []
 
-  // 路由跳转 - 携带预填数据 + recognitionId 关联
   router.push({
     path: '/forum/publish',
     query: {
       recognitionId: recognitionId.value,
-      title:   presetTitle,
+      title: presetTitle,
       content: presetContent,
-      images:  JSON.stringify(presetImages),
-      tags:    JSON.stringify(['AI识别', '星空'])
+      images: JSON.stringify(presetImages),
+      tags: JSON.stringify(['AI识别', '星空'])
     }
   })
 }
@@ -537,10 +556,10 @@ async function handleShare() {
     '🌠 天文商城 · 星图识别结果',
     '─'.repeat(18),
     `天体：${objectStr}`,
-    d.raFormatted          ? `赤经(RA)：${d.raFormatted}`        : null,
-    d.decFormatted         ? `赤纬(Dec)：${d.decFormatted}`      : null,
+    d.raFormatted ? `赤经(RA)：${d.raFormatted}` : null,
+    d.decFormatted ? `赤纬(Dec)：${d.decFormatted}` : null,
     d.orientationFormatted ? `方向角：${d.orientationFormatted}` : null,
-    d.radiusFormatted      ? `视野半径：${d.radiusFormatted}`    : null,
+    d.radiusFormatted ? `视野半径：${d.radiusFormatted}` : null,
     '─'.repeat(18),
     `识别时间：${d.createTime || ''}`,
     '📲 天文器材商城 - 探索星空，从这里开始'
@@ -557,350 +576,847 @@ async function handleShare() {
 }
 </script>
 
-<style scoped>
-/* ============================================================ */
-/* 页面基础 + 原有样式（与4.3保持一致）                           */
-/* ============================================================ */
-.recognition-result-page {
+<style lang="scss" scoped>
+/* ── palette (shared with StarRecognition / Waiting / History) ───── */
+$moon:      #f7ecd2;
+$moon-soft: #ede2c3;
+$cream:     #f3e9cf;
+$cream-dim: rgba(243,233,207,0.72);
+$cream-low: rgba(243,233,207,0.42);
+$cream-xlow:rgba(243,233,207,0.22);
+
+$sky-top: #1a2547;
+$sky-mid: #0e1731;
+$sky-bot: #070b1d;
+
+$violet:  #9a86d1;
+$rose:    #d99db4;
+$bloom:   #6b8ed6;
+$petal:   #f2e4c7;
+
+$ok:   #a6dcbc;
+$warn: #e9b7b7;
+$mid:  #b9c8e8;
+
+$sans:  'Inter','PingFang SC','Microsoft YaHei','Hiragino Sans GB','Helvetica Neue',Arial,sans-serif;
+$serif: 'Cormorant Garamond','Playfair Display',Georgia,'Songti SC',serif;
+
+/* ── page base ───────────────────────────────────────────────────── */
+.rr {
   min-height: 100vh;
-  background: linear-gradient(160deg, #050c1a 0%, #0a1525 50%, #070f1e 100%);
-  color: #e0eaff;
-  padding-bottom: 60px;
+  position: relative;
+  color: $cream;
+  font-family: $sans;
+  overflow-x: hidden;
+  padding-bottom: 120px;
+  background: $sky-bot;
 }
 
-/* ============================================================ */
-/* 导航栏                                                         */
-/* ============================================================ */
-.nav-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 24px;
-  background: rgba(8, 20, 45, 0.9);
-  border-bottom: 1px solid rgba(80, 130, 200, 0.15);
-  position: sticky; top: 0; z-index: 10;
-  backdrop-filter: blur(10px);
-}
-.nav-title { font-size: 1rem; color: #8ab4d8; font-weight: 500; letter-spacing: 1px; }
-.back-btn, .history-btn { color: #5a8ac8 !important; font-size: 0.85rem; }
-.loading-container {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  min-height: calc(100vh - 60px); gap: 16px; color: #4a6a8a;
-}
-.failed-container {
-  display: flex; align-items: center; justify-content: center;
-  min-height: calc(100vh - 60px); padding: 20px;
-}
-.failed-card {
-  background: rgba(10, 22, 48, 0.9); border: 1px solid rgba(200, 80, 60, 0.2);
-  border-radius: 16px; padding: 50px 40px; text-align: center; max-width: 460px; width: 100%;
-}
-.failed-icon { font-size: 3.5rem; margin-bottom: 16px; }
-.failed-card h2 { color: #c0deff; margin: 0 0 12px; }
-.fail-reason { color: #8a6050; margin: 0 0 20px; font-size: 0.9rem; line-height: 1.6; }
-.fail-tips {
-  text-align: left; background: rgba(255,255,255,0.03); border-radius: 10px;
-  padding: 14px 18px; margin-bottom: 24px; font-size: 0.85rem; color: #5a7a8a; line-height: 1.8;
-}
-.fail-tips p { margin: 0 0 8px; color: #7a9aaa; }
-.fail-tips ul { margin: 0; padding-left: 18px; }
-.result-content {
-  max-width: 1200px; margin: 30px auto; padding: 0 20px;
-  display: grid; grid-template-columns: 1fr 420px; gap: 24px; align-items: start;
-}
-@media (max-width: 900px) { .result-content { grid-template-columns: 1fr; } }
-.image-section { position: sticky; top: 70px; }
-.annotated-image-wrapper {
-  background: rgba(5, 15, 35, 0.8); border: 1px solid rgba(80, 130, 200, 0.2);
-  border-radius: 12px; overflow: hidden; min-height: 300px;
-  display: flex; align-items: center; justify-content: center;
-}
-.image-skeleton {
-  display: flex; flex-direction: column; align-items: center; gap: 12px;
-  color: #4a6a8a; font-size: 0.9rem; padding: 60px;
-}
-.annotated-image { width: 100%; max-height: 70vh; object-fit: contain; display: block; }
-.image-error {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 10px; padding: 40px; color: #4a6a8a; font-size: 2rem;
-}
-.image-error p { font-size: 0.9rem; margin: 0; }
-.image-caption {
-  text-align: center; color: #3a5a7a; font-size: 0.8rem; margin-top: 10px;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-}
-.info-section { display: flex; flex-direction: column; gap: 16px; }
-.info-card {
-  background: rgba(10, 22, 48, 0.85) !important;
-  border: 1px solid rgba(80, 130, 200, 0.18) !important;
-  border-radius: 12px !important;
-}
-.card-title { font-size: 0.95rem; color: #8ab4d8; font-weight: 500; }
-.card-subtitle { font-size: 0.75rem; color: #3a5a7a; margin-left: 8px; }
-:deep(.el-card__header) { border-bottom: 1px solid rgba(60,100,160,0.2); padding: 12px 16px; }
-:deep(.el-card__body) { padding: 16px; }
-.coords-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.coord-item {
-  display: flex; flex-direction: column; gap: 4px;
-  background: rgba(5,15,40,0.6); border-radius: 8px; padding: 10px 12px;
-}
-.coord-label { font-size: 0.72rem; color: #4a6a8a; text-transform: uppercase; letter-spacing: 0.5px; }
-.coord-value { font-size: 0.88rem; color: #8ecdf7; font-family: 'Courier New', monospace; font-weight: 600; word-break: break-all; }
-.coord-deg { font-style: normal; color: #3a5a7a; font-size: 0.72rem; display: block; margin-top: 2px; }
-.objects-bilingual { display: flex; flex-wrap: wrap; gap: 10px; }
-.bilingual-tag {
-  position: relative; padding: 8px 14px 8px 12px; border-radius: 10px;
-  min-width: 120px; max-width: 180px; cursor: default; transition: transform 0.15s;
-}
-.bilingual-tag:hover { transform: translateY(-2px); }
-.tag-zh { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 3px; }
-.tag-en { display: block; font-size: 0.72rem; opacity: 0.7; font-style: italic; }
-.tag-type {
-  position: absolute; top: -7px; right: 6px;
-  font-size: 0.65rem; padding: 1px 7px; border-radius: 8px; font-weight: 700; letter-spacing: 0.3px;
-}
-.type-nebula { background: rgba(59,130,246,0.14); border: 1px solid rgba(59,130,246,0.38); color: #7ec8fd; }
-.type-nebula .tag-type { background: #3b82f6; color: #fff; }
-.type-galaxy { background: rgba(139,92,246,0.14); border: 1px solid rgba(139,92,246,0.38); color: #c4a9fd; }
-.type-galaxy .tag-type { background: #8b5cf6; color: #fff; }
-.type-cluster { background: rgba(16,185,129,0.14); border: 1px solid rgba(16,185,129,0.38); color: #6ee7b7; }
-.type-cluster .tag-type { background: #10b981; color: #fff; }
-.type-constellation { background: rgba(245,158,11,0.14); border: 1px solid rgba(245,158,11,0.38); color: #fcd34d; }
-.type-constellation .tag-type { background: #f59e0b; color: #fff; }
-.type-unknown { background: rgba(100,116,139,0.14); border: 1px solid rgba(100,116,139,0.3); color: #94a3b8; }
-.type-unknown .tag-type { background: #64748b; color: #fff; }
-.objects-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.object-tag { font-size: 0.85rem; cursor: default; }
-.tags-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.machine-tag { background: rgba(30,60,100,0.5) !important; border-color: rgba(80,130,200,0.25) !important; color: #6a9ac8 !important; }
-.share-area { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.share-tip { color: #4a6a8a; font-size: 0.85rem; margin: 0; }
-.share-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-.still-processing { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 60px); }
-.processing-card {
-  background: rgba(10,22,48,0.85); border: 1px solid rgba(80,130,200,0.2);
-  border-radius: 16px; padding: 50px 40px; text-align: center;
-  display: flex; flex-direction: column; align-items: center; gap: 16px;
-}
-.processing-card h2 { color: #c0deff; margin: 0; }
-.processing-card p { color: #6a8aaa; margin: 0; }
-
-/* ============================================================ */
-/* ⭐ 4.4 新增：推荐器材区                                       */
-/* ============================================================ */
-.recommend-section {
-  max-width: 1200px;
-  margin: 24px auto 0;
-  padding: 0 20px;
+/* painterly sky */
+.sky {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(1200px 600px at 20% -10%, rgba(154,134,209,0.18), transparent 60%),
+    radial-gradient(900px 520px at 85% 10%, rgba(217,157,180,0.10), transparent 60%),
+    radial-gradient(1400px 900px at 50% 110%, rgba(107,142,214,0.14), transparent 70%),
+    linear-gradient(180deg, $sky-top 0%, $sky-mid 45%, $sky-bot 100%);
 }
 
-.recommend-header {
+.stars {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    radial-gradient(1.2px 1.2px at 18% 22%, rgba(255,255,255,0.85), transparent 55%),
+    radial-gradient(1px 1px at 72% 18%, rgba(247,236,210,0.75), transparent 55%),
+    radial-gradient(1px 1px at 34% 68%, rgba(255,255,255,0.55), transparent 55%),
+    radial-gradient(1.4px 1.4px at 88% 54%, rgba(185,200,232,0.7), transparent 55%),
+    radial-gradient(1px 1px at 9% 82%, rgba(255,255,255,0.55), transparent 55%),
+    radial-gradient(1px 1px at 57% 88%, rgba(217,157,180,0.55), transparent 55%),
+    radial-gradient(1.2px 1.2px at 44% 36%, rgba(255,255,255,0.4), transparent 55%),
+    radial-gradient(1px 1px at 95% 86%, rgba(247,236,210,0.55), transparent 55%);
+  background-size: 720px 720px, 940px 940px, 620px 620px, 1100px 1100px,
+                   820px 820px, 1020px 1020px, 520px 520px, 1220px 1220px;
+  opacity: .85;
+  animation: twinkle 6.5s ease-in-out infinite alternate;
+}
+@keyframes twinkle { 0% { opacity: .55; } 100% { opacity: .95; } }
+
+.grain {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  mix-blend-mode: overlay;
+  opacity: .22;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.95  0 0 0 0 0.92  0 0 0 0 0.82  0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* ── topbar ──────────────────────────────────────────────────────── */
+.topbar {
+  position: relative; z-index: 3;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 26px 40px 18px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
+  justify-content: space-between;
 }
+.crumbs {
+  display: flex; align-items: center; gap: 10px;
+  font-family: $serif;
+  font-size: 14px;
+  font-style: italic;
+  letter-spacing: .6px;
+  color: $cream-dim;
 
-.recommend-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #8ab4d8;
+  &--end { justify-content: flex-end; }
 }
+.crumb { cursor: pointer; transition: color .2s; &:hover { color: $moon; } }
 
-.recommend-hint {
-  font-size: 0.8rem;
-  color: #3a5a7a;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  flex: 1;
-}
-
-.recommend-more-btn {
-  color: #5a8ac8 !important;
-  font-size: 0.8rem;
-}
-
-/* 横向滚动容器 */
-.recommend-scroll {
-  display: flex;
-  gap: 14px;
-  overflow-x: auto;
-  padding-bottom: 12px;
-  /* 隐藏滚动条但保留功能 */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(80,130,200,0.3) transparent;
-}
-
-.recommend-scroll::-webkit-scrollbar {
-  height: 4px;
-}
-.recommend-scroll::-webkit-scrollbar-thumb {
-  background: rgba(80, 130, 200, 0.3);
-  border-radius: 2px;
-}
-
-/* 商品卡片 */
-.product-card {
+/* ── orb (reusable moon) ─────────────────────────────────────────── */
+.orb {
+  position: relative;
+  width: 120px; height: 120px;
   flex-shrink: 0;
-  width: 160px;
-  background: rgba(10, 22, 48, 0.85);
-  border: 1px solid rgba(80, 130, 200, 0.18);
-  border-radius: 12px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: transform 0.2s, border-color 0.2s;
-  display: flex;
-  flex-direction: column;
+
+  &__halo {
+    position: absolute; inset: -16px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, rgba(247,236,210,0.26), transparent 70%);
+    animation: breath 5s ease-in-out infinite alternate;
+  }
+  &__disc {
+    position: absolute; inset: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 32%, #fff7e0, $moon 55%, $moon-soft 100%);
+    box-shadow: 0 0 30px rgba(247,236,210,0.25);
+  }
+  &__ring {
+    position: absolute; inset: 0;
+    animation: spin 2.2s linear infinite;
+    svg { width: 100%; height: 100%; }
+  }
+
+  &--sm { width: 86px; height: 86px; .orb__halo { inset: -12px; } .orb__disc { inset: 7px; } }
+  &--xs { width: 54px; height: 54px; .orb__halo { inset: -8px; } .orb__disc { inset: 5px; } }
+}
+@keyframes breath {
+  0%   { opacity: .55; transform: scale(.96); }
+  100% { opacity: .95; transform: scale(1.04); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse-dot {
+  0%,100% { opacity: .4; transform: scale(.8); }
+  50%     { opacity: 1;  transform: scale(1.15); }
+}
+.pulse {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+  animation: pulse-dot 1.2s ease infinite;
+  margin-right: 4px;
 }
 
-.product-card:hover {
-  transform: translateY(-4px);
-  border-color: rgba(80, 130, 200, 0.45);
+/* ── phases ──────────────────────────────────────────────────────── */
+.phase {
+  position: relative; z-index: 2;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 60px 40px 0;
+}
+.phase--loading {
+  min-height: 60vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 22px;
+
+  .phase__title {
+    font-family: $serif;
+    font-size: 24px;
+    letter-spacing: 3px;
+    color: $moon;
+  }
+  .phase__en {
+    font-family: $serif; font-style: italic;
+    font-size: 13px; letter-spacing: 2px;
+    color: $cream-low;
+  }
+}
+.phase--fail, .phase--still {
+  min-height: 70vh;
+  display: flex; align-items: center; justify-content: center;
 }
 
-/* 商品图片区 */
-.product-img-wrap {
-  width: 100%;
-  height: 120px;
-  background: rgba(5, 15, 35, 0.8);
+/* ── panels (fail / still) ──────────────────────────────────────── */
+.panel {
+  position: relative;
+  max-width: 560px;
+  padding: 52px 44px 44px;
+  border: 1px solid $cream-xlow;
+  background: linear-gradient(180deg, rgba(247,236,210,0.03), rgba(247,236,210,0.01));
+  border-radius: 4px;
+  text-align: center;
+  backdrop-filter: blur(6px);
+
+  &__kicker {
+    font-family: $serif;
+    font-style: italic;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: $cream-low;
+    margin-bottom: 14px;
+  }
+  &__title {
+    font-family: $serif;
+    font-size: 30px;
+    letter-spacing: 3px;
+    color: $moon;
+    margin: 0 0 14px;
+    font-weight: 500;
+  }
+  &__reason {
+    font-family: $sans;
+    font-size: 14px;
+    color: $cream-dim;
+    letter-spacing: .5px;
+    line-height: 1.7;
+    margin: 0 0 28px;
+  }
+
+  .orb { margin: 0 auto 20px; }
+}
+.panel--fail .panel__kicker { color: $warn; }
+
+.tips {
+  text-align: left;
+  border: 1px solid $cream-xlow;
+  border-left: 2px solid $warn;
+  border-radius: 2px;
+  padding: 18px 22px;
+  margin-bottom: 28px;
+  background: rgba(247,236,210,0.02);
+
+  &__head {
+    font-family: $serif; font-style: italic;
+    font-size: 14px; letter-spacing: 1.5px;
+    color: $warn;
+    margin-bottom: 10px;
+  }
+  ul {
+    margin: 0;
+    padding-left: 22px;
+    color: $cream-dim;
+    font-family: $sans;
+    font-size: 13px;
+    line-height: 1.9;
+    list-style: '— ';
+    li::marker { color: $cream-low; }
+  }
+}
+
+/* ── dossier head ────────────────────────────────────────────────── */
+.phase--ok { padding: 50px 40px 0; }
+
+.head {
+  margin-bottom: 48px;
+
+  &__kicker {
+    font-family: $serif;
+    font-style: italic;
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: $cream-low;
+    margin-bottom: 14px;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
+  }
+
+  &__num {
+    font-family: $serif;
+    font-weight: 500;
+    font-size: 64px;
+    line-height: 1;
+    color: $moon;
+    letter-spacing: 4px;
+  }
+  &__sep {
+    width: 1px; height: 48px;
+    background: $cream-xlow;
+  }
+  &__meta {
+    display: flex; flex-direction: column;
+    gap: 6px;
+  }
+
+  &__rule {
+    margin-top: 32px;
+    display: flex; align-items: center;
+    gap: 14px;
+    .dot { width: 4px; height: 4px; border-radius: 50%; background: $cream-low; }
+    .line { flex: 1; max-width: 140px; height: 1px; background: linear-gradient(90deg, transparent, $cream-xlow, transparent); }
+    .glyph { font-family: $serif; font-size: 18px; color: $moon; }
+  }
+}
+.mrow {
+  display: inline-flex; gap: 12px; align-items: baseline;
+  .mk {
+    font-family: $serif; font-style: italic;
+    font-size: 13px; letter-spacing: 1px;
+    color: $cream-low;
+    width: 80px;
+  }
+  .mv {
+    font-family: $sans;
+    font-size: 13.5px;
+    color: $cream;
+    letter-spacing: .5px;
+  }
+}
+
+/* ── grid ────────────────────────────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 32px;
+  margin-bottom: 80px;
+}
+
+/* plate */
+.plate-wrap { min-width: 0; }
+.plate {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background:
+    radial-gradient(circle at center, rgba(247,236,210,0.04), transparent 70%),
+    rgba(7,11,29,0.55);
+  border: 1px solid $cream-xlow;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+
+  &__img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  &__load, &__err {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    color: $cream-dim;
+    font-family: $serif;
+    font-style: italic;
+    font-size: 14px;
+    letter-spacing: 1px;
+    p {
+      margin: 0;
+      font-family: $sans; font-style: normal;
+      font-size: 13.5px;
+      letter-spacing: .5px;
+    }
+  }
+  &__err-glyph {
+    font-size: 36px;
+    color: $moon-soft;
+    opacity: .8;
+  }
+
+  &__tag {
+    position: absolute;
+    left: 14px; bottom: 14px;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 5px 12px;
+    background: rgba(7,11,29,0.7);
+    border: 1px solid $cream-xlow;
+    border-radius: 999px;
+    font-family: $serif; font-style: italic;
+    font-size: 12px;
+    letter-spacing: 1px;
+    .pt-k { color: $cream-low; }
+    .pt-v { color: $moon; font-style: normal; letter-spacing: 1.5px; }
+  }
 }
 
-.product-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+.plate-caption {
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: $serif;
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: .8px;
+  color: $cream-low;
+
+  &__link {
+    color: $moon !important;
+    font-family: $sans !important;
+    font-style: normal !important;
+    font-size: 12.5px !important;
+    letter-spacing: 1.2px !important;
+    &:hover { color: #fff7e0 !important; }
+  }
 }
 
-.product-img-placeholder {
-  font-size: 2.5rem;
-  color: #2a4a6a;
-}
-
-/* 商品信息区 */
-.product-info {
-  padding: 10px 10px 4px;
-  flex: 1;
-}
-
-.product-name {
-  font-size: 0.8rem;
-  color: #c0d8f0;
-  margin: 0 0 6px;
-  line-height: 1.4;
-  /* 最多两行 */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.product-price {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #f59e0b;
-  margin: 0 0 4px;
-}
-
-.product-reason {
-  font-size: 0.7rem;
-  color: #3a6a8a;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 去看看按钮 */
-.product-btn {
-  margin: 8px 10px 10px;
-  width: calc(100% - 20px);
-}
-
-/* 骨架屏 */
-.skeleton-card {
-  cursor: default;
-  pointer-events: none;
-}
-
-.skeleton-img {
-  width: 100%;
-  height: 120px;
-  background: linear-gradient(90deg, rgba(30,60,100,0.3) 25%, rgba(50,80,130,0.4) 50%, rgba(30,60,100,0.3) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-
-.skeleton-line {
-  height: 10px;
-  margin: 10px 10px 6px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, rgba(30,60,100,0.3) 25%, rgba(50,80,130,0.4) 50%, rgba(30,60,100,0.3) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-}
-.skeleton-line.long  { width: calc(100% - 20px); }
-.skeleton-line.short { width: 60%; }
-
-@keyframes shimmer {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* 无推荐 */
-.recommend-empty {
-  text-align: center;
-  padding: 30px;
-  color: #3a5a7a;
-  font-size: 0.85rem;
+/* ── data cards ──────────────────────────────────────────────────── */
+.data {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 20px;
+}
+
+.card {
+  position: relative;
+  background: linear-gradient(180deg, rgba(247,236,210,0.035), rgba(247,236,210,0.01));
+  border: 1px solid $cream-xlow;
+  border-radius: 4px;
+  padding: 24px 24px 26px;
+  backdrop-filter: blur(6px);
+
+  &__head { margin-bottom: 18px; }
+  &__kicker {
+    font-family: $serif; font-style: italic;
+    font-size: 12.5px;
+    letter-spacing: 2px;
+    color: $cream-low;
+    margin-bottom: 6px;
+  }
+  &__title {
+    font-family: $serif;
+    font-size: 22px;
+    font-weight: 500;
+    color: $moon;
+    margin: 0;
+    letter-spacing: 2.5px;
+  }
+  &__sub {
+    font-family: $serif; font-style: italic;
+    font-size: 14px;
+    color: $cream-low;
+    font-weight: 400;
+    letter-spacing: 1px;
+    margin-left: 4px;
+  }
+}
+
+/* coords */
+.coords {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.coord {
+  padding: 14px 16px;
+  background: rgba(7,11,29,0.55);
+  border: 1px solid $cream-xlow;
+  border-radius: 2px;
+
+  &__k {
+    font-family: $serif; font-style: italic;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    color: $cream-low;
+    margin-bottom: 8px;
+  }
+  &__v {
+    font-family: $serif;
+    font-size: 18px;
+    color: $moon;
+    letter-spacing: 1px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    word-break: break-all;
+    line-height: 1.25;
+  }
+  &__d {
+    font-family: $sans;
+    font-size: 11.5px;
+    letter-spacing: 1px;
+    color: $cream-low;
+  }
+}
+
+/* objects */
+.objs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+.obj {
+  padding: 14px 16px;
+  border: 1px solid $cream-xlow;
+  background: rgba(7,11,29,0.5);
+  border-radius: 2px;
+  transition: all .25s ease;
 
-/* ============================================================ */
-/* 🆕 8.3.1 推荐课程区（复用 .recommend-section 样式 + 课程专属）  */
-/* ============================================================ */
-.course-recommend-section {
-  margin-top: 32px;
+  &:hover {
+    transform: translateY(-1px);
+    border-color: currentColor;
+    background: rgba(7,11,29,0.75);
+  }
+
+  &__type {
+    display: inline-block;
+    font-family: $sans;
+    font-size: 10.5px;
+    letter-spacing: 1.5px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    margin-bottom: 8px;
+    border: 1px solid currentColor;
+  }
+  &__zh {
+    font-family: $serif;
+    font-size: 18px;
+    color: $moon;
+    font-weight: 500;
+    letter-spacing: 2px;
+    margin-bottom: 3px;
+  }
+  &__en {
+    font-family: $serif; font-style: italic;
+    font-size: 12.5px;
+    letter-spacing: 1px;
+    color: $cream-low;
+  }
+
+  &--nebula         { color: $rose; }
+  &--galaxy         { color: $violet; }
+  &--cluster        { color: $moon-soft; }
+  &--constellation  { color: $bloom; }
+  &--unknown        { color: $mid; }
 }
 
-.course-card .product-img-wrap {
-  background: rgba(20, 40, 70, 0.8);
+/* chips */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  font-family: $sans;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: $moon-soft;
+  padding: 5px 14px;
+  border: 1px solid $cream-xlow;
+  background: rgba(247,236,210,0.04);
+  border-radius: 999px;
+  transition: all .2s;
+  &:hover {
+    background: rgba(247,236,210,0.1);
+    color: $moon;
+    border-color: $cream-low;
+  }
+}
+
+/* share */
+.share-desc {
+  font-family: $serif; font-style: italic;
+  font-size: 14px;
+  color: $cream-dim;
+  margin: 0 0 16px;
+  letter-spacing: .5px;
+}
+.share-actions {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+
+/* ── buttons ─────────────────────────────────────────────────────── */
+.quiet-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid $cream-xlow;
+  color: $cream-dim;
+  font-family: $sans;
+  font-size: 12.5px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all .25s;
+  border-radius: 999px;
+
+  .qb-mark { color: $moon; font-size: 11px; }
+  &:hover {
+    color: $moon;
+    border-color: $cream-low;
+    background: rgba(247,236,210,0.04);
+  }
+  &--primary {
+    color: $moon;
+    border-color: $cream-low;
+    background: rgba(247,236,210,0.08);
+    &:hover { background: rgba(247,236,210,0.16); }
+  }
+}
+
+.submit {
+  display: inline-flex; flex-direction: column; align-items: center;
+  gap: 4px;
+  padding: 16px 52px;
+  background: linear-gradient(180deg, rgba(247,236,210,0.12), rgba(247,236,210,0.04));
+  border: 1px solid $cream-low;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all .3s;
+  color: $moon;
+  font-family: $sans;
+
+  &__en {
+    font-family: $serif; font-style: italic;
+    font-size: 12px; letter-spacing: 2px;
+    color: $cream-dim;
+  }
+  &__cn { font-size: 15px; letter-spacing: 4px; }
+
+  &:hover {
+    background: linear-gradient(180deg, rgba(247,236,210,0.22), rgba(247,236,210,0.08));
+    box-shadow: 0 0 40px rgba(247,236,210,0.18);
+    transform: translateY(-1px);
+  }
+}
+
+.link {
+  font-family: $sans;
+  font-size: 12.5px;
+  letter-spacing: 1.2px;
+  color: $cream-dim;
+  cursor: pointer;
+  padding: 6px 2px;
+  transition: color .2s;
+  user-select: none;
+  white-space: nowrap;
+  border-bottom: 1px solid transparent;
+
+  &:hover { color: $moon; border-bottom-color: $cream-low; }
+  &--on { color: $moon; }
+}
+
+/* ── reels ───────────────────────────────────────────────────────── */
+.reel {
+  margin-bottom: 64px;
+
+  &__head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid $cream-xlow;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  &__head-l { display: flex; flex-direction: column; gap: 6px; }
+  &__head-r {
+    display: flex; align-items: center; gap: 20px;
+    font-family: $serif; font-style: italic;
+    font-size: 13px;
+    color: $cream-low;
+  }
+  &__kicker {
+    font-family: $serif; font-style: italic;
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    color: $cream-low;
+  }
+  &__title {
+    font-family: $serif;
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    color: $moon;
+    margin: 0;
+  }
+  &__hint { color: $cream-low; }
+  &__empty {
+    text-align: center;
+    padding: 60px 20px;
+    border: 1px dashed $cream-xlow;
+    border-radius: 4px;
+    p {
+      font-family: $serif; font-style: italic;
+      font-size: 14px;
+      color: $cream-low;
+      letter-spacing: 1.5px;
+      margin: 0 0 14px;
+    }
+  }
+}
+
+.track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 230px;
+  gap: 18px;
+  overflow-x: auto;
+  padding-bottom: 18px;
+  scrollbar-width: thin;
+  scrollbar-color: $cream-xlow transparent;
+  &::-webkit-scrollbar { height: 6px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: $cream-xlow; border-radius: 3px; }
+  &::-webkit-scrollbar-thumb:hover { background: $cream-low; }
+}
+
+.cell {
+  position: relative;
+  background: linear-gradient(180deg, rgba(247,236,210,0.035), rgba(247,236,210,0.01));
+  border: 1px solid $cream-xlow;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all .25s ease;
+  padding-bottom: 18px;
+  min-width: 0;
+  overflow: hidden;
+
+  &:hover {
+    border-color: $cream-low;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(7,11,29,0.4);
+    .cell__overlay { opacity: 1; }
+  }
+
+  &__img {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    background: rgba(7,11,29,0.6);
+    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+  &__ph {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px; color: $cream-low;
+  }
+  &__overlay {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(7,11,29,0.7);
+    opacity: 0;
+    transition: opacity .25s;
+  }
+  &__cta {
+    font-family: $sans;
+    font-size: 12px;
+    letter-spacing: 2px;
+    color: $moon;
+    padding: 8px 18px;
+    border: 1px solid $cream-low;
+    border-radius: 999px;
+    background: rgba(247,236,210,0.08);
+  }
+  &__name {
+    padding: 14px 16px 4px;
+    font-family: $serif;
+    font-size: 15.5px;
+    color: $moon;
+    font-weight: 500;
+    letter-spacing: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.45;
+    min-height: 45px;
+  }
+  &__price {
+    padding: 0 16px 4px;
+    font-family: $serif;
+    font-size: 18px;
+    color: $moon-soft;
+    letter-spacing: 1px;
+    font-weight: 500;
+  }
+  &__reason {
+    padding: 0 16px;
+    font-family: $serif; font-style: italic;
+    font-size: 12px;
+    color: $cream-low;
+    letter-spacing: .5px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
 }
 
 .course-meta {
-  font-size: 0.72rem;
-  color: #6a8ab0;
-  margin: 0 0 4px;
-  display: flex;
-  gap: 6px;
-  align-items: center;
+  padding: 0 16px 4px;
+  display: flex; gap: 8px; align-items: center;
+  .course-badge {
+    font-family: $sans;
+    font-size: 10.5px;
+    letter-spacing: 1.5px;
+    color: $violet;
+    border: 1px solid rgba(154,134,209,0.4);
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  .course-chapters {
+    font-family: $serif; font-style: italic;
+    font-size: 12px;
+    color: $cream-low;
+    letter-spacing: .5px;
+  }
 }
 
-.course-badge {
-  background: rgba(80, 130, 200, 0.18);
-  color: #a0c8e0;
-  padding: 1px 6px;
-  border-radius: 4px;
+/* skeletons */
+.skeleton .sk-img {
+  aspect-ratio: 1 / 1;
+  background: linear-gradient(90deg,
+    rgba(247,236,210,0.04),
+    rgba(247,236,210,0.10),
+    rgba(247,236,210,0.04));
+  background-size: 200% 100%;
+  animation: skeleton 1.5s ease-in-out infinite;
+}
+.sk-line {
+  height: 10px;
+  margin: 14px 16px 0;
+  background: linear-gradient(90deg,
+    rgba(247,236,210,0.04),
+    rgba(247,236,210,0.10),
+    rgba(247,236,210,0.04));
+  background-size: 200% 100%;
+  animation: skeleton 1.5s ease-in-out infinite;
+  border-radius: 2px;
+  &--l { width: 80%; }
+  &--s { width: 50%; }
+}
+@keyframes skeleton {
+  0%,100% { background-position: 0% 0; }
+  50%     { background-position: -100% 0; }
 }
 
-.course-chapters {
-  color: #4a6a8a;
+/* element-plus loading */
+:deep(.el-loading-mask) {
+  background-color: rgba(7,11,29,0.65);
+  .el-loading-spinner .path { stroke: $moon; }
 }
 
-/* ============================================================ */
-/* 通用动画                                                       */
-/* ============================================================ */
-@keyframes rotate {
-  to { transform: rotate(360deg); }
+/* responsive */
+@media (max-width: 1100px) {
+  .grid { grid-template-columns: 1fr; }
+  .coords, .objs { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  .topbar { padding: 20px 22px 14px; flex-wrap: wrap; gap: 10px; }
+  .phase, .phase--ok { padding: 30px 22px 0; }
+  .head__num { font-size: 44px; letter-spacing: 2px; }
+  .head__sep { display: none; }
+  .coords, .objs { grid-template-columns: 1fr; }
+  .track { grid-auto-columns: 180px; }
+  .reel__title { font-size: 22px; letter-spacing: 2px; }
+  .panel { padding: 40px 24px 32px; }
 }
 
-.rotating {
-  animation: rotate 1s linear infinite;
+@media (prefers-reduced-motion: reduce) {
+  .stars, .orb__halo, .orb__ring, .pulse, .skeleton .sk-img, .sk-line { animation: none !important; }
 }
 </style>

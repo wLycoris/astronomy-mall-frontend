@@ -1,103 +1,118 @@
 <template>
-  <div class="login-container">
-    <!-- 星空背景 -->
-    <div class="stars-background">
-      <div class="stars"></div>
-      <div class="stars2"></div>
-      <div class="stars3"></div>
-    </div>
+  <div class="auth-page">
+    <!-- ── 左半屏 · 编辑级视觉 ───────────────────────────── -->
+    <aside class="auth-visual">
+      <!-- 底图 + 叠加 -->
+      <div class="v-image" :style="{ backgroundImage: `url(${visualUrl})` }"></div>
+      <div class="v-starfield"></div>
+      <div class="v-overlay"></div>
 
-    <!-- 返回首页按钮（左上角） -->
-    <el-button class="back-home-btn" link @click="router.push('/home')">
-      <el-icon><ArrowLeft /></el-icon> 返回首页
-    </el-button>
-
-    <!-- 登录卡片 -->
-    <div class="login-card">
-      <!-- 左侧:品牌展示 -->
-      <div class="brand-section">
-        <div class="brand-content">
-          <div class="logo-wrapper">
-            <div class="planet"></div>
-            <div class="ring"></div>
-          </div>
-          <h1 class="brand-title">
-            <span class="gradient-text">天文商城</span>
-          </h1>
-          <p class="brand-subtitle">探索宇宙 · 从这里开始</p>
-          <div class="feature-list">
-            <div class="feature-item" v-for="(item, index) in features" :key="index">
-              <el-icon><Check /></el-icon>
-              <span>{{ item }}</span>
-            </div>
-          </div>
+      <!-- 顶部 meta -->
+      <div class="v-top">
+        <div class="v-logo" @click="router.push('/home')">
+          <span class="lg-dot">◎</span>
+          <span class="lg-text">GALAXY · 天文器材商城</span>
         </div>
+        <div class="v-cat">◎ 01 / 02</div>
       </div>
 
-      <!-- 右侧:登录表单 -->
-      <div class="form-section">
-        <div class="form-wrapper">
-          <h2 class="form-title">欢迎回来</h2>
-          <p class="form-subtitle">登录您的账户继续探索</p>
+      <!-- 中间 editorial 引语 -->
+      <div class="v-quote">
+        <div class="q-kicker">— THE NIGHT CONTINUES</div>
+        <h1 class="q-title">
+          <span class="line">星子如旧</span>
+          <span class="line italic">只等归人</span>
+        </h1>
+        <p class="q-sub">The Night Resumes · 你上次标记过的那颗星，仍在原地</p>
+      </div>
 
-          <el-form
-              :model="loginForm"
-              :rules="loginRules"
-              ref="loginFormRef"
-              class="login-form"
-          >
-            <el-form-item prop="username">
+      <!-- 底部 ghost watermark -->
+      <div class="v-ghost">RETURN</div>
+      <div class="v-bottom">
+        <span class="b-line"></span>
+        <span class="b-text">RETURN · TELESCOPIUM</span>
+      </div>
+    </aside>
+
+    <!-- ── 右半屏 · 表单 ─────────────────────────────────── -->
+    <main class="auth-form">
+      <!-- 左上返回（仅右侧独立显示，用于窄屏） -->
+      <div class="f-top">
+        <div class="back-link" @click="router.push('/home')">
+          <el-icon><ArrowLeft /></el-icon>
+          <span>返回首页</span>
+        </div>
+        <div class="f-step">— STEP 01 · IDENTIFY</div>
+      </div>
+
+      <div class="f-inner">
+        <div class="f-head">
+          <div class="f-kicker">— SIGN IN</div>
+          <h2 class="f-title">登&nbsp;&nbsp;入</h2>
+          <p class="f-sub">Continue Your Journey · 输入凭证继续探索</p>
+        </div>
+
+        <el-form
+            :model="loginForm"
+            :rules="loginRules"
+            ref="loginFormRef"
+            class="f-form"
+            hide-required-asterisk
+        >
+          <el-form-item prop="username">
+            <div class="field">
+              <label class="field-label">USERNAME · 用户名</label>
               <el-input
                   v-model="loginForm.username"
-                  placeholder="请输入用户名"
+                  placeholder="请输入你的用户名"
                   size="large"
-                  clearable
-              >
-                <template #prefix>
-                  <el-icon><User /></el-icon>
-                </template>
-              </el-input>
-            </el-form-item>
+                  class="line-input"
+              />
+            </div>
+          </el-form-item>
 
-            <el-form-item prop="password">
+          <el-form-item prop="password">
+            <div class="field">
+              <label class="field-label">PASSWORD · 密码</label>
               <el-input
                   v-model="loginForm.password"
                   type="password"
                   placeholder="请输入密码"
                   size="large"
                   show-password
+                  class="line-input"
                   @keyup.enter="handleLogin"
-              >
-                <template #prefix>
-                  <el-icon><Lock /></el-icon>
-                </template>
-              </el-input>
-            </el-form-item>
-
-            <div class="form-options">
-              <el-checkbox v-model="rememberMe">记住我</el-checkbox>
-              <a href="#" class="forgot-password">忘记密码?</a>
+              />
             </div>
+          </el-form-item>
 
-            <el-button
-                type="primary"
-                size="large"
-                class="login-button"
-                :loading="loading"
-                @click="handleLogin"
-            >
-              <span v-if="!loading">登录</span>
-              <span v-else>登录中...</span>
-            </el-button>
-          </el-form>
-
-          <div class="register-link">
-            还没有账户?
-            <router-link to="/register">立即注册</router-link>
+          <div class="f-row">
+            <el-checkbox v-model="rememberMe" class="remember-check">记住我</el-checkbox>
+            <a class="forgot" @click.prevent="onForgot">忘记密码 →</a>
           </div>
+
+          <button
+              class="bracket-btn primary"
+              :disabled="loading"
+              @click.prevent="handleLogin"
+          >
+            <span class="b-inner">{{ loading ? '正在登入…' : '登  入  →' }}</span>
+          </button>
+        </el-form>
+
+        <div class="f-foot">
+          <div class="divider">
+            <span class="d-line"></span>
+            <span class="d-text">NEW HERE</span>
+            <span class="d-line"></span>
+          </div>
+          <router-link to="/register" class="to-register">
+            <span>还没有账户？</span>
+            <span class="accent">立即注册 →</span>
+          </router-link>
         </div>
       </div>
-    </div>
+    </main>
   </div>
 </template>
 
@@ -106,14 +121,18 @@ import { setToken } from '@/utils/auth'
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { User, Lock, Check, ArrowLeft } from '@element-plus/icons-vue'
+import { ArrowLeft } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
-// 密码修改成功后跳转登录页，显示提示
+// 🔥 编辑级暗色 · 左侧视觉底图
+//   月面近摄 · 冷静、熟悉、"老朋友还在原地"的气质，与"归来"主题呼应
+//   （刻意避开首页 4 张 stage 用图）
+const visualUrl = 'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?auto=format&fit=crop&w=1400&q=80'
+
 onMounted(() => {
   if (route.query.message === 'password_changed') {
     ElMessage.success('密码已修改，请重新登录')
@@ -140,21 +159,13 @@ const loginRules = {
   ]
 }
 
-const features = [
-  'AI星图智能识别',
-  '专业天文器材',
-  '海量学习资源',
-  '活跃社区交流'
-]
-
 const handleLogin = () => {
   loginFormRef.value.validate(async (valid) => {
     if (!valid) return
-
     loading.value = true
     try {
       await userStore.login(loginForm)
-      ElMessage.success('登录成功!')
+      ElMessage.success('登录成功')
       router.push('/home')
     } catch (error) {
       console.error('登录失败:', error)
@@ -163,298 +174,464 @@ const handleLogin = () => {
     }
   })
 }
+
+const onForgot = () => {
+  ElMessage.info('请联系管理员重置密码')
+}
 </script>
 
 <style scoped lang="scss">
-.login-container {
+// ─── tokens（与 Home.vue 对齐）────────────────────────
+$bg-0:#000;
+$bg-1:#070709;
+$bg-2:#0e0e12;
+$bg-3:#14141a;
+$line:rgba(255,255,255,0.10);
+$line-2:rgba(255,255,255,0.18);
+$tx-1:#f4f4f4;
+$tx-2:rgba(255,255,255,0.72);
+$tx-3:rgba(255,255,255,0.45);
+$tx-4:rgba(255,255,255,0.25);
+$accent:#c7a572;
+$danger:#ff8585;
+$serif:'Cormorant Garamond','Playfair Display','Noto Serif SC','Songti SC','宋体',serif;
+$sans:-apple-system,BlinkMacSystemFont,'Helvetica Neue','PingFang SC','Microsoft YaHei',sans-serif;
+$mono:'SF Mono','JetBrains Mono',Menlo,Consolas,monospace;
+
+.auth-page {
   position: relative;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  background: linear-gradient(135deg, #000428 0%, #004e92 100%);
-}
-
-// 返回首页按钮（左上角悬浮）
-.back-home-btn {
-  position: absolute;
-  top: 24px;
-  left: 24px;
-  z-index: 10;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
-
-  &:hover {
-    color: #fff;
-  }
-}
-
-// 星空背景动画
-.stars-background {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-
-  .stars, .stars2, .stars3 {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    background: transparent;
-  }
-
-  .stars {
-    background-image:
-        radial-gradient(2px 2px at 20px 30px, #eee, rgba(0,0,0,0)),
-        radial-gradient(2px 2px at 40px 70px, #fff, rgba(0,0,0,0)),
-        radial-gradient(1px 1px at 90px 40px, #fff, rgba(0,0,0,0));
-    background-repeat: repeat;
-    background-size: 200px 200px;
-    animation: twinkle 3s infinite;
-  }
-
-  .stars2 {
-    background-image:
-        radial-gradient(1px 1px at 50px 50px, #fff, rgba(0,0,0,0)),
-        radial-gradient(1px 1px at 100px 100px, #fff, rgba(0,0,0,0));
-    background-repeat: repeat;
-    background-size: 250px 250px;
-    animation: twinkle 4s infinite;
-  }
-
-  .stars3 {
-    background-image:
-        radial-gradient(1px 1px at 80px 10px, #fff, rgba(0,0,0,0)),
-        radial-gradient(1px 1px at 160px 70px, #fff, rgba(0,0,0,0));
-    background-repeat: repeat;
-    background-size: 300px 300px;
-    animation: twinkle 5s infinite;
-  }
-}
-
-// 登录卡片
-.login-card {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 900px;
-  height: 550px;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(20px);
-  border-radius: 24px;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
   display: flex;
+  min-height: 100vh;
+  background: $bg-0;
+  color: $tx-1;
+  font-family: $sans;
   overflow: hidden;
-  animation: fadeInUp 0.6s ease;
 }
 
-// 左侧品牌展示
-.brand-section {
-  flex: 1;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 60px 50px;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.brand-content {
-  text-align: center;
-}
-
-.logo-wrapper {
+// ══════════════════════════════════════════════════════
+// 左侧 · 编辑级视觉
+// ══════════════════════════════════════════════════════
+.auth-visual {
   position: relative;
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 30px;
+  flex: 1.15;
+  min-width: 0;
+  overflow: hidden;
+  border-right: 1px solid $line;
 
-  .planet {
-    width: 80px;
-    height: 80px;
-    background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
-    border-radius: 50%;
+  .v-image {
+    position: absolute; inset: 0;
+    background-size: cover;
+    background-position: center;
+    transform: scale(1.02);
+    filter: saturate(0.85) brightness(0.78);
+    animation: slow-zoom 28s ease-in-out infinite alternate;
+  }
+  .v-overlay {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.2) 40%, rgba(0,0,0,0.75) 100%),
+      radial-gradient(ellipse at 30% 40%, rgba(199,165,114,0.08), transparent 60%);
+  }
+  // 星点装饰层（防御性 · 图片挂了仍有内容）
+  .v-starfield {
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(1.2px 1.2px at 14% 18%, rgba(255,255,255,0.85), transparent 50%),
+      radial-gradient(1px 1px at 72% 32%, rgba(255,255,255,0.7), transparent 50%),
+      radial-gradient(1.5px 1.5px at 48% 68%, rgba(255,255,255,0.9), transparent 50%),
+      radial-gradient(1px 1px at 26% 82%, rgba(255,255,255,0.6), transparent 50%),
+      radial-gradient(1.2px 1.2px at 88% 76%, rgba(255,255,255,0.75), transparent 50%);
+    opacity: 0.5;
+  }
+
+  .v-top {
     position: absolute;
-    top: 20px;
-    left: 20px;
-    animation: float 6s ease-in-out infinite;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    top: 40px; left: 48px; right: 48px;
+    display: flex; justify-content: space-between; align-items: center;
+    z-index: 3;
+    .v-logo {
+      display: inline-flex; align-items: center; gap: 10px;
+      cursor: pointer;
+      .lg-dot { color: $accent; font-size: 16px; }
+      .lg-text {
+        font-family: $serif;
+        font-size: 14px;
+        letter-spacing: 3px;
+        color: $tx-1;
+      }
+    }
+    .v-cat {
+      font-family: $mono;
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: $tx-3;
+      text-transform: uppercase;
+    }
   }
 
-  .ring {
-    width: 120px;
-    height: 30px;
-    border: 4px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
+  .v-quote {
     position: absolute;
-    top: 45px;
-    transform: rotateX(75deg);
-    animation: float 6s ease-in-out infinite reverse;
+    left: 48px; right: 48px;
+    top: 50%;
+    transform: translateY(-48%);
+    z-index: 3;
+    max-width: 540px;
+
+    .q-kicker {
+      font-family: $mono;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: $accent;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .q-title {
+      font-family: $serif;
+      font-size: clamp(48px, 6vw, 88px);
+      font-weight: 500;
+      line-height: 1.02;
+      letter-spacing: 6px;
+      margin: 0 0 28px;
+      color: $tx-1;
+      .line { display: block; }
+      .italic {
+        font-style: italic;
+        font-weight: 400;
+        color: rgba(255,255,255,0.9);
+        letter-spacing: 10px;
+        margin-top: 4px;
+      }
+    }
+    .q-sub {
+      font-family: $serif;
+      font-style: italic;
+      font-size: 16px;
+      color: $tx-3;
+      line-height: 1.7;
+      letter-spacing: 0.8px;
+      margin: 0;
+    }
   }
-}
 
-.brand-title {
-  font-size: 36px;
-  font-weight: 700;
-  margin-bottom: 10px;
-
-  .gradient-text {
-    background: linear-gradient(90deg, #fff 0%, #e0e7ff 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+  .v-ghost {
+    position: absolute;
+    right: -20px; bottom: 80px;
+    font-family: $serif;
+    font-size: clamp(100px, 14vw, 220px);
+    font-weight: 400;
+    letter-spacing: 12px;
+    color: rgba(255,255,255,0.04);
+    line-height: 1;
+    pointer-events: none;
+    z-index: 2;
   }
-}
 
-.brand-subtitle {
-  font-size: 16px;
-  opacity: 0.9;
-  margin-bottom: 40px;
-}
-
-.feature-list {
-  text-align: left;
-  display: inline-block;
-
-  .feature-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 16px;
-    font-size: 15px;
-
-    .el-icon {
-      margin-right: 10px;
-      font-size: 18px;
+  .v-bottom {
+    position: absolute;
+    bottom: 40px; left: 48px;
+    display: inline-flex; align-items: center; gap: 14px;
+    z-index: 3;
+    .b-line { display: inline-block; width: 36px; height: 1px; background: $accent; }
+    .b-text {
+      font-family: $mono;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: $tx-3;
+      text-transform: uppercase;
     }
   }
 }
 
-// 右侧表单
-.form-section {
-  flex: 1;
-  padding: 60px 50px;
+@keyframes slow-zoom {
+  from { transform: scale(1.02); }
+  to   { transform: scale(1.08); }
+}
+
+// ══════════════════════════════════════════════════════
+// 右侧 · 表单
+// ══════════════════════════════════════════════════════
+.auth-form {
+  flex: 0.85;
+  min-width: 460px;
+  background: $bg-1;
+  padding: 40px 56px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  position: relative;
 }
 
-.form-wrapper {
-  width: 100%;
-  max-width: 350px;
-}
-
-.form-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 8px;
-}
-
-.form-subtitle {
-  font-size: 14px;
-  color: #6b7280;
-  margin-bottom: 40px;
-}
-
-.login-form {
-  .el-form-item {
-    margin-bottom: 24px;
-  }
-
-  :deep(.el-input__wrapper) {
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-
-    &:hover {
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-  }
-}
-
-.form-options {
+.f-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  font-size: 14px;
-
-  .forgot-password {
-    color: #667eea;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
+  margin-bottom: 56px;
+  .back-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: $mono;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: $tx-3;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-transform: uppercase;
+    &:hover { color: $accent; transform: translateX(-4px); }
+    .el-icon { font-size: 14px; }
+  }
+  .f-step {
+    font-family: $mono;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: $tx-4;
+    text-transform: uppercase;
   }
 }
 
-.login-button {
+.f-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 420px;
+  margin: 0 auto;
   width: 100%;
-  height: 48px;
-  font-size: 16px;
-  font-weight: 600;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  transition: all 0.3s ease;
+}
 
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+.f-head {
+  margin-bottom: 44px;
+  .f-kicker {
+    font-family: $mono;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: $accent;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .f-title {
+    font-family: $serif;
+    font-weight: 500;
+    font-size: 54px;
+    letter-spacing: 6px;
+    color: $tx-1;
+    margin: 0 0 18px;
+    line-height: 1;
+  }
+  .f-sub {
+    font-family: $serif;
+    font-style: italic;
+    font-size: 14px;
+    color: $tx-3;
+    margin: 0;
+    letter-spacing: 0.8px;
   }
 }
 
-.register-link {
-  text-align: center;
-  margin-top: 24px;
-  font-size: 14px;
-  color: #6b7280;
+// ── 输入框 · 线性暗色 ────────────────────────────────
+.f-form {
+  :deep(.el-form-item) {
+    margin-bottom: 28px;
+  }
+  :deep(.el-form-item__error) {
+    font-family: $mono;
+    font-size: 10.5px;
+    letter-spacing: 0.8px;
+    color: $danger;
+    padding-top: 4px;
+  }
+}
 
-  a {
-    color: #667eea;
-    text-decoration: none;
-    font-weight: 600;
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+.field-label {
+  font-family: $mono;
+  font-size: 10.5px;
+  letter-spacing: 2px;
+  color: $tx-3;
+  text-transform: uppercase;
+}
+
+// Element Plus 输入框重绘为 underline-only
+.line-input {
+  :deep(.el-input__wrapper) {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-bottom: 1px solid $line-2 !important;
+    border-radius: 0 !important;
+    padding: 0 0 10px !important;
+    transition: border-color 0.25s ease !important;
 
     &:hover {
-      text-decoration: underline;
+      border-bottom-color: $tx-3 !important;
+    }
+    &.is-focus {
+      border-bottom-color: $accent !important;
+      box-shadow: 0 1px 0 0 $accent !important;
+    }
+  }
+  :deep(.el-input__inner) {
+    color: $tx-1 !important;
+    font-family: $serif;
+    font-size: 16px;
+    letter-spacing: 1px;
+    height: 32px;
+    caret-color: $accent;
+    &::placeholder {
+      color: $tx-4;
+      font-family: $serif;
+      font-style: italic;
+      letter-spacing: 0.5px;
+    }
+  }
+  :deep(.el-input__suffix) {
+    color: $tx-3;
+    .el-input__password { color: $tx-3; cursor: pointer; &:hover { color: $accent; } }
+  }
+}
+
+// ── 记住我 / 忘记密码 ───────────────────────────────
+.f-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 14px 0 36px;
+}
+.remember-check {
+  :deep(.el-checkbox__label) {
+    font-family: $mono;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: $tx-2;
+    text-transform: uppercase;
+  }
+  :deep(.el-checkbox__inner) {
+    background: transparent;
+    border: 1px solid $line-2;
+    border-radius: 0;
+    width: 14px; height: 14px;
+    &::after { border-color: $bg-0; }
+  }
+  :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+    background: $accent;
+    border-color: $accent;
+  }
+  :deep(.el-checkbox__input.is-checked + .el-checkbox__label) { color: $tx-1; }
+}
+.forgot {
+  font-family: $mono;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: $tx-3;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: color 0.25s ease;
+  &:hover { color: $accent; }
+}
+
+// ── 主 CTA · bracket-btn ─────────────────────────────
+.bracket-btn {
+  position: relative;
+  width: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 18px 28px;
+  font-family: $mono;
+  font-size: 13px;
+  letter-spacing: 4px;
+  color: $accent;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+  .b-inner { position: relative; z-index: 2; }
+  &::before, &::after {
+    content: '';
+    position: absolute;
+    width: 14px; height: 14px;
+    border: 1px solid $accent;
+    transition: all 0.3s ease;
+  }
+  &::before { top: 0; left: 0; border-right: none; border-bottom: none; }
+  &::after  { bottom: 0; right: 0; border-left: none; border-top: none; }
+  &:hover:not(:disabled) {
+    color: $tx-1;
+    background: rgba(199,165,114,0.06);
+    &::before, &::after { width: 22px; height: 22px; border-color: $tx-1; }
+  }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+// ── 底部分隔 / 跳转注册 ──────────────────────────────
+.f-foot {
+  margin-top: 48px;
+
+  .divider {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 22px;
+    .d-line { flex: 1; height: 1px; background: $line; }
+    .d-text {
+      font-family: $mono;
+      font-size: 10px;
+      letter-spacing: 2.5px;
+      color: $tx-4;
+      text-transform: uppercase;
+    }
+  }
+  .to-register {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 20px;
+    border: 1px solid $line;
+    font-family: $serif;
+    font-size: 14px;
+    color: $tx-2;
+    text-decoration: none;
+    letter-spacing: 1px;
+    transition: all 0.25s ease;
+    &:hover {
+      background: $bg-2;
+      border-color: $line-2;
+      .accent { letter-spacing: 2px; }
+    }
+    .accent {
+      font-family: $mono;
+      font-size: 11px;
+      color: $accent;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      transition: letter-spacing 0.25s ease;
     }
   }
 }
 
-@keyframes twinkle {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 1; }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px) rotateX(75deg); }
-  50% { transform: translateY(-20px) rotateX(75deg); }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -40%);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%);
-  }
-}
-
+// ══════════════════════════════════════════════════════
 // 响应式
-@media (max-width: 768px) {
-  .login-card {
-    width: 90vw;
-    height: auto;
-    flex-direction: column;
+// ══════════════════════════════════════════════════════
+@media (max-width: 980px) {
+  .auth-page { flex-direction: column; }
+  .auth-visual {
+    flex: none;
+    height: 42vh;
+    min-height: 320px;
+    border-right: none;
+    border-bottom: 1px solid $line;
+    .v-top { top: 24px; left: 24px; right: 24px; }
+    .v-quote {
+      left: 24px; right: 24px;
+      .q-title { font-size: 44px; letter-spacing: 4px; .italic { letter-spacing: 6px; } }
+      .q-sub { font-size: 14px; }
+    }
+    .v-bottom { left: 24px; bottom: 20px; }
+    .v-ghost { font-size: 80px; bottom: 20px; }
   }
-
-  .brand-section {
-    padding: 40px 30px;
+  .auth-form {
+    min-width: 0;
+    padding: 32px 24px;
   }
-
-  .form-section {
-    padding: 40px 30px;
-  }
+  .f-top { margin-bottom: 32px; }
+  .f-head { margin-bottom: 32px; .f-title { font-size: 42px; letter-spacing: 4px; } }
 }
 </style>

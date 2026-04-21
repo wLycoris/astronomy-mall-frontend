@@ -3,7 +3,11 @@
 
     <!-- ── 页面标题 ─────────────────────────── -->
     <div class="page-header">
-      <h2>安装预约</h2>
+      <div class="header-copy">
+        <span class="section-kicker">AFTER-SALE SERVICE</span>
+        <h2>安装预约</h2>
+        <p>为大件器材安排上门安装，确认地址、商品和期望时间后提交服务单。</p>
+      </div>
       <el-button type="primary" @click="openApplyDialog">
         <el-icon><Plus /></el-icon> 提交安装预约
       </el-button>
@@ -95,6 +99,7 @@
         v-model="applyDialogVisible"
         title="提交安装预约"
         width="600px"
+        class="installation-apply-dialog"
         :close-on-click-modal="false"
         @close="resetApplyForm"
     >
@@ -127,7 +132,7 @@
                     v-if="order.items?.[0]?.productImage"
                     :src="order.items[0].productImage"
                 />
-                <span v-else>🔭</span>
+                <span v-else class="oc-placeholder">无图</span>
               </div>
               <!-- 主信息 -->
               <div class="oc-info">
@@ -175,7 +180,7 @@
                   :src="item.productImage"
                   class="pc-img"
               />
-              <span v-else class="pc-img pc-placeholder">🔭</span>
+              <span v-else class="pc-img pc-placeholder">无图</span>
               <span class="pc-name">{{ item.productName }}</span>
               <el-icon v-if="applyForm.productId === item.productId" class="pc-check">
                 <CircleCheckFilled />
@@ -256,6 +261,11 @@ const list     = ref([])
 const total    = ref(0)
 const pageNum  = ref(1)
 const pageSize = ref(10)
+const installationMessageOptions = {
+  customClass: 'installation-message-box',
+  confirmButtonClass: 'installation-message-confirm',
+  cancelButtonClass: 'installation-message-cancel'
+}
 
 const fetchList = async () => {
   loading.value = true
@@ -276,7 +286,13 @@ const handleCancel = async (item) => {
     await ElMessageBox.confirm(
         `确定要取消订单「${item.orderNo}」的安装预约吗？`,
         '取消确认',
-        { type: 'warning', confirmButtonText: '确定取消', cancelButtonText: '暂不取消' }
+        {
+          type: 'warning',
+          confirmButtonText: '确定取消',
+          cancelButtonText: '暂不取消',
+          appendToBody: true,
+          ...installationMessageOptions
+        }
     )
     await cancelInstallation(item.id)
     ElMessage.success('预约已取消')
@@ -539,4 +555,361 @@ onMounted(fetchList)
 }
 .pc-name  { flex: 1; font-size: 13px; color: #303133; }
 .pc-check { font-size: 16px; color: #409eff; flex-shrink: 0; }
+
+/* Final after-sale service pass */
+:global(body .installation-list-page.installation-list-page) {
+  max-width: 100%;
+  padding: 0;
+  color: #111827;
+}
+
+:global(body .installation-list-page.installation-list-page .page-header) {
+  margin: 0 0 16px;
+  padding: 18px 22px;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 7px;
+  background: #fffdfa;
+  box-shadow: 0 14px 38px rgba(17, 24, 39, 0.06);
+}
+
+:global(body .installation-list-page.installation-list-page .header-copy) {
+  min-width: 0;
+}
+
+:global(body .installation-list-page.installation-list-page .section-kicker) {
+  display: block;
+  margin-bottom: 7px;
+  color: #9c6b35;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+:global(body .installation-list-page.installation-list-page .page-header h2) {
+  margin: 0;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+:global(body .installation-list-page.installation-list-page .page-header p) {
+  margin: 8px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+:global(body .installation-list-page.installation-list-page .el-button) {
+  min-height: 34px;
+  border-radius: 4px;
+  font-weight: 760;
+  letter-spacing: 0;
+}
+
+:global(body .installation-list-page.installation-list-page .el-button span) {
+  color: inherit;
+}
+
+:global(body .installation-list-page.installation-list-page .el-button--primary) {
+  border-color: #111827;
+  background: #111827;
+  color: #fff;
+}
+
+:global(body .installation-list-page.installation-list-page .el-button--primary:hover) {
+  border-color: #273142;
+  background: #273142;
+}
+
+:global(body .installation-list-page.installation-list-page .el-button--danger.is-plain) {
+  border-color: rgba(156, 79, 30, 0.34);
+  background: #fff8ec;
+  color: #9c4f1e;
+}
+
+:global(body .installation-list-page.installation-list-page .list-container) {
+  gap: 14px;
+}
+
+:global(body .installation-list-page.installation-list-page .installation-card.el-card) {
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 7px;
+  background: #fffdfa;
+  box-shadow: 0 12px 30px rgba(17, 24, 39, 0.055);
+  overflow: hidden;
+}
+
+:global(body .installation-list-page.installation-list-page .installation-card.el-card:hover) {
+  border-color: rgba(156, 107, 53, 0.26);
+  box-shadow: 0 18px 42px rgba(17, 24, 39, 0.09);
+}
+
+:global(body .installation-list-page.installation-list-page .installation-card .el-card__body) {
+  padding: 18px 20px;
+}
+
+:global(body .installation-list-page.installation-list-page .card-header) {
+  gap: 18px;
+  align-items: flex-start;
+}
+
+:global(body .installation-list-page.installation-list-page .card-header .left) {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+}
+
+:global(body .installation-list-page.installation-list-page .order-no) {
+  color: #8a9099;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+:global(body .installation-list-page.installation-list-page .product-name) {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+:global(body .installation-list-page.installation-list-page .el-divider) {
+  margin: 15px 0;
+  border-color: rgba(17, 24, 39, 0.08);
+}
+
+:global(body .installation-list-page.installation-list-page .el-descriptions__label) {
+  color: #6b7280;
+  font-weight: 650;
+}
+
+:global(body .installation-list-page.installation-list-page .el-descriptions__content) {
+  color: #111827;
+  font-weight: 650;
+}
+
+:global(body .installation-list-page.installation-list-page .highlight) {
+  color: #8a5a22;
+  font-weight: 850;
+}
+
+:global(body .installation-list-page.installation-list-page .cancel-reason) {
+  color: #9c4f1e;
+  font-weight: 750;
+}
+
+:global(body .installation-list-page.installation-list-page .el-tag) {
+  border-radius: 999px;
+  font-weight: 760;
+}
+
+:global(body .installation-list-page.installation-list-page .el-tag--warning),
+:global(body .installation-list-page.installation-list-page .el-tag--success),
+:global(body .installation-list-page.installation-list-page .el-tag--info),
+:global(body .installation-list-page.installation-list-page .el-tag--primary) {
+  border-color: rgba(156, 107, 53, 0.26);
+  background: #fff8ec;
+  color: #8a5a22;
+}
+
+:global(body .installation-list-page.installation-list-page .el-empty) {
+  min-height: 340px;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 7px;
+  background: #fffdfa;
+  box-shadow: 0 14px 38px rgba(17, 24, 39, 0.06);
+}
+
+:global(body .installation-list-page.installation-list-page .el-empty__description p) {
+  color: #4b5563;
+  font-weight: 650;
+}
+
+:global(body .installation-list-page.installation-list-page .pagination) {
+  margin-top: 22px;
+}
+
+:global(body .installation-list-page.installation-list-page .el-pagination button),
+:global(body .installation-list-page.installation-list-page .el-pagination .el-pager li) {
+  border-radius: 4px;
+  background: #fffdfa;
+  color: #374151;
+}
+
+:global(body .installation-list-page.installation-list-page .el-pagination .el-pager li.is-active) {
+  color: #8a5a22;
+  font-weight: 850;
+}
+
+:global(.installation-apply-dialog .el-dialog),
+:global(.installation-apply-dialog.el-dialog) {
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  border-radius: 7px;
+  background: #fffdfa;
+  box-shadow: 0 28px 70px rgba(17, 24, 39, 0.22);
+}
+
+:global(.installation-apply-dialog .el-dialog__header),
+:global(.installation-apply-dialog.el-dialog .el-dialog__header) {
+  margin: 0;
+  padding: 18px 22px;
+  border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+  background: #f8f5ef;
+}
+
+:global(.installation-apply-dialog .el-dialog__title),
+:global(.installation-apply-dialog.el-dialog .el-dialog__title) {
+  color: #111827;
+  font-size: 18px;
+  font-weight: 850;
+}
+
+:global(.installation-apply-dialog .el-dialog__body),
+:global(.installation-apply-dialog.el-dialog .el-dialog__body) {
+  padding: 20px 22px;
+}
+
+:global(.installation-apply-dialog .el-dialog__footer),
+:global(.installation-apply-dialog.el-dialog .el-dialog__footer) {
+  padding: 0 22px 20px;
+}
+
+:global(body .installation-list-page.installation-list-page .order-card-item),
+:global(body .installation-list-page.installation-list-page .product-card-item) {
+  border-width: 1px;
+  border-color: rgba(17, 24, 39, 0.12);
+  border-radius: 6px;
+  background: #fff;
+}
+
+:global(body .installation-list-page.installation-list-page .order-card-item:hover),
+:global(body .installation-list-page.installation-list-page .product-card-item:hover),
+:global(body .installation-list-page.installation-list-page .order-card-item.selected),
+:global(body .installation-list-page.installation-list-page .product-card-item.selected) {
+  border-color: rgba(156, 107, 53, 0.48);
+  background: #fff8ec;
+}
+
+:global(body .installation-list-page.installation-list-page .oc-thumb),
+:global(body .installation-list-page.installation-list-page .pc-img) {
+  border-color: rgba(17, 24, 39, 0.12);
+  background: #f8f5ef;
+}
+
+:global(body .installation-list-page.installation-list-page .oc-placeholder),
+:global(body .installation-list-page.installation-list-page .pc-placeholder) {
+  color: #8a9099;
+  font-size: 12px;
+  font-weight: 760;
+}
+
+:global(body .installation-list-page.installation-list-page .oc-no),
+:global(body .installation-list-page.installation-list-page .oc-more),
+:global(body .installation-list-page.installation-list-page .form-tip),
+:global(body .installation-list-page.installation-list-page .oc-date) {
+  color: #6b7280;
+}
+
+:global(body .installation-list-page.installation-list-page .oc-product),
+:global(body .installation-list-page.installation-list-page .pc-name) {
+  color: #111827;
+  font-weight: 750;
+}
+
+:global(body .installation-list-page.installation-list-page .oc-amount) {
+  color: #9c6b35;
+  font-weight: 850;
+}
+
+:global(body .installation-list-page.installation-list-page .oc-check),
+:global(body .installation-list-page.installation-list-page .pc-check) {
+  color: #8a5a22;
+}
+
+:global(.installation-apply-dialog .el-form-item__label),
+:global(.installation-apply-dialog.el-dialog .el-form-item__label) {
+  color: #111827;
+  font-weight: 760;
+}
+
+:global(.installation-apply-dialog .el-input__wrapper),
+:global(.installation-apply-dialog .el-textarea__inner),
+:global(.installation-apply-dialog.el-dialog .el-input__wrapper),
+:global(.installation-apply-dialog.el-dialog .el-textarea__inner) {
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(17, 24, 39, 0.14);
+}
+
+:global(.installation-apply-dialog .el-input__inner),
+:global(.installation-apply-dialog .el-textarea__inner),
+:global(.installation-apply-dialog.el-dialog .el-input__inner),
+:global(.installation-apply-dialog.el-dialog .el-textarea__inner) {
+  color: #111827;
+  font-weight: 600;
+}
+
+:global(.installation-apply-dialog .el-input__wrapper.is-focus),
+:global(.installation-apply-dialog .el-textarea__inner:focus),
+:global(.installation-apply-dialog.el-dialog .el-input__wrapper.is-focus),
+:global(.installation-apply-dialog.el-dialog .el-textarea__inner:focus) {
+  box-shadow: inset 0 0 0 1px #9c6b35, 0 0 0 3px rgba(156, 107, 53, 0.1);
+}
+
+:global(body .installation-message-box.el-message-box) {
+  width: 420px;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  border-radius: 7px;
+  box-shadow: 0 28px 70px rgba(17, 24, 39, 0.24);
+}
+
+:global(body .installation-message-box .el-message-box__header) {
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+  background: #f8f5ef;
+}
+
+:global(body .installation-message-box .el-message-box__title) {
+  color: #111827;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+:global(body .installation-message-box .el-message-box__content) {
+  padding: 18px 20px;
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+:global(body .installation-message-box .el-message-box__btns) {
+  padding: 0 20px 18px;
+}
+
+:global(body .installation-message-confirm.el-button--primary) {
+  border-color: #111827;
+  background: #111827;
+  color: #fff;
+}
+
+:global(body .installation-message-cancel.el-button) {
+  border-color: rgba(17, 24, 39, 0.16);
+  background: #fff;
+  color: #111827;
+}
+
+@media (max-width: 720px) {
+  :global(body .installation-list-page.installation-list-page .page-header) {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  :global(.installation-apply-dialog .el-dialog),
+  :global(.installation-apply-dialog.el-dialog) {
+    width: calc(100vw - 28px) !important;
+  }
+}
 </style>

@@ -9,10 +9,15 @@
   -->
   <div class="my-posts-page">
     <div class="page-header">
-      <h2 class="page-title">我的帖子</h2>
-      <router-link to="/forum/publish" class="publish-btn">
-        + 发布帖子
-      </router-link>
+      <div>
+        <div class="section-kicker">COMMUNITY LOG</div>
+        <h2 class="page-title">我的帖子</h2>
+        <p class="page-subtitle">管理你在社区发布的观测记录、器材心得和学习笔记。</p>
+      </div>
+      <div class="header-side">
+        <span class="count-pill">{{ total }} 篇帖子</span>
+        <router-link to="/forum/publish" class="publish-btn">发布帖子</router-link>
+      </div>
     </div>
 
     <!-- 瀑布流内容区 -->
@@ -27,6 +32,7 @@
         v-if="!loading && postList.length === 0"
         description="你还没有发布任何帖子"
         :image-size="100"
+        class="empty-state"
       >
         <template #default>
           <router-link to="/forum/publish" class="empty-action">去发布第一篇帖子</router-link>
@@ -34,8 +40,8 @@
       </el-empty>
 
       <div ref="loadMoreRef" class="load-more">
-        <span v-if="loadingMore">加载中...</span>
-        <span v-else-if="noMore && postList.length > 0">已经到底啦~</span>
+        <span v-if="loadingMore">正在加载更多</span>
+        <span v-else-if="noMore && postList.length > 0">已加载全部内容</span>
       </div>
     </div>
 
@@ -60,6 +66,7 @@ const postList = ref([])
 const loading = ref(false)
 const loadingMore = ref(false)
 const noMore = ref(false)
+const total = ref(0)
 const pageNum = ref(1)
 const pageSize = 20
 
@@ -98,6 +105,7 @@ const fetchPosts = async (reset = false) => {
     const data = res.data
     if (data) {
       const list = data.list || []
+      total.value = data.total || 0
       list.forEach(p => {
         if (p.images && Array.isArray(p.images)) p.imageCount = p.images.length
       })
@@ -143,53 +151,214 @@ onUnmounted(() => {
 
 <style scoped>
 .my-posts-page {
-  background: #fff;
+  color: #172033;
+  background:
+    radial-gradient(600px 180px at 12% 0%, rgba(199, 165, 114, .12), transparent 62%),
+    #fffdfa;
+  border: 1px solid #e9e1d4;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 16px 38px rgba(35, 30, 22, .08);
   padding: 24px;
   min-height: 400px;
 }
 
 .page-header {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  margin-bottom: 20px;
+  gap: 20px;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #ebe3d7;
+}
+
+.section-kicker {
+  margin-bottom: 6px;
+  color: #9a6b36;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1.8px;
 }
 
 .page-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
   margin: 0;
+  color: #101827;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.page-subtitle {
+  margin: 7px 0 0;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.header-side {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.count-pill {
+  padding: 7px 12px;
+  border: 1px solid #e6d7c1;
+  border-radius: 999px;
+  background: #f8f4ec;
+  color: #8a5f2e;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .publish-btn {
-  padding: 6px 18px;
-  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 4px;
   font-size: 13px;
-  color: #fff;
-  background: #ff2442;
+  font-weight: 800;
+  color: #fffdfa;
+  background: #111827;
   text-decoration: none;
-  transition: background 0.2s;
+  transition: background .2s, border-color .2s;
 }
-.publish-btn:hover { background: #e6203c; }
+
+.publish-btn:hover {
+  background: #9a6b36;
+}
 
 .content-area {
-  min-height: 300px;
+  min-height: 320px;
 }
 
 .load-more {
   text-align: center;
   padding: 20px 0;
   font-size: 13px;
-  color: #bbb;
+  color: #8b95a5;
+}
+
+.empty-state {
+  padding: 70px 0;
+  border: 1px solid #ebe3d7;
+  border-radius: 8px;
+  background: rgba(255, 253, 250, .72);
 }
 
 .empty-action {
-  color: #ff2442;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 132px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 4px;
+  background: #111827;
+  color: #fffdfa;
   text-decoration: none;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 800;
 }
-.empty-action:hover { text-decoration: underline; }
+
+.empty-action:hover {
+  background: #9a6b36;
+}
+
+:deep(.waterfall-container) {
+  columns: 3;
+  column-gap: 16px;
+}
+
+:deep(.post-card) {
+  margin-bottom: 16px;
+  border: 1px solid #ebe3d7;
+  border-radius: 8px;
+  background: #fffdfa;
+  box-shadow: 0 10px 24px rgba(35, 30, 22, .07);
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+}
+
+:deep(.post-card:hover) {
+  border-color: rgba(154, 107, 54, .42);
+  box-shadow: 0 16px 32px rgba(35, 30, 22, .12);
+  transform: translateY(-2px);
+}
+
+:deep(.card-cover img) {
+  min-height: 128px;
+  max-height: 320px;
+}
+
+:deep(.text-cover) {
+  background:
+    radial-gradient(180px 120px at 20% 10%, rgba(199, 165, 114, .18), transparent 60%),
+    #f8f4ec !important;
+}
+
+:deep(.text-cover::before),
+:deep(.text-cover-content) {
+  color: #6b5132 !important;
+}
+
+:deep(.multi-badge) {
+  border: 1px solid rgba(247, 236, 210, .26);
+  background: rgba(17, 24, 39, .78);
+}
+
+:deep(.card-body) {
+  padding: 11px 12px 12px;
+}
+
+:deep(.card-title) {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+:deep(.author-info .avatar-placeholder) {
+  background: #f3e9cf;
+  color: #8a5f2e;
+  font-weight: 800;
+}
+
+:deep(.author-info .author-name) {
+  color: #667085;
+}
+
+:deep(.like-info) {
+  color: #8b95a5;
+}
+
+:deep(.like-info.liked) {
+  color: #9a6b36;
+}
+
+@media (max-width: 1100px) {
+  :deep(.waterfall-container) {
+    columns: 2;
+  }
+}
+
+@media (max-width: 720px) {
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .header-side {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  :deep(.waterfall-container) {
+    columns: 1;
+  }
+}
 </style>

@@ -170,6 +170,13 @@ onMounted(() => {
   // 7.7 拉取一次论坛待审核数 + 60s 定时刷新
   refreshForumPendingCount()
   forumPendingTimer = setInterval(refreshForumPendingCount, 60 * 1000)
+
+  // 🔥 标记 body/html，使 AdminLayout 的 body 级全局样式只在后台激活
+  //   （修复：admin 页面的 `html, body { overflow-y: auto }` 一旦加载便滞留在文档中，
+  //    离开后回到首页时 body 仍是滚动容器，导致 window scroll 事件不再触发，
+  //    Home.vue 的滚动图片切换失效）
+  document.documentElement.classList.add('admin-active')
+  document.body.classList.add('admin-active')
 })
 
 onBeforeUnmount(() => {
@@ -177,6 +184,9 @@ onBeforeUnmount(() => {
     clearInterval(forumPendingTimer)
     forumPendingTimer = null
   }
+  // 🔥 离开后台：恢复默认滚动容器（window）
+  document.documentElement.classList.remove('admin-active')
+  document.body.classList.remove('admin-active')
 })
 const backToHome = () => router.push('/')
 
@@ -587,38 +597,45 @@ $glass-bg: rgba(15, 23, 42, 0.7);
   filter: none !important;
 }
 
-.el-container,
-.el-main {
-  overflow: visible !important;
+// 🔥 修复：下列全局规则仅在后台激活时生效（body.admin-active）,
+//   否则离开后台回到首页，body 仍是滚动容器会导致 window scroll 事件失效
+body.admin-active {
+  .el-container,
+  .el-main {
+    overflow: visible !important;
+  }
 }
 
-html, body {
+html.admin-active,
+body.admin-active {
   overflow-y: auto;
 }
 
-.el-overlay {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-}
+body.admin-active {
+  .el-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
 
-.el-overlay-dialog {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  overflow-y: auto !important;
-}
+  .el-overlay-dialog {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow-y: auto !important;
+  }
 
-.el-overlay-dialog .el-dialog {
-  margin: 0 !important;
-  position: relative !important;
-  top: auto !important;
+  .el-overlay-dialog .el-dialog {
+    margin: 0 !important;
+    position: relative !important;
+    top: auto !important;
+  }
 }
 </style>

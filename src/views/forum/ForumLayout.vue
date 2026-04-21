@@ -4,7 +4,7 @@
     <!-- 顶部通栏：Logo + 搜索框 + 右侧链接 -->
     <header class="top-bar">
       <div class="top-left" @click="$router.push('/home')">
-        <span class="logo-icon">🔭</span>
+        <span class="logo-mark" aria-hidden="true"></span>
         <span class="logo-text">天文社区</span>
       </div>
       <div class="top-center">
@@ -309,21 +309,34 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 .forum-layout {
+  --forum-ink: #101722;
+  --forum-ink-soft: #1b2637;
+  --forum-paper: #f7f5ef;
+  --forum-card: #fffdfa;
+  --forum-line: #e7e1d7;
+  --forum-muted: #697386;
+  --forum-gold: #c89b53;
+  --forum-blue: #2f6f9f;
+  --forum-red: #d84b5f;
   min-height: 100vh;
-  background: #fff;
+  background:
+    linear-gradient(180deg, rgba(247, 245, 239, 0.96), rgba(242, 239, 230, 0.96)),
+    radial-gradient(circle at 80% 10%, rgba(47, 111, 159, 0.08), transparent 34%);
+  color: var(--forum-ink);
 }
 
 /* ══════ 顶部通栏 ══════ */
 .top-bar {
-  height: 56px;
+  height: 60px;
   display: flex;
   align-items: center;
-  padding: 0 24px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 0 28px;
+  border-bottom: 1px solid rgba(16, 23, 34, 0.08);
   position: sticky;
   top: 0;
   z-index: 200;
-  background: #fff;
+  background: rgba(255, 253, 250, 0.94);
+  backdrop-filter: blur(16px);
 }
 
 .top-left {
@@ -334,11 +347,36 @@ onUnmounted(() => {
   width: 200px;
   flex-shrink: 0;
 
-  .logo-icon { font-size: 28px; }
+  .logo-mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--forum-ink);
+    position: relative;
+    background:
+      radial-gradient(circle at 50% 50%, var(--forum-gold) 0 2px, transparent 3px),
+      radial-gradient(circle at 70% 28%, rgba(47, 111, 159, 0.7) 0 2px, transparent 3px);
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      border: 1px solid rgba(16, 23, 34, 0.24);
+    }
+
+    &::after {
+      inset: 12px -3px;
+      border-color: rgba(200, 155, 83, 0.7);
+      transform: rotate(-24deg);
+    }
+  }
+
   .logo-text {
-    font-size: 20px;
+    font-size: 19px;
     font-weight: 700;
-    color: #ff2442;
+    color: var(--forum-ink);
   }
 }
 
@@ -349,19 +387,21 @@ onUnmounted(() => {
 }
 
 .search-box {
-  width: 400px;
+  width: 420px;
   max-width: 100%;
-  height: 34px;
+  height: 38px;
   display: flex;
   align-items: center;
-  background: #f5f5f5;
-  border-radius: 17px;
+  background: #f1eee8;
+  border: 1px solid transparent;
+  border-radius: 20px;
   overflow: hidden;
-  transition: background 0.2s, box-shadow 0.2s;
+  transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
 
   &.focused, &:focus-within {
     background: #fff;
-    box-shadow: 0 0 0 1px #ddd;
+    border-color: rgba(16, 23, 34, 0.18);
+    box-shadow: 0 12px 26px rgba(16, 23, 34, 0.08);
   }
 
   input {
@@ -370,43 +410,43 @@ onUnmounted(() => {
     border: none;
     outline: none;
     background: transparent;
-    padding: 0 16px;
+    padding: 0 18px;
     font-size: 14px;
-    color: #333;
+    color: var(--forum-ink);
 
-    &::placeholder { color: #bbb; }
+    &::placeholder { color: #8c95a3; }
   }
 
   .search-btn {
-    width: 42px;
+    width: 46px;
     height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     color: #fff;
-    background: #ff2442;
-    border-radius: 0 17px 17px 0;
+    background: var(--forum-ink);
+    border-radius: 0 20px 20px 0;
     transition: background 0.2s;
 
-    &:hover { background: #e6203c; }
+    &:hover { background: var(--forum-ink-soft); }
   }
 }
 
 /* ══════ 搜索下拉面板（fixed定位，脱离top-bar层叠上下文） ══════ */
 .search-dropdown {
   position: fixed;
-  top: 46px;
+  top: 54px;
   left: 50%;
   transform: translateX(-50%);
   width: 440px;
   max-height: 480px;
   overflow-y: auto;
-  background: #fff;
-  border: 1px solid #f0f0f0;
+  background: var(--forum-card);
+  border: 1px solid var(--forum-line);
   border-top: none;
-  border-radius: 0 0 12px 12px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 18px 40px rgba(16, 23, 34, 0.14);
   z-index: 301;
   padding: 16px 20px;
 }
@@ -427,7 +467,7 @@ onUnmounted(() => {
 .dropdown-title {
   font-size: 14px;
   font-weight: 600;
-  color: #333;
+  color: var(--forum-ink);
 }
 
 .history-actions {
@@ -466,10 +506,10 @@ onUnmounted(() => {
 .history-tag {
   display: inline-block;
   padding: 5px 14px;
-  background: #f5f5f5;
+  background: #f3efe7;
   border-radius: 14px;
   font-size: 13px;
-  color: #333;
+  color: var(--forum-ink);
   cursor: pointer;
   transition: background 0.15s;
   max-width: 160px;
@@ -477,7 +517,7 @@ onUnmounted(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
 
-  &:hover { background: #ebebeb; }
+  &:hover { background: #ece5d9; }
 
   .tag-close {
     margin-left: 4px;
@@ -501,7 +541,7 @@ onUnmounted(() => {
   border-radius: 6px;
   transition: background 0.15s;
 
-  &:hover { background: #f8f8f8; }
+  &:hover { background: #f4efe7; }
 }
 
 .hot-rank {
@@ -511,12 +551,12 @@ onUnmounted(() => {
   color: #bbb;
   text-align: center;
 
-  &.top { color: #ff2442; }
+  &.top { color: var(--forum-gold); }
 }
 
 .hot-text {
   font-size: 14px;
-  color: #333;
+  color: var(--forum-ink);
 }
 
 .dropdown-loading, .dropdown-empty {
@@ -530,7 +570,7 @@ onUnmounted(() => {
   position: fixed;
   inset: 0;
   z-index: 300;
-  background: rgba(0, 0, 0, 0.05);
+  background: rgba(16, 23, 34, 0.08);
 }
 
 .top-right {
@@ -542,31 +582,34 @@ onUnmounted(() => {
 
   .top-link {
     font-size: 13px;
-    color: #666;
+    color: var(--forum-muted);
     text-decoration: none;
     white-space: nowrap;
 
-    &:hover { color: #333; }
+    &:hover { color: var(--forum-ink); }
   }
 }
 
 /* ══════ 下方主体 ══════ */
 .body-wrapper {
   display: flex;
-  min-height: calc(100vh - 56px);
+  min-height: calc(100vh - 60px);
 }
 
 /* ── 左侧边栏 ── */
 .forum-sidebar {
-  width: 200px;
+  width: 208px;
   flex-shrink: 0;
   position: sticky;
-  top: 56px;
-  height: calc(100vh - 56px);
+  top: 60px;
+  height: calc(100vh - 60px);
   display: flex;
   flex-direction: column;
-  padding: 16px 0;
-  border-right: 1px solid #f5f5f5;
+  padding: 18px 0;
+  background:
+    linear-gradient(180deg, #101722 0%, #151f2e 56%, #111927 100%);
+  border-right: 1px solid rgba(16, 23, 34, 0.18);
+  box-shadow: inset -1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .sidebar-nav {
@@ -579,20 +622,24 @@ onUnmounted(() => {
   align-items: center;
   gap: 14px;
   padding: 12px 16px;
-  color: #333;
+  color: rgba(255, 255, 255, 0.72);
   font-size: 15px;
   text-decoration: none;
   transition: all 0.15s;
-  border-radius: 10px;
-  margin-bottom: 2px;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
 
   &:hover {
-    background: #f5f5f5;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
   }
 
   &.active {
     font-weight: 700;
-    color: #333;
+    color: #fff;
+    background: rgba(200, 155, 83, 0.14);
+    border-color: rgba(200, 155, 83, 0.32);
   }
 
   .el-icon { font-size: 22px; }
@@ -615,14 +662,14 @@ onUnmounted(() => {
   &.sub {
     padding: 10px 16px;
     font-size: 13px;
-    color: #999;
+    color: rgba(255, 255, 255, 0.5);
     .el-icon { font-size: 18px; }
-    &:hover { color: #333; }
+    &:hover { color: #fff; }
   }
 }
 
 .sidebar-bottom {
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding: 12px 12px 0;
 }
 
@@ -630,7 +677,11 @@ onUnmounted(() => {
 .forum-main {
   flex: 1;
   min-width: 0;
-  background: #f5f5f5;
+  background:
+    linear-gradient(rgba(16, 23, 34, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 23, 34, 0.025) 1px, transparent 1px),
+    var(--forum-paper);
+  background-size: 36px 36px, 36px 36px, auto;
 }
 
 /* ══════ 响应式 ══════ */

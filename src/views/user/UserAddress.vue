@@ -116,7 +116,7 @@
 
         <!-- 省市区级联 + 定位按钮（6.4 地址联动） -->
         <el-form-item label="所在地区" prop="region">
-          <div style="display: flex; gap: 8px; width: 100%;">
+          <div class="region-row">
             <el-cascader
                 v-model="addressForm.region"
                 :options="regionOptions"
@@ -133,7 +133,7 @@
                 @click="handleUseCurrentLocation"
                 title="使用当前位置自动填充省市区"
             >
-              📍 定位
+              定位
             </el-button>
           </div>
         </el-form-item>
@@ -156,7 +156,7 @@
               v-model="addressForm.isDefault"
               :active-value="1"
               :inactive-value="0"
-              active-text="设为默认地址"
+              active-text="默认地址"
           />
         </el-form-item>
       </el-form>
@@ -515,5 +515,696 @@ const resetForm = () => {
 .address-actions {
   display: flex; align-items: center; gap: 4px;
   border-top: 1px solid #f0f0f0; padding-top: 10px;
+}
+
+/* Final direction: restrained premium address book */
+.address-manage {
+  min-height: 100%;
+  padding: 26px;
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(246, 244, 239, 0.94)),
+    #f6f4ef;
+}
+
+.page-header {
+  margin-bottom: 18px;
+  padding: 22px 24px;
+  border: 1px solid rgba(23, 32, 51, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14px 34px rgba(23, 32, 51, 0.06);
+}
+
+.header-left {
+  gap: 12px;
+}
+
+.page-title {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: #172033;
+  font-size: 22px;
+  font-weight: 760;
+  letter-spacing: 0;
+}
+
+.page-title::before {
+  content: "";
+  width: 34px;
+  height: 1px;
+  background: #b88d3e;
+}
+
+.address-count {
+  border: 1px solid rgba(23, 32, 51, 0.08);
+  border-radius: 999px;
+  background: #fbfcfd;
+  color: #697386;
+  font-weight: 650;
+}
+
+.address-list {
+  gap: 14px;
+}
+
+.address-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px 24px;
+  padding: 20px 22px;
+  border: 1px solid rgba(23, 32, 51, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 12px 30px rgba(23, 32, 51, 0.055);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.address-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(184, 141, 62, 0.32);
+  box-shadow: 0 18px 38px rgba(23, 32, 51, 0.09);
+}
+
+.address-card.is-default {
+  border-color: rgba(184, 141, 62, 0.48);
+  background: linear-gradient(135deg, #ffffff, #fffaf0);
+}
+
+.address-card.is-default::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 8px 0 0 8px;
+  background: #b88d3e;
+}
+
+.address-badge {
+  top: 14px;
+  right: 18px;
+}
+
+.address-badge :deep(.el-tag) {
+  border-color: #172033;
+  background: #172033;
+  color: #ffffff;
+}
+
+.address-info {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.address-header {
+  gap: 14px;
+  margin-bottom: 10px;
+  padding-right: 72px;
+}
+
+.receiver-name {
+  color: #172033;
+  font-size: 17px;
+  font-weight: 760;
+}
+
+.receiver-phone {
+  color: #697386;
+  font-size: 14px;
+}
+
+.address-detail {
+  max-width: 680px;
+  color: #4e5969;
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.address-actions {
+  align-self: end;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.address-actions :deep(.el-button.is-link) {
+  height: 30px;
+  padding: 0 4px;
+  color: #4e5969;
+  font-weight: 650;
+}
+
+.address-actions :deep(.el-button.is-link:hover) {
+  color: #7a5e3d;
+}
+
+.address-actions :deep(.el-button--danger.is-link) {
+  color: #b45a4f;
+}
+
+.address-manage :deep(.el-empty) {
+  min-height: 320px;
+  border: 1px solid rgba(23, 32, 51, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 30px rgba(23, 32, 51, 0.05);
+}
+
+.address-manage :deep(.el-button--primary) {
+  border-color: #172033;
+  background: #172033;
+  box-shadow: 0 10px 22px rgba(23, 32, 51, 0.14);
+}
+
+.address-manage :deep(.el-button--primary:hover),
+.address-manage :deep(.el-button--primary:focus) {
+  border-color: #24314c;
+  background: #24314c;
+}
+
+.address-manage :deep(.el-button:not(.el-button--primary):not(.is-link):hover),
+.address-manage :deep(.el-button:not(.el-button--primary):not(.is-link):focus) {
+  border-color: rgba(184, 141, 62, 0.42);
+  color: #7a5e3d;
+}
+
+.address-manage :deep(.el-dialog) {
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.address-manage :deep(.el-dialog__header) {
+  margin-right: 0;
+  padding: 22px 24px;
+  border-bottom: 1px solid rgba(23, 32, 51, 0.08);
+  background: #fbfcfd;
+}
+
+.address-manage :deep(.el-dialog__title) {
+  color: #172033;
+  font-weight: 760;
+}
+
+.address-manage :deep(.el-dialog__body) {
+  padding: 24px 24px 10px;
+}
+
+.address-manage :deep(.el-dialog__footer) {
+  padding: 16px 24px 24px;
+}
+
+.address-manage :deep(.el-form-item__label) {
+  color: #4e5969;
+  font-weight: 650;
+}
+
+.address-manage :deep(.el-input__wrapper),
+.address-manage :deep(.el-textarea__inner),
+.address-manage :deep(.el-cascader .el-input__wrapper) {
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px rgba(23, 32, 51, 0.12) inset;
+}
+
+.address-manage :deep(.el-input__wrapper.is-focus),
+.address-manage :deep(.el-textarea__inner:focus),
+.address-manage :deep(.el-cascader .el-input.is-focus .el-input__wrapper) {
+  box-shadow: 0 0 0 1px #172033 inset;
+}
+
+@media (max-width: 820px) {
+  .address-manage {
+    padding: 16px;
+  }
+
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .address-card {
+    grid-template-columns: 1fr;
+  }
+
+  .address-actions {
+    justify-content: flex-start;
+    padding-top: 12px;
+    border-top: 1px solid rgba(23, 32, 51, 0.08);
+  }
+}
+
+/* Address final pass: page-local address book. */
+:global(body .address-manage.address-manage.address-manage) {
+  width: min(1160px, calc(100vw - 48px)) !important;
+  max-width: none !important;
+  margin: 0 auto !important;
+  padding: 28px 0 72px !important;
+  color: #1f2933 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .page-header) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  margin-bottom: 18px !important;
+  padding: 20px 22px !important;
+  border: 1px solid rgba(21, 26, 34, 0.12) !important;
+  border-radius: 7px !important;
+  background: #fffdfa !important;
+  box-shadow: 0 14px 32px rgba(21, 26, 34, 0.055) !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .page-title) {
+  color: #111827 !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-count) {
+  color: #667085 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-list) {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-card) {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 14px !important;
+  min-height: 132px !important;
+  padding: 20px !important;
+  border: 1px solid rgba(21, 26, 34, 0.12) !important;
+  border-radius: 7px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-card.is-default) {
+  border-color: #9c6b35 !important;
+  background: #fff8ec !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-card.is-default::before) {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 auto 0 0 !important;
+  width: 3px !important;
+  border-radius: 7px 0 0 7px !important;
+  background: #9c6b35 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-header) {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-bottom: 10px !important;
+  padding-right: 74px !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .receiver-name) {
+  color: #111827 !important;
+  font-size: 17px !important;
+  font-weight: 800 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .receiver-phone),
+:global(body .address-manage.address-manage.address-manage .address-detail) {
+  color: #667085 !important;
+  line-height: 1.65 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-actions) {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 6px !important;
+  align-self: end !important;
+  padding-top: 0 !important;
+  border-top: 0 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-actions .el-button.is-link) {
+  height: 30px !important;
+  color: #374151 !important;
+  font-weight: 650 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-button--primary) {
+  border-color: #111827 !important;
+  background: #111827 !important;
+  color: #fffdfa !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-dialog) {
+  overflow: hidden !important;
+  border-radius: 7px !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-dialog__header) {
+  padding: 20px 24px !important;
+  border-bottom: 1px solid rgba(21, 26, 34, 0.1) !important;
+  background: #f8f5ef !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-form-item__label) {
+  color: #374151 !important;
+  font-weight: 700 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-input__wrapper),
+:global(body .address-manage.address-manage.address-manage .el-textarea__inner),
+:global(body .address-manage.address-manage.address-manage .el-cascader .el-input__wrapper) {
+  border-radius: 5px !important;
+  box-shadow: 0 0 0 1px rgba(21, 26, 34, 0.14) inset !important;
+}
+
+@media (max-width: 820px) {
+  :global(body .address-manage.address-manage.address-manage) {
+    width: calc(100vw - 28px) !important;
+    padding: 18px 0 44px !important;
+  }
+
+  :global(body .address-manage.address-manage.address-manage .page-header) {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  :global(body .address-manage.address-manage.address-manage .address-list),
+  :global(body .address-manage.address-manage.address-manage .address-card) {
+    grid-template-columns: 1fr !important;
+  }
+
+  :global(body .address-manage.address-manage.address-manage .address-actions) {
+    flex-direction: row !important;
+    justify-content: flex-start !important;
+    padding-top: 12px !important;
+    border-top: 1px solid rgba(21, 26, 34, 0.1) !important;
+  }
+}
+
+/* Address polish pass: calmer address book cards and less intrusive actions. */
+:global(body .address-manage.address-manage.address-manage .page-header) {
+  padding: 18px 22px !important;
+  background: #fffdfa !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .header-left) {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-count) {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 24px !important;
+  padding: 0 10px !important;
+  border: 1px solid rgba(21, 26, 34, 0.1) !important;
+  border-radius: 999px !important;
+  background: #f8f5ef !important;
+  color: #667085 !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .page-header .el-button--primary) {
+  height: 34px !important;
+  min-width: 104px !important;
+  border-radius: 4px !important;
+  background: #111827 !important;
+  color: #fffdfa !important;
+  font-weight: 750 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-list) {
+  align-items: stretch !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-card) {
+  display: block !important;
+  min-height: 126px !important;
+  padding: 18px 20px 46px !important;
+  border-color: rgba(21, 26, 34, 0.12) !important;
+  background: #fffdfa !important;
+  box-shadow: 0 10px 24px rgba(21, 26, 34, 0.045) !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-card.is-default) {
+  border-color: rgba(156, 107, 53, 0.55) !important;
+  background: #fff8ec !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-card.is-default::before) {
+  width: 4px !important;
+  background: #b07a3b !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-badge) {
+  position: absolute !important;
+  top: 16px !important;
+  right: 18px !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-badge .el-tag) {
+  height: 22px !important;
+  padding: 0 9px !important;
+  border: 1px solid rgba(156, 107, 53, 0.28) !important;
+  border-radius: 999px !important;
+  background: #fffdfa !important;
+  color: #8a5a22 !important;
+  font-weight: 750 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-header) {
+  margin-bottom: 8px !important;
+  padding-right: 90px !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .receiver-name) {
+  font-size: 16px !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .receiver-phone) {
+  color: #6b7280 !important;
+  font-weight: 650 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-detail) {
+  max-width: 82% !important;
+  color: #4b5563 !important;
+  line-height: 1.7 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-actions) {
+  position: absolute !important;
+  right: 18px !important;
+  bottom: 14px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-actions .el-button.is-link) {
+  width: auto !important;
+  height: 24px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #374151 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-actions .el-button.is-link:hover) {
+  color: #111827 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-actions .el-button--danger.is-link) {
+  color: #9c4f1e !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-dialog .el-button) {
+  border-radius: 4px !important;
+  font-weight: 700 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-dialog .el-button:not(.el-button--primary)) {
+  border-color: rgba(21, 26, 34, 0.16) !important;
+  background: #fffdfa !important;
+  color: #374151 !important;
+}
+
+@media (max-width: 820px) {
+  :global(body .address-manage.address-manage.address-manage .header-left) {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  :global(body .address-manage.address-manage.address-manage .address-card) {
+    min-height: 0 !important;
+    padding-bottom: 58px !important;
+  }
+
+  :global(body .address-manage.address-manage.address-manage .address-detail) {
+    max-width: none !important;
+  }
+}
+
+/* Address readability pass: explicit contrast for cards, actions, tags and dialogs. */
+:global(body .address-manage.address-manage.address-manage),
+:global(body .address-manage.address-manage.address-manage .page-header),
+:global(body .address-manage.address-manage.address-manage .address-card) {
+  color: #111827 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .page-title),
+:global(body .address-manage.address-manage.address-manage .receiver-name),
+:global(body .address-manage.address-manage.address-manage .receiver-phone),
+:global(body .address-manage.address-manage.address-manage .address-detail),
+:global(body .address-manage.address-manage.address-manage .address-count) {
+  color: #111827 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-actions .el-button.is-link),
+:global(body .address-manage.address-manage.address-manage .address-actions .el-button.is-link span) {
+  color: #111827 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-actions .el-button--danger.is-link),
+:global(body .address-manage.address-manage.address-manage .address-actions .el-button--danger.is-link span) {
+  color: #8f3f20 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .address-badge .el-tag),
+:global(body .address-manage.address-manage.address-manage .address-badge .el-tag__content) {
+  color: #8a5a22 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .page-header .el-button--primary),
+:global(body .address-manage.address-manage.address-manage .page-header .el-button--primary span),
+:global(body .address-manage.address-manage.address-manage .el-dialog .el-button--primary),
+:global(body .address-manage.address-manage.address-manage .el-dialog .el-button--primary span) {
+  color: #fffdfa !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-dialog),
+:global(body .address-manage.address-manage.address-manage .el-dialog__title),
+:global(body .address-manage.address-manage.address-manage .el-form-item__label),
+:global(body .address-manage.address-manage.address-manage .el-input__inner),
+:global(body .address-manage.address-manage.address-manage .el-textarea__inner),
+:global(body .address-manage.address-manage.address-manage .el-dialog .el-button:not(.el-button--primary) span) {
+  color: #111827 !important;
+}
+
+/* Address dialog polish: cleaner spacing and readable validation. */
+:global(body .address-manage.address-manage.address-manage .el-dialog) {
+  width: min(560px, calc(100vw - 32px)) !important;
+  border-radius: 6px !important;
+  background: #fffdfa !important;
+  box-shadow: 0 24px 70px rgba(17, 24, 39, 0.18) !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-dialog__header) {
+  padding: 22px 28px !important;
+  border-bottom: 1px solid rgba(17, 24, 39, 0.1) !important;
+  background: #f8f5ef !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-dialog__title) {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-dialog__body) {
+  padding: 24px 28px 8px !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-dialog__footer) {
+  padding: 14px 28px 28px !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-form-item) {
+  align-items: flex-start !important;
+  margin-bottom: 22px !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-form-item__label) {
+  height: 36px !important;
+  line-height: 36px !important;
+  color: #111827 !important;
+  font-weight: 760 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-form-item__content) {
+  min-height: 36px !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .region-row) {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .region-row .el-cascader) {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .region-row .el-button) {
+  flex: 0 0 auto !important;
+  height: 36px !important;
+  min-width: 78px !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-input__wrapper),
+:global(body .address-manage.address-manage.address-manage .el-cascader .el-input__wrapper) {
+  min-height: 36px !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-textarea__inner) {
+  min-height: 86px !important;
+  padding: 10px 12px !important;
+  color: #111827 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-form-item__error) {
+  position: static !important;
+  padding-top: 6px !important;
+  color: #9c4f1e !important;
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-switch__label) {
+  color: #374151 !important;
+  font-weight: 650 !important;
+}
+
+:global(body .address-manage.address-manage.address-manage .el-dialog__footer .el-button) {
+  min-width: 86px !important;
+  height: 36px !important;
+}
+
+@media (max-width: 620px) {
+  :global(body .address-manage.address-manage.address-manage .region-row) {
+    flex-direction: column !important;
+  }
+
+  :global(body .address-manage.address-manage.address-manage .region-row .el-button) {
+    width: 100% !important;
+  }
 }
 </style>

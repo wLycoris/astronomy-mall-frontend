@@ -508,20 +508,29 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .user-profile-page {
   min-height: 100%;
-  background: #f5f5f5;
+  background: transparent;
 }
 
 /* ══════ 顶部Banner + 用户信息 ══════ */
 .profile-header {
-  background: #fff;
+  width: min(1320px, calc(100% - 48px));
+  margin: 18px auto 0;
+  background: var(--forum-card, #fffdfa);
   padding-bottom: 0;
   position: relative;
+  border: 1px solid var(--forum-line, #e7e1d7);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 12px 28px rgba(16, 23, 34, 0.06);
 }
 
 /* 星空渐变背景 */
 .banner-bg {
   height: 180px;
-  background: linear-gradient(135deg, #0c1445 0%, #1a237e 30%, #283593 50%, #1565c0 70%, #0d47a1 100%);
+  background:
+    radial-gradient(circle at 18% 35%, rgba(200, 155, 83, 0.18), transparent 28%),
+    radial-gradient(circle at 82% 20%, rgba(47, 111, 159, 0.26), transparent 30%),
+    linear-gradient(135deg, #101722 0%, #172437 54%, #24364b 100%);
   position: relative;
   overflow: hidden;
 
@@ -541,6 +550,7 @@ onUnmounted(() => {
       radial-gradient(1px 1px at 90% 40%, rgba(255,255,255,0.5) 50%, transparent 50%),
       radial-gradient(2px 2px at 45% 10%, rgba(255,215,0,0.7) 50%, transparent 50%),
       radial-gradient(1.5px 1.5px at 75% 85%, rgba(200,200,255,0.8) 50%, transparent 50%);
+    opacity: 0.86;
   }
 }
 
@@ -549,7 +559,7 @@ onUnmounted(() => {
   display: flex;
   align-items: flex-start;
   gap: 24px;
-  padding: 0 40px 20px;
+  padding: 0 40px 22px;
   margin-top: -44px;
   position: relative;
   z-index: 1;
@@ -563,12 +573,12 @@ onUnmounted(() => {
   width: 92px;
   height: 92px;
   border-radius: 50%;
-  border: 4px solid #fff;
+  border: 4px solid #fffdfa;
   object-fit: cover;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
 
   &.placeholder {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #101722 0%, #2f6f9f 100%);
     color: #fff;
     font-size: 36px;
     font-weight: 700;
@@ -594,7 +604,7 @@ onUnmounted(() => {
 .user-nickname {
   font-size: 24px;
   font-weight: 700;
-  color: #333;
+  color: var(--forum-ink, #101722);
   margin: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -610,15 +620,15 @@ onUnmounted(() => {
 
 .level-badge {
   font-size: 12px;
-  color: #f59e0b;
-  background: #fef3c7;
+  color: #8a5d1f;
+  background: #f6ead4;
   padding: 2px 8px;
   border-radius: 10px;
 }
 
 .city-tag {
   font-size: 12px;
-  color: #999;
+  color: var(--forum-muted, #697386);
 }
 
 /* ── 统计数据 ── */
@@ -642,12 +652,12 @@ onUnmounted(() => {
 .stat-num {
   font-size: 18px;
   font-weight: 700;
-  color: #333;
+  color: var(--forum-ink, #101722);
 }
 
 .stat-label {
   font-size: 13px;
-  color: #999;
+  color: var(--forum-muted, #697386);
 }
 
 /* ── 关注按钮 ── */
@@ -660,11 +670,11 @@ onUnmounted(() => {
   border: none;
   transition: all 0.2s;
   color: #fff;
-  background: #ff2442;
+  background: var(--forum-ink, #101722);
   white-space: nowrap;
   flex-shrink: 0;
 
-  &:hover { background: #e6203c; }
+  &:hover { background: #1b2637; }
 
   &.followed {
     color: #666;
@@ -677,21 +687,24 @@ onUnmounted(() => {
 
 /* ══════ Tab栏 ══════ */
 .profile-tabs {
-  background: #fff;
+  width: min(1320px, calc(100% - 48px));
+  margin: 12px auto 0;
+  background: rgba(255, 253, 250, 0.92);
   display: flex;
   justify-content: center;
   gap: 0;
-  border-bottom: 1px solid #f0f0f0;
-  margin-top: 0;
+  border: 1px solid var(--forum-line, #e7e1d7);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(16, 23, 34, 0.05);
 }
 
 .tab-item {
   font-size: 15px;
-  color: #999;
+  color: var(--forum-muted, #697386);
   cursor: pointer;
-  padding: 14px 32px;
+  padding: 13px 32px;
   border-bottom: 3px solid transparent;
-  transition: all 0.15s;
+  transition: color 0.15s, border-color 0.15s;
   font-weight: 500;
   display: inline-flex;
   align-items: center;
@@ -700,9 +713,9 @@ onUnmounted(() => {
   &:hover { color: #333; }
 
   &.active {
-    color: #333;
+    color: var(--forum-ink, #101722);
     font-weight: 700;
-    border-bottom-color: #ff2442;
+    border-bottom-color: var(--forum-gold, #c89b53);
   }
 }
 
@@ -718,7 +731,9 @@ onUnmounted(() => {
 
 /* ══════ 瀑布流内容区 ══════ */
 .waterfall-wrapper {
-  padding: 16px 20px;
+  width: min(1320px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 18px 0 34px;
   min-height: 300px;
 }
 
@@ -740,11 +755,11 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   padding: 12px 0;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid #ede7dc;
   cursor: pointer;
   transition: background 0.15s;
 
-  &:hover { background: #fafafa; }
+  &:hover { background: #f7f3ec; }
   &:last-child { border-bottom: none; }
 }
 
@@ -773,13 +788,13 @@ onUnmounted(() => {
 .item-nickname {
   font-size: 14px;
   font-weight: 600;
-  color: #333;
+  color: #101722;
   display: block;
 }
 
 .item-city {
   font-size: 12px;
-  color: #999;
+  color: #697386;
   display: block;
   margin-top: 2px;
 }
@@ -789,13 +804,13 @@ onUnmounted(() => {
   border-radius: 14px;
   font-size: 12px;
   cursor: pointer;
-  border: 1px solid #ff2442;
-  color: #ff2442;
-  background: #fff;
+  border: 1px solid rgba(16, 23, 34, 0.22);
+  color: #101722;
+  background: #fffdfa;
   transition: all 0.2s;
   flex-shrink: 0;
 
-  &:hover { background: #fff5f5; }
+  &:hover { background: #f4eadb; }
 
   &.followed {
     border-color: #ddd;
@@ -808,20 +823,25 @@ onUnmounted(() => {
   text-align: center;
   padding: 12px 0 4px;
   font-size: 13px;
-  color: #409eff;
+  color: #2f6f9f;
   cursor: pointer;
 
-  &:hover { color: #337ecc; }
+  &:hover { color: #1e587f; }
 }
 
 /* ══════ 响应式 ══════ */
 @media (max-width: 768px) {
+  .profile-header,
+  .profile-tabs,
+  .waterfall-wrapper {
+    width: calc(100% - 24px);
+  }
   .profile-info-section { padding: 0 16px 16px; gap: 16px; }
   .info-right { padding-top: 40px; }
   .stats-row { gap: 16px; }
   .user-avatar { width: 68px; height: 68px; }
   .user-nickname { font-size: 18px; }
-  .waterfall-wrapper { padding: 12px; }
+  .waterfall-wrapper { padding: 12px 0; }
   .banner-bg { height: 140px; }
 }
 </style>

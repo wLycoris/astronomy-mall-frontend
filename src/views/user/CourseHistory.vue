@@ -13,11 +13,12 @@
       <div class="header-left">
         <el-icon class="header-icon"><VideoPlay /></el-icon>
         <div>
+          <div class="section-kicker">COURSE LOG</div>
           <h2 class="page-title">学习历史</h2>
-          <p class="page-subtitle">共 {{ total }} 条记录</p>
+          <p class="page-subtitle">共 {{ total }} 条记录，继续上一次停下的章节。</p>
         </div>
       </div>
-      <el-button type="primary" plain size="small" @click="router.push('/course')">
+      <el-button class="primary-action" size="small" @click="router.push('/course')">
         <el-icon><Search /></el-icon>
         发现新课程
       </el-button>
@@ -47,9 +48,9 @@
         class="empty-state"
     >
       <template #image>
-        <div class="empty-icon">🚀</div>
+        <div class="empty-icon">LEARN</div>
       </template>
-      <el-button type="primary" @click="router.push('/course')">浏览课程</el-button>
+      <el-button class="primary-action" @click="router.push('/course')">浏览课程</el-button>
     </el-empty>
 
     <!-- 历史列表 -->
@@ -70,7 +71,7 @@
               @error="handleImgError"
           />
           <span class="cover-type-badge" :class="item.type === 0 ? 'badge-video' : 'badge-book'">
-            {{ item.type === 0 ? '🎬' : '📖' }}
+            {{ item.type === 0 ? '视频' : '图文' }}
           </span>
         </div>
 
@@ -92,7 +93,7 @@
                   :percentage="calcProgress(item.completedCount, item.chapterCount)"
                   :stroke-width="4"
                   :show-text="false"
-                  color="#409eff"
+                  color="#c7a572"
                   class="progress-bar"
               />
               <span class="progress-text">
@@ -103,7 +104,7 @@
           <template v-else>
             <!-- 未学习：只浏览过详情页，未点击任何章节 -->
             <div class="no-study-row">
-              <el-tag type="info" size="small" effect="plain">📌 未学习</el-tag>
+              <el-tag type="info" size="small" effect="plain">未学习</el-tag>
               <span class="no-study-hint">点击进入课程开始学习</span>
             </div>
           </template>
@@ -169,7 +170,7 @@ const total       = ref(0)
 const currentPage = ref(1)
 const pageSize    = ref(10)
 
-const defaultCover = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="90" viewBox="0 0 160 90"><rect width="160" height="90" fill="%231a1a2e"/><text x="80" y="54" font-size="24" text-anchor="middle" fill="%23444">🌌</text></svg>'
+const defaultCover = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="90" viewBox="0 0 160 90"><rect width="160" height="90" fill="%23111827"/><circle cx="80" cy="45" r="18" fill="%23f3e9cf" opacity="0.86"/><path d="M22 68h116" stroke="%23c7a572" stroke-width="2" opacity="0.6"/><text x="80" y="78" font-size="11" text-anchor="middle" fill="%23f3e9cf">COURSE</text></svg>'
 
 // ─────────────────────────────────────────────────
 
@@ -244,80 +245,347 @@ onMounted(() => fetchList(1))
 </script>
 
 <style scoped>
-.course-history-page { padding: 0 4px; min-height: 400px; }
-
-/* 页头 */
-.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--el-border-color-lighter, #f0f0f0); }
-.header-left { display: flex; align-items: center; gap: 12px; }
-.header-icon { font-size: 28px; color: #409eff; }
-.page-title { font-size: 20px; font-weight: 600; color: var(--el-text-color-primary, #303133); margin: 0; }
-.page-subtitle { font-size: 13px; color: var(--el-text-color-secondary, #909399); margin: 2px 0 0; }
-
-/* 骨架屏 */
-.skeleton-item { background: var(--el-bg-color, #fff); border-radius: 10px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 12px; }
-.skeleton-row { display: flex; gap: 14px; }
-.sk-cover { width: 120px; height: 68px; border-radius: 6px; flex-shrink: 0; }
-.sk-body { flex: 1; padding-top: 4px; }
-
-/* 空状态 */
-.empty-state { padding: 60px 0; }
-.empty-icon { font-size: 64px; line-height: 1; }
-
-/* 列表 */
-.list-container { display: flex; flex-direction: column; gap: 12px; }
-
-/* 单条记录 */
-.history-item {
-  display: flex; align-items: flex-start; gap: 14px;
-  background: var(--el-bg-color, #fff);
-  border-radius: 10px; padding: 14px 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  cursor: pointer; transition: box-shadow 0.2s, transform 0.2s;
-  border: 1px solid transparent;
+.course-history-page {
+  min-height: 420px;
+  color: #172033;
 }
-.history-item:hover { box-shadow: 0 4px 16px rgba(64,158,255,0.16); border-color: rgba(64,158,255,0.25); transform: translateX(2px); }
 
-/* 封面 */
-.item-cover-wrapper { position: relative; flex-shrink: 0; width: 120px; height: 68px; border-radius: 6px; overflow: hidden; background: #1a1a2e; }
-.item-cover { width: 100%; height: 100%; object-fit: cover; transition: transform 0.25s; }
-.history-item:hover .item-cover { transform: scale(1.05); }
-.cover-type-badge { position: absolute; bottom: 3px; left: 4px; font-size: 12px; background: rgba(0,0,0,0.55); border-radius: 3px; padding: 1px 3px; }
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+  padding: 22px 24px;
+  border: 1px solid #e9e1d4;
+  border-radius: 8px;
+  background:
+    radial-gradient(520px 180px at 8% 0%, rgba(199, 165, 114, .13), transparent 64%),
+    linear-gradient(180deg, #fffdfa 0%, #f8f4ec 100%);
+  box-shadow: 0 16px 38px rgba(35, 30, 22, .08);
+}
 
-/* 信息区 */
-.item-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
-.item-title { font-size: 14px; font-weight: 600; color: var(--el-text-color-primary, #303133); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
 
-/* 上次章节 */
-.last-chapter { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--el-text-color-regular, #606266); }
-.lc-icon { color: var(--el-color-primary, #409eff); font-size: 13px; flex-shrink: 0; }
-.lc-text { color: var(--el-text-color-secondary, #909399); flex-shrink: 0; }
-.lc-title { color: var(--el-color-primary, #409eff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+.header-icon {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #111827;
+  color: #f4d08a;
+  font-size: 22px;
+  flex-shrink: 0;
+}
 
-/* 进度条 */
-.progress-row { display: flex; align-items: center; gap: 8px; }
-.progress-bar { flex: 1; }
-.progress-text { font-size: 11px; color: var(--el-text-color-placeholder, #c0c4cc); white-space: nowrap; flex-shrink: 0; }
+.section-kicker {
+  margin-bottom: 5px;
+  color: #9a6b36;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+}
 
-/* 未学习行 */
-.no-study-row { display: flex; align-items: center; gap: 8px; }
-.no-study-hint { font-size: 12px; color: var(--el-text-color-placeholder, #c0c4cc); }
+.page-title {
+  margin: 0;
+  color: #101827;
+  font-size: 24px;
+  font-weight: 800;
+}
 
-/* 标签 */
-.item-tags { display: flex; flex-wrap: wrap; gap: 4px; }
-.tag-chip { font-size: 11px; border-radius: 20px; }
+.page-subtitle {
+  margin: 6px 0 0;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.6;
+}
 
-/* 右侧 */
-.item-right { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; min-width: 80px; }
-.learn-time { display: flex; align-items: center; gap: 3px; font-size: 11px; color: var(--el-text-color-placeholder, #c0c4cc); white-space: nowrap; }
-.continue-btn { font-size: 12px; padding: 4px 12px; white-space: nowrap; }
+.primary-action {
+  border: 1px solid #111827;
+  border-radius: 4px;
+  background: #111827;
+  color: #fffdfa;
+  font-weight: 800;
+}
 
-/* 分页 */
-.pagination-wrap { display: flex; justify-content: center; margin-top: 32px; }
+.primary-action:hover {
+  border-color: #9a6b36;
+  background: #9a6b36;
+  color: #fffdfa;
+}
 
-/* 响应式 */
-@media (max-width: 640px) {
-  .history-item { flex-wrap: wrap; }
-  .item-cover-wrapper { width: 90px; height: 51px; }
-  .item-right { width: 100%; flex-direction: row; justify-content: space-between; align-items: center; border-top: 1px dashed var(--el-border-color-lighter, #f0f0f0); padding-top: 8px; }
+.skeleton-item {
+  margin-bottom: 12px;
+  padding: 16px;
+  border: 1px solid #ebe3d7;
+  border-radius: 8px;
+  background: #fffdfa;
+}
+
+.skeleton-row {
+  display: flex;
+  gap: 14px;
+}
+
+.sk-cover {
+  width: 128px;
+  height: 72px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.sk-body {
+  flex: 1;
+  padding-top: 4px;
+}
+
+.empty-state {
+  padding: 70px 0;
+  border: 1px solid #ebe3d7;
+  border-radius: 8px;
+  background: #fffdfa;
+}
+
+.empty-icon {
+  width: 112px;
+  height: 112px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 42% 34%, #fff7e0, #f3e9cf 58%, #d7c192 100%);
+  color: #111827;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 1.8px;
+}
+
+.list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-item {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #ebe3d7;
+  border-radius: 8px;
+  background: #fffdfa;
+  cursor: pointer;
+  transition: border-color .2s, box-shadow .2s, transform .2s;
+}
+
+.history-item:hover {
+  border-color: rgba(154, 107, 54, .45);
+  box-shadow: 0 14px 30px rgba(35, 30, 22, .10);
+  transform: translateY(-1px);
+}
+
+.item-cover-wrapper {
+  position: relative;
+  width: 132px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 7px;
+  background: #111827;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+}
+
+.item-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .25s;
+}
+
+.history-item:hover .item-cover {
+  transform: scale(1.04);
+}
+
+.cover-type-badge {
+  position: absolute;
+  left: 8px;
+  bottom: 7px;
+  padding: 2px 8px;
+  border: 1px solid rgba(247, 236, 210, .32);
+  border-radius: 999px;
+  background: rgba(17, 24, 39, .82);
+  color: #f3e9cf;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.item-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item-title {
+  color: #111827;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.45;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.last-chapter {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #5f6b7a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.lc-icon {
+  color: #9a6b36;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.lc-text {
+  color: #8b95a5;
+  flex-shrink: 0;
+}
+
+.lc-title {
+  max-width: 280px;
+  color: #8a5f2e;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress-bar {
+  flex: 1;
+  min-width: 120px;
+}
+
+.progress-text {
+  color: #8b95a5;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.no-study-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.no-study-hint {
+  color: #8b95a5;
+  font-size: 12px;
+}
+
+.item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.tag-chip {
+  border-color: #e8ded0;
+  border-radius: 999px;
+  background: #faf6ef;
+  color: #6b5132;
+  font-size: 11px;
+}
+
+.item-right {
+  min-width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.learn-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #9aa3b2;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.continue-btn {
+  border-color: #111827;
+  background: #111827;
+  color: #fffdfa;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.continue-btn:hover {
+  border-color: #9a6b36;
+  background: #9a6b36;
+  color: #fffdfa;
+}
+
+.pagination-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+}
+
+:deep(.el-pagination.is-background .el-pager li.is-active) {
+  background-color: #111827;
+}
+
+:deep(.el-progress-bar__outer) {
+  background-color: #efe8dc;
+}
+
+@media (max-width: 820px) {
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .history-item {
+    grid-template-columns: 112px minmax(0, 1fr);
+  }
+
+  .item-cover-wrapper {
+    width: 112px;
+  }
+
+  .item-right {
+    grid-column: 1 / -1;
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px dashed #ebe3d7;
+  }
 }
 </style>

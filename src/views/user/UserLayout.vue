@@ -200,7 +200,7 @@ const levelStars = computed(() => {
 // ── 菜单分组配置 ────────────────────────────────────
 const menuGroups = computed(() => [
   {
-    label: '我的账户',
+    label: '账户中心',
     items: [
       {
         path: '/user/overview',
@@ -213,24 +213,18 @@ const menuGroups = computed(() => [
         label: '我的钱包',
         icon: Wallet,
         badge: 0
-      },
-      {
-        path: '/user/settings',
-        label: '账号设置',
-        icon: Setting,
-        badge: 0
       }
     ]
   },
   {
-    label: '我的订单',
+    label: '交易管理',
     items: [
-      { path: '/user/orders', label: '全部订单', icon: List, badge: 0 }
-    ]
-  },
-  {
-    label: '我的服务',
-    items: [
+      {
+        path: '/user/orders',
+        label: '全部订单',
+        icon: List,
+        badge: orderCounts.value.pendingPay + orderCounts.value.pendingShip + orderCounts.value.pendingReceive
+      },
       {
         path: '/user/address',
         label: '收货地址',
@@ -241,36 +235,50 @@ const menuGroups = computed(() => [
         path: '/user/reviews',
         label: '我的评价',
         icon: ChatDotRound,
-        badge: 0
+        badge: orderCounts.value.pendingReview
       },
-      // 🆕 移除 disabled: true，收藏功能 2.6 已上线
       {
         path: '/user/favorites',
-        label: '我的收藏',
+        label: '商品收藏',
         icon: Star,
         badge: 0
-      },
+      }
+    ]
+  },
+  {
+    label: '售后服务',
+    items: [
       { path: '/user/installation',     label: '安装预约',     icon: Tools,       badge: 0 },
       { path: '/user/service-reminder', label: '器材保养提醒', icon: Bell,        badge: 0 },
-      // ── 2.5.3 新增：二手回收 ─────────────────────────
-      { path: '/user/recycling',        label: '二手回收',     icon: RefreshRight, badge: 0 },
-      // ── 4.5 新增：识别历史 ──────────────────────────
+      { path: '/user/recycling',        label: '二手回收',     icon: RefreshRight, badge: orderCounts.value.refunding }
+    ]
+  },
+  {
+    label: '天文学习',
+    items: [
       { path: '/user/recognition',      label: '识别历史',     icon: Search,       badge: 0 },
-      // ── 5.3 新增：学习历史 / 课程收藏 ──────────────
+      { path: '/user/checkin-history',  label: '我的足迹',     icon: Location,     badge: 0 },
       { path: '/user/course-history',   label: '学习历史',     icon: VideoPlay,    badge: 0 },
       { path: '/user/course-favorite',  label: '课程收藏',     icon: Star,         badge: 0 },
-      // ── 5.6 新增：我的课程评价 ──────────────────────
-      { path: '/user/course-reviews',   label: '课程评价',     icon: ChatDotRound, badge: 0 },
-      // ── 6.3 新增：我的足迹（签到历史）──────────────
-      { path: '/user/checkin-history',  label: '我的足迹',     icon: Location,     badge: 0 }
+      { path: '/user/course-reviews',   label: '课程评价',     icon: ChatDotRound, badge: 0 }
     ]
   },
   {
     label: '社区互动',
     items: [
-      // ── 7.5 新增：我的帖子 / 我的帖子收藏 ────────
       { path: '/user/my-posts',    label: '我的帖子',     icon: EditPen,      badge: 0 },
       { path: '/user/my-collects', label: '帖子收藏',     icon: Collection,   badge: 0 }
+    ]
+  },
+  {
+    label: '账户安全',
+    items: [
+      {
+        path: '/user/settings',
+        label: '账号设置',
+        icon: Setting,
+        badge: 0
+      }
     ]
   }
 ])
@@ -486,6 +494,162 @@ const isActive = (path) => {
   .nav-item.active {
     border-right: none;
     border-bottom: 3px solid #409eff;
+  }
+}
+
+/* User center navigation polish: organized and readable. */
+:global(body .user-center-wrapper.user-center-wrapper) {
+  width: min(1280px, calc(100vw - 48px)) !important;
+  max-width: none !important;
+  margin: 0 auto !important;
+  padding: 18px 0 64px !important;
+  color: #111827 !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .user-breadcrumb) {
+  margin-bottom: 14px !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .user-layout-body) {
+  display: grid !important;
+  grid-template-columns: 220px minmax(0, 1fr) !important;
+  gap: 18px !important;
+  align-items: start !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .user-sidebar) {
+  position: sticky !important;
+  top: 18px !important;
+  width: 220px !important;
+  max-height: calc(100vh - 36px) !important;
+  overflow: auto !important;
+  border: 1px solid rgba(21, 26, 34, 0.12) !important;
+  border-radius: 7px !important;
+  background: #fffdfa !important;
+  box-shadow: 0 14px 32px rgba(21, 26, 34, 0.055) !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .sidebar-user-card) {
+  padding: 18px 16px !important;
+  border-bottom: 1px solid rgba(255, 253, 250, 0.12) !important;
+  background:
+    linear-gradient(135deg, rgba(240, 200, 120, 0.13), transparent 58%),
+    #111827 !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .sidebar-avatar) {
+  width: 54px !important;
+  height: 54px !important;
+  border: 2px solid rgba(255, 253, 250, 0.26) !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .sidebar-username) {
+  color: #fffdfa !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .sidebar-level) {
+  color: #f0c878 !important;
+  font-size: 11px !important;
+  line-height: 1.5 !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .sidebar-nav) {
+  padding: 10px 10px 14px !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .nav-group) {
+  margin-bottom: 10px !important;
+  padding-bottom: 8px !important;
+  border-bottom: 1px solid rgba(21, 26, 34, 0.08) !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .nav-group:last-child) {
+  margin-bottom: 0 !important;
+  border-bottom: 0 !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .nav-group-label) {
+  padding: 7px 8px 6px !important;
+  color: #8a6a42 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .nav-item) {
+  min-height: 34px !important;
+  margin: 1px 0 !important;
+  padding: 8px 9px !important;
+  border: 0 !important;
+  border-radius: 5px !important;
+  color: #374151 !important;
+  font-size: 13px !important;
+  font-weight: 650 !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .nav-item span) {
+  color: inherit !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .nav-item:hover) {
+  background: #f8f5ef !important;
+  color: #111827 !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .nav-item.active) {
+  border: 0 !important;
+  background: #111827 !important;
+  color: #fffdfa !important;
+  font-weight: 800 !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .nav-icon) {
+  width: 18px !important;
+  font-size: 16px !important;
+  color: inherit !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .nav-badge) {
+  margin-left: auto !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .nav-badge .el-badge__content) {
+  border-color: #fffdfa !important;
+  background: #a6531f !important;
+  color: #fffdfa !important;
+  font-weight: 800 !important;
+}
+
+:global(body .user-center-wrapper.user-center-wrapper .user-main) {
+  min-width: 0 !important;
+}
+
+@media (max-width: 900px) {
+  :global(body .user-center-wrapper.user-center-wrapper) {
+    width: calc(100vw - 28px) !important;
+    padding: 16px 0 44px !important;
+  }
+
+  :global(body .user-center-wrapper.user-center-wrapper .user-layout-body) {
+    grid-template-columns: 1fr !important;
+  }
+
+  :global(body .user-center-wrapper.user-center-wrapper .user-sidebar) {
+    position: static !important;
+    width: 100% !important;
+    max-height: none !important;
+  }
+
+  :global(body .user-center-wrapper.user-center-wrapper .sidebar-nav) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  :global(body .user-center-wrapper.user-center-wrapper .nav-group) {
+    border-bottom: 0 !important;
   }
 }
 </style>

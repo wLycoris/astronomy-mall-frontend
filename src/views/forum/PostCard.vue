@@ -76,15 +76,19 @@ const formatCount = (count) => {
 <style lang="scss" scoped>
 .post-card {
   break-inside: avoid;
-  margin-bottom: 12px;
-  background: #fff;
+  margin-bottom: 18px;
+  background: var(--forum-card, #fffdfa);
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
-  transition: box-shadow 0.2s;
+  border: 1px solid rgba(16, 23, 34, 0.09);
+  box-shadow: 0 8px 22px rgba(16, 23, 34, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 
   &:hover {
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+    border-color: rgba(200, 155, 83, 0.38);
+    box-shadow: 0 16px 32px rgba(16, 23, 34, 0.12);
   }
 }
 
@@ -101,6 +105,7 @@ const formatCount = (count) => {
     min-height: 120px;
     max-height: 360px;
     object-fit: cover;
+    background: #e8e2d8;
   }
 }
 
@@ -123,7 +128,7 @@ const formatCount = (count) => {
     font-size: 48px;
     font-family: Georgia, serif;
     line-height: 1;
-    opacity: 0.15;
+    opacity: 0.12;
   }
 
   .text-cover-content {
@@ -139,30 +144,30 @@ const formatCount = (count) => {
     word-break: break-word;
   }
 
-  /* 配色主题（浅色系，与小红书一致） */
+  /* 无图帖子做成观测手札封面，保持文字清楚 */
   &.theme-purple {
-    background: #f0ecff;
-    &::before, .text-cover-content { color: #5b4a9e; }
+    background: linear-gradient(135deg, #efe8d8, #f8f4ea);
+    &::before, .text-cover-content { color: #5d4526; }
   }
   &.theme-blue {
-    background: #e8f4fd;
-    &::before, .text-cover-content { color: #2b6cb0; }
+    background: linear-gradient(135deg, #dfeaf0, #f5f8f8);
+    &::before, .text-cover-content { color: #1d4d6b; }
   }
   &.theme-teal {
-    background: #e6f9f0;
-    &::before, .text-cover-content { color: #276749; }
+    background: linear-gradient(135deg, #e3efe9, #faf7ef);
+    &::before, .text-cover-content { color: #205548; }
   }
   &.theme-orange {
-    background: #fff4e6;
-    &::before, .text-cover-content { color: #c05621; }
+    background: linear-gradient(135deg, #f4e3cc, #fbf5ec);
+    &::before, .text-cover-content { color: #7a4c1f; }
   }
   &.theme-pink {
-    background: #fff0f0;
-    &::before, .text-cover-content { color: #c53030; }
+    background: linear-gradient(135deg, #eee2e3, #fbf4f1);
+    &::before, .text-cover-content { color: #7d3443; }
   }
   &.theme-dark {
-    background: #f0f2f5;
-    &::before, .text-cover-content { color: #2d3748; }
+    background: linear-gradient(135deg, #151f2e, #26364a);
+    &::before, .text-cover-content { color: #f6ead4; }
   }
 }
 
@@ -178,21 +183,21 @@ const formatCount = (count) => {
   border-radius: 10px;
   font-size: 11px;
   color: #fff;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(16, 23, 34, 0.68);
   backdrop-filter: blur(4px);
 }
 
 /* ── 卡片内容 ── */
 .card-body {
-  padding: 8px 10px 10px;
+  padding: 10px 12px 12px;
 }
 
 .card-title {
   font-size: 14px;
   font-weight: 600;
-  color: #333;
-  line-height: 1.4;
-  margin: 0 0 8px;
+  color: var(--forum-ink, #101722);
+  line-height: 1.5;
+  margin: 0 0 10px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -225,8 +230,8 @@ const formatCount = (count) => {
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: #ddd;
-    color: #999;
+    background: #f1eadf;
+    color: #796b5b;
     font-size: 10px;
     display: flex;
     align-items: center;
@@ -236,7 +241,7 @@ const formatCount = (count) => {
 
   .author-name {
     font-size: 12px;
-    color: #999;
+    color: #7a8494;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -247,10 +252,10 @@ const formatCount = (count) => {
   display: flex;
   align-items: center;
   gap: 3px;
-  color: #999;
+  color: #7a8494;
   font-size: 12px;
   flex-shrink: 0;
 
-  &.liked { color: #ff2442; }
+  &.liked { color: var(--forum-red, #d84b5f); }
 }
 </style>

@@ -27,11 +27,16 @@ defineEmits(['card-click'])
 /* 瀑布流容器 — CSS columns实现 */
 .waterfall-container {
   columns: 5;
-  column-gap: 12px;
+  column-gap: 18px;
 }
 
 /* 响应式列数 */
 @media (max-width: 1600px) { .waterfall-container { columns: 4; } }
 @media (max-width: 1200px) { .waterfall-container { columns: 3; } }
-@media (max-width: 768px)  { .waterfall-container { columns: 2; } }
+@media (max-width: 768px)  {
+  .waterfall-container {
+    columns: 2;
+    column-gap: 12px;
+  }
+}
 </style>

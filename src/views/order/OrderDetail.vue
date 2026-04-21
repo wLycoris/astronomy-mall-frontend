@@ -126,6 +126,7 @@
 
           <!-- 费用明细 -->
           <div class="amount-section">
+            <div class="amount-title">费用明细</div>
             <div class="amount-row">
               <span>商品总额:</span>
               <span>¥{{ order.totalAmount.toFixed(2) }}</span>
@@ -144,82 +145,84 @@
             </div>
           </div>
 
-          <!-- 操作按钮 -->
-          <div class="action-buttons">
-            <el-button @click="goBack">返回订单列表</el-button>
+          <div class="detail-footer">
+            <!-- 操作按钮 -->
+            <div class="action-buttons">
+              <el-button @click="goBack">返回订单列表</el-button>
 
-            <el-button
-                v-if="order.status === 0"
-                type="primary"
-                @click="handleCancelOrder"
-            >
-              取消订单
-            </el-button>
-
-            <el-button
-                v-if="order.status === 2"
-                type="primary"
-                @click="handleConfirmReceipt"
-            >
-              确认收货
-            </el-button>
-
-            <!-- ✅ 新增: 评价全部商品按钮 -->
-            <el-button
-                v-if="order.status === 3 && hasUnreviewedItems"
-                type="warning"
-                @click="goToReview(order.items[0])"
-            >
-              评价商品
-            </el-button>
-
-            <el-button
-                v-if="order.status === 3 || order.status === 4"
-                type="danger"
-                @click="handleDeleteOrder"
-            >
-              删除订单
-            </el-button>
-          </div>
-
-          <!-- 新增：订单操作按钮区域（按你要求添加，未改动其它任何代码） -->
-          <div class="order-actions">
-            <!-- 待支付状态 -->
-            <template v-if="order.status === 0">
-              <el-button type="primary" @click="goToPay">
-                立即支付
-              </el-button>
-              <el-button @click="handleCancelOrder">
+              <el-button
+                  v-if="order.status === 0"
+                  type="primary"
+                  @click="handleCancelOrder"
+              >
                 取消订单
               </el-button>
-            </template>
 
-            <!-- 待发货状态 -->
-            <template v-else-if="order.status === 1">
-              <el-button type="danger" @click="goToRefund">
-                申请退款
-              </el-button>
-            </template>
-
-            <!-- 待收货状态 -->
-            <template v-else-if="order.status === 2">
-              <el-button type="primary" @click="handleConfirmReceipt">
+              <el-button
+                  v-if="order.status === 2"
+                  type="primary"
+                  @click="handleConfirmReceipt"
+              >
                 确认收货
               </el-button>
-              <el-button type="danger" @click="goToRefund">
-                申请退款
-              </el-button>
-            </template>
 
-            <!-- 已完成状态 -->
-            <template v-else-if="order.status === 3">
-              <el-button type="primary" @click="goToReview(order.items[0])" v-if="hasUnreviewedItems">
-                评价订单
+              <!-- ✅ 新增: 评价全部商品按钮 -->
+              <el-button
+                  v-if="order.status === 3 && hasUnreviewedItems"
+                  type="warning"
+                  @click="goToReview(order.items[0])"
+              >
+                评价商品
               </el-button>
-              <el-button type="danger" @click="goToRefund">
-                申请退款
+
+              <el-button
+                  v-if="order.status === 3 || order.status === 4"
+                  type="danger"
+                  @click="handleDeleteOrder"
+              >
+                删除订单
               </el-button>
-            </template>
+            </div>
+
+            <!-- 新增：订单操作按钮区域（按你要求添加，未改动其它任何代码） -->
+            <div class="order-actions">
+              <!-- 待支付状态 -->
+              <template v-if="order.status === 0">
+                <el-button type="primary" @click="goToPay">
+                  立即支付
+                </el-button>
+                <el-button @click="handleCancelOrder">
+                  取消订单
+                </el-button>
+              </template>
+
+              <!-- 待发货状态 -->
+              <template v-else-if="order.status === 1">
+                <el-button type="danger" @click="goToRefund">
+                  申请退款
+                </el-button>
+              </template>
+
+              <!-- 待收货状态 -->
+              <template v-else-if="order.status === 2">
+                <el-button type="primary" @click="handleConfirmReceipt">
+                  确认收货
+                </el-button>
+                <el-button type="danger" @click="goToRefund">
+                  申请退款
+                </el-button>
+              </template>
+
+              <!-- 已完成状态 -->
+              <template v-else-if="order.status === 3">
+                <el-button type="primary" @click="goToReview(order.items[0])" v-if="hasUnreviewedItems">
+                  评价订单
+                </el-button>
+                <el-button type="danger" @click="goToRefund">
+                  申请退款
+                </el-button>
+              </template>
+            </div>
           </div>
 
         </div>
@@ -284,6 +287,18 @@ const loading = ref(false)
 const order = ref({})
 const reviewDialogVisible = ref(false)
 const currentReview = ref(null)
+
+const orderMessageOptions = (type = 'warning') => ({
+  type,
+  customClass: 'order-message-box',
+  confirmButtonClass: 'order-message-confirm',
+  cancelButtonClass: 'order-message-cancel'
+})
+
+const orderPromptOptions = {
+  ...orderMessageOptions('warning'),
+  customClass: 'order-message-box order-message-prompt'
+}
 
 // 跳转到支付页面
 const goToPay = () => {
@@ -382,10 +397,10 @@ const viewReview = async (item) => {
 // ✅ 新增: 删除评价
 const handleDeleteReview = async () => {
   try {
-    await ElMessageBox.confirm('确定要删除这条评价吗?', '提示', {
-      confirmButtonText: '确定',
+    await ElMessageBox.confirm('确定要删除这条评价吗?', '删除评价', {
+      confirmButtonText: '确认删除',
       cancelButtonText: '取消',
-      type: 'warning'
+      ...orderMessageOptions('warning')
     })
 
     await deleteReview(currentReview.value.id)
@@ -423,7 +438,8 @@ const handleCancelOrder = async () => {
       confirmButtonText: '确认取消',
       cancelButtonText: '返回',
       inputPattern: /.+/,
-      inputErrorMessage: '请输入取消原因'
+      inputErrorMessage: '请输入取消原因',
+      ...orderPromptOptions
     })
 
     await cancelOrder(order.value.id, value)
@@ -440,7 +456,9 @@ const handleCancelOrder = async () => {
 const handleConfirmReceipt = async () => {
   try {
     await ElMessageBox.confirm('确认已收到商品吗?', '确认收货', {
-      type: 'info'
+      confirmButtonText: '确认收货',
+      cancelButtonText: '返回',
+      ...orderMessageOptions('info')
     })
 
     await confirmReceipt(order.value.id)
@@ -457,7 +475,9 @@ const handleConfirmReceipt = async () => {
 const handleDeleteOrder = async () => {
   try {
     await ElMessageBox.confirm('确认删除该订单吗?', '删除订单', {
-      type: 'warning'
+      confirmButtonText: '确认删除',
+      cancelButtonText: '取消',
+      ...orderMessageOptions('warning')
     })
 
     await deleteOrder(order.value.id)
@@ -694,5 +714,907 @@ onMounted(() => {
       text-align: right;
     }
   }
+}
+
+/* Trade flow polish */
+.order-detail-page {
+  min-height: 100vh;
+  padding: 28px 0 78px;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(199,165,114,.10), transparent 28%),
+    linear-gradient(180deg, #f7f9fc 0%, #eef2f7 100%);
+  color: #172033;
+}
+
+.container {
+  width: min(1200px, calc(100% - 48px));
+}
+
+.el-breadcrumb {
+  margin-bottom: 22px;
+}
+
+:deep(.el-breadcrumb__inner),
+:deep(.el-breadcrumb__inner a) {
+  color: #6f7787 !important;
+  font-weight: 500 !important;
+}
+
+:deep(.el-breadcrumb__item:last-child .el-breadcrumb__inner) {
+  color: #172033 !important;
+}
+
+.detail-card {
+  border: 1px solid rgba(23,32,51,.08);
+  border-radius: 10px;
+  background: rgba(255,255,255,.95);
+  box-shadow: 0 18px 45px rgba(23,32,51,.08);
+  overflow: hidden;
+
+  :deep(.el-card__header) {
+    padding: 18px 22px;
+    background: linear-gradient(180deg, #ffffff, #f7f9fc);
+    border-bottom: 1px solid rgba(23,32,51,.08);
+  }
+
+  :deep(.el-card__body) {
+    padding: 22px;
+  }
+
+  .card-header {
+    color: #172033;
+    font-size: 22px;
+    font-weight: 760;
+    letter-spacing: .4px;
+  }
+}
+
+.order-info {
+  .section-title {
+    margin: 34px 0 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(23,32,51,.10);
+    color: #172033;
+    font-size: 20px;
+    font-weight: 750;
+    letter-spacing: .4px;
+  }
+
+  :deep(.el-descriptions__table) {
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  :deep(.el-descriptions__label) {
+    background: #f5f8fc !important;
+    color: #657084;
+    font-weight: 650;
+  }
+
+  :deep(.el-descriptions__content) {
+    color: #172033;
+    background: #fff !important;
+  }
+
+  :deep(.el-table) {
+    border-radius: 8px;
+    overflow: hidden;
+    --el-table-header-bg-color: #f5f8fc;
+    --el-table-header-text-color: #657084;
+    --el-table-border-color: rgba(23,32,51,.08);
+  }
+
+  :deep(.el-table th.el-table__cell) {
+    background: #f5f8fc;
+    color: #657084;
+    font-weight: 700;
+  }
+
+  .product-cell {
+    .product-image {
+      width: 86px;
+      height: 86px;
+      border-radius: 8px;
+      border: 1px solid rgba(23,32,51,.08);
+      background: #eef2f7;
+    }
+
+    .product-info {
+      .product-name {
+        color: #172033;
+        font-weight: 650;
+
+        &:hover {
+          color: #7a5e3d;
+          text-decoration: none;
+        }
+      }
+
+      .product-brand {
+        color: #8a92a3;
+      }
+    }
+  }
+
+  .total-price {
+    color: #d85c25;
+  }
+
+  .amount-section {
+    max-width: 430px;
+    margin: 28px 0 0 auto;
+    padding: 20px 22px;
+    border: 1px solid rgba(23,32,51,.08);
+    border-radius: 10px;
+    background: #fbfcff;
+
+    .amount-row {
+      color: #5a6272;
+    }
+
+    .amount-row.total {
+      border-top-color: rgba(23,32,51,.10);
+      color: #172033;
+
+      .total-amount {
+        color: #d85c25;
+        font-size: 28px;
+        letter-spacing: .5px;
+      }
+    }
+  }
+
+  .action-buttons {
+    justify-content: flex-end;
+  }
+}
+
+.action-buttons,
+.order-actions {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(23,32,51,.08);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.review-detail {
+  color: #172033;
+
+  .review-header {
+    border-bottom-color: rgba(23,32,51,.08);
+
+    .review-time {
+      color: #8a92a3;
+    }
+  }
+
+  .review-content,
+  .merchant-reply {
+    border: 1px solid rgba(23,32,51,.08);
+    border-radius: 10px;
+    background: #f7f9fc;
+  }
+
+  .review-content {
+    padding: 14px 16px;
+    color: #172033;
+  }
+
+  .merchant-reply {
+    .reply-label {
+      color: #7a5e3d;
+    }
+
+    .reply-content {
+      color: #5a6272;
+    }
+  }
+}
+
+:deep(.el-button--primary) {
+  --el-button-bg-color: #172033;
+  --el-button-border-color: #172033;
+  --el-button-hover-bg-color: #27334b;
+  --el-button-hover-border-color: #27334b;
+  --el-button-active-bg-color: #101827;
+  --el-button-active-border-color: #101827;
+}
+
+:deep(.el-button--warning) {
+  --el-button-bg-color: #b88d3e;
+  --el-button-border-color: #b88d3e;
+  --el-button-hover-bg-color: #c99b4b;
+  --el-button-hover-border-color: #c99b4b;
+}
+
+:deep(.el-dialog) {
+  border-radius: 12px;
+}
+
+@media (max-width: 760px) {
+  .container {
+    width: calc(100% - 28px);
+  }
+
+  .order-info .amount-section {
+    max-width: none;
+  }
+}
+/* Final direction: restrained premium order detail */
+.order-detail-page {
+  min-height: 100vh;
+  padding: 28px 0 64px;
+  background:
+    linear-gradient(180deg, rgba(18, 27, 43, 0.035), transparent 220px),
+    #f6f4ef;
+  color: #172033;
+}
+
+.container {
+  width: min(1160px, calc(100% - 48px));
+  margin: 0 auto;
+}
+
+.el-breadcrumb {
+  margin-bottom: 18px;
+  font-size: 13px;
+}
+
+:deep(.el-breadcrumb__inner),
+:deep(.el-breadcrumb__inner a) {
+  color: #7a8494 !important;
+  font-weight: 500 !important;
+}
+
+:deep(.el-breadcrumb__item:last-child .el-breadcrumb__inner) {
+  color: #172033 !important;
+}
+
+:deep(.detail-card.el-card) {
+  border: 1px solid rgba(23, 32, 51, 0.08);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 16px 36px rgba(23, 32, 51, 0.06);
+  overflow: hidden;
+}
+
+:deep(.detail-card .el-card__header) {
+  padding: 18px 22px;
+  border-bottom: 1px solid rgba(23, 32, 51, 0.08);
+  background: #fbfcfd;
+}
+
+.card-header span {
+  color: #172033;
+  font-size: 20px;
+  font-weight: 760;
+}
+
+:deep(.el-tag) {
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.order-info {
+  color: #172033;
+}
+
+:deep(.el-descriptions) {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+:deep(.el-descriptions__label.el-descriptions__cell.is-bordered-label) {
+  background: #f6f7f9;
+  color: #6b7280;
+  font-weight: 650;
+}
+
+:deep(.el-descriptions__content.el-descriptions__cell.is-bordered-content) {
+  color: #172033;
+}
+
+.section-title {
+  margin: 28px 0 14px;
+  padding-left: 12px;
+  border-left: 3px solid #9f7a44;
+  color: #172033;
+  font-size: 18px;
+  font-weight: 760;
+}
+
+:deep(.el-table) {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+:deep(.el-table th.el-table__cell) {
+  background: #fbfcfd;
+  color: #6b7280;
+  font-weight: 700;
+}
+
+:deep(.el-table td.el-table__cell) {
+  color: #172033;
+}
+
+.product-cell {
+  gap: 14px;
+}
+
+.product-image {
+  width: 76px;
+  height: 76px;
+  border: 1px solid rgba(23, 32, 51, 0.08);
+  border-radius: 6px;
+  background: #eef0f3;
+  overflow: hidden;
+}
+
+.product-name {
+  color: #172033;
+  font-size: 15px;
+  font-weight: 680;
+  line-height: 1.5;
+}
+
+.product-brand {
+  color: #8a93a3;
+}
+
+.total-price {
+  color: #b35d25;
+  font-weight: 800;
+}
+
+.amount-section {
+  margin-top: 22px;
+  margin-left: auto;
+  padding: 22px;
+  border: 1px solid rgba(23, 32, 51, 0.08);
+  border-radius: 8px;
+  background: #172033;
+  color: #ffffff;
+  box-shadow: 0 16px 36px rgba(23, 32, 51, 0.16);
+}
+
+.amount-row {
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.amount-row span:last-child {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.amount-row .discount {
+  color: #9bd49d;
+}
+
+.amount-row.total {
+  margin-top: 14px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.total-amount {
+  color: #e7c078 !important;
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.action-buttons,
+.order-actions {
+  gap: 10px;
+  margin-top: 22px;
+}
+
+:deep(.el-button--primary) {
+  --el-button-bg-color: #172033;
+  --el-button-border-color: #172033;
+  --el-button-hover-bg-color: #28344d;
+  --el-button-hover-border-color: #28344d;
+}
+
+:deep(.el-button--warning) {
+  --el-button-bg-color: #e7c078;
+  --el-button-border-color: #e7c078;
+  --el-button-hover-bg-color: #edca8e;
+  --el-button-hover-border-color: #edca8e;
+  color: #172033;
+}
+
+:deep(.el-button--danger) {
+  --el-button-bg-color: #b35d25;
+  --el-button-border-color: #b35d25;
+  --el-button-hover-bg-color: #c76d32;
+  --el-button-hover-border-color: #c76d32;
+}
+
+.review-detail {
+  border: 1px solid rgba(23, 32, 51, 0.08);
+  border-radius: 8px;
+  background: #fbfcfd;
+}
+
+.review-header {
+  border-bottom: 1px solid rgba(23, 32, 51, 0.08);
+}
+
+.review-content {
+  color: #4b5563;
+}
+
+.merchant-reply {
+  border: 1px solid rgba(159, 122, 68, 0.16);
+  border-radius: 8px;
+  background: #fbf4e8;
+}
+
+.reply-label {
+  color: #8a6a3f;
+  font-weight: 760;
+}
+
+@media (max-width: 760px) {
+  .order-detail-page {
+    padding: 18px 0 44px;
+  }
+
+  .container {
+    width: calc(100% - 28px);
+  }
+
+  .amount-section {
+    width: 100%;
+  }
+
+  .action-buttons,
+  .order-actions {
+    flex-wrap: wrap;
+  }
+}
+
+/* Order detail final pass: page-local receipt layout. */
+:global(body .order-detail-page.order-detail-page.order-detail-page) {
+  min-height: 100vh !important;
+  padding: 28px 0 72px !important;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 247, 0.88) 0%, rgba(246, 243, 236, 0.96) 260px),
+    #f6f3ec !important;
+  color: #1f2933 !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .container) {
+  width: min(1160px, calc(100vw - 48px)) !important;
+  max-width: none !important;
+  margin: 0 auto !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .detail-card.el-card) {
+  overflow: hidden !important;
+  border: 1px solid rgba(21, 26, 34, 0.12) !important;
+  border-radius: 7px !important;
+  background: #fffdfa !important;
+  box-shadow: 0 14px 32px rgba(21, 26, 34, 0.055) !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .detail-card .el-card__header) {
+  padding: 20px 24px !important;
+  border-bottom: 1px solid rgba(21, 26, 34, 0.1) !important;
+  background: #f8f5ef !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .detail-card .el-card__body) {
+  padding: 24px !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .card-header) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .card-header span) {
+  color: #111827 !important;
+  font-size: 20px !important;
+  font-weight: 800 !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .section-title) {
+  margin: 28px 0 14px !important;
+  padding-left: 12px !important;
+  border-left: 3px solid #9c6b35 !important;
+  color: #111827 !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .el-descriptions) {
+  overflow: hidden !important;
+  border-radius: 7px !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .el-descriptions__label.el-descriptions__cell.is-bordered-label),
+:global(body .order-detail-page.order-detail-page.order-detail-page .el-table th.el-table__cell) {
+  background: #f8f5ef !important;
+  color: #667085 !important;
+  font-weight: 720 !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .el-descriptions__content.el-descriptions__cell.is-bordered-content),
+:global(body .order-detail-page.order-detail-page.order-detail-page .el-table td.el-table__cell) {
+  color: #1f2933 !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .el-table) {
+  overflow: hidden !important;
+  border-radius: 7px !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .product-cell) {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .product-image) {
+  width: 76px !important;
+  height: 76px !important;
+  border: 1px solid rgba(21, 26, 34, 0.12) !important;
+  border-radius: 5px !important;
+  background: #eef0f3 !important;
+  overflow: hidden !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .product-name) {
+  color: #111827 !important;
+  font-size: 15px !important;
+  font-weight: 720 !important;
+  line-height: 1.5 !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .product-brand) {
+  color: #667085 !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .total-price) {
+  color: #a6531f !important;
+  font-weight: 850 !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .amount-section) {
+  width: min(430px, 100%) !important;
+  margin: 24px 0 0 auto !important;
+  padding: 22px !important;
+  border: 1px solid #111827 !important;
+  border-radius: 7px !important;
+  background: #111827 !important;
+  color: #f9fafb !important;
+  box-shadow: none !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .amount-row) {
+  display: flex !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  color: #f9fafb !important;
+  line-height: 1.6 !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .amount-row span) {
+  color: #f9fafb !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .amount-row.total) {
+  margin-top: 14px !important;
+  padding-top: 18px !important;
+  border-top: 1px solid rgba(255, 253, 250, 0.18) !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .total-amount) {
+  color: #f0c878 !important;
+  font-size: 28px !important;
+  font-weight: 850 !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .action-buttons),
+:global(body .order-detail-page.order-detail-page.order-detail-page .order-actions) {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  margin-top: 22px !important;
+  padding-top: 18px !important;
+  border-top: 1px solid rgba(21, 26, 34, 0.1) !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .action-buttons) {
+  justify-content: flex-start !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .order-actions) {
+  justify-content: flex-end !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .action-buttons .el-button--primary),
+:global(body .order-detail-page.order-detail-page.order-detail-page .action-buttons .el-button--warning),
+:global(body .order-detail-page.order-detail-page.order-detail-page .action-buttons .el-button--danger) {
+  display: none !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .el-button--primary) {
+  border-color: #111827 !important;
+  background: #111827 !important;
+  color: #fffdfa !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .el-button--warning) {
+  border-color: #f0c878 !important;
+  background: #f0c878 !important;
+  color: #111827 !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .el-button--danger) {
+  border-color: #a6531f !important;
+  background: #a6531f !important;
+  color: #fffdfa !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .review-detail) {
+  border: 1px solid rgba(21, 26, 34, 0.12) !important;
+  border-radius: 7px !important;
+  background: #fffdfa !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .merchant-reply) {
+  border-left: 3px solid #9c6b35 !important;
+  border-radius: 5px !important;
+  background: #f8f5ef !important;
+}
+
+/* Order detail final pass: make the closing area read like one receipt footer. */
+:global(body .order-detail-page.order-detail-page.order-detail-page .amount-section) {
+  display: grid !important;
+  grid-template-columns: 1fr repeat(3, max-content) !important;
+  column-gap: 28px !important;
+  row-gap: 10px !important;
+  align-items: center !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 18px 20px !important;
+  border: 1px solid rgba(21, 26, 34, 0.12) !important;
+  border-top: 0 !important;
+  border-radius: 0 0 7px 7px !important;
+  background: #fffaf2 !important;
+  color: #1f2933 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .amount-title) {
+  grid-row: 1 / span 2 !important;
+  align-self: stretch !important;
+  display: flex !important;
+  align-items: center !important;
+  padding-right: 18px !important;
+  border-right: 1px solid rgba(156, 107, 53, 0.18) !important;
+  color: #111827 !important;
+  font-size: 15px !important;
+  font-weight: 780 !important;
+  line-height: 1.35 !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .amount-row) {
+  display: grid !important;
+  grid-template-columns: max-content max-content !important;
+  gap: 10px !important;
+  align-items: baseline !important;
+  justify-content: end !important;
+  margin: 0 !important;
+  color: #4b5563 !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+  white-space: nowrap !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .amount-row span) {
+  width: auto !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  color: inherit !important;
+  text-align: right !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .amount-row span:last-child) {
+  color: #111827 !important;
+  font-weight: 720 !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .amount-row.total) {
+  grid-column: auto !important;
+  grid-row: 1 / span 2 !important;
+  min-width: 210px !important;
+  padding: 0 0 0 24px !important;
+  border-top: 0 !important;
+  border-left: 1px solid rgba(21, 26, 34, 0.14) !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .amount-row.total span:first-child) {
+  color: #111827 !important;
+  font-size: 14px !important;
+  font-weight: 780 !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .total-amount) {
+  color: #9c4f1e !important;
+  font-size: 26px !important;
+  font-weight: 860 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .detail-footer) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  margin-top: 24px !important;
+  padding-top: 18px !important;
+  border-top: 1px solid rgba(21, 26, 34, 0.1) !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .detail-footer .action-buttons),
+:global(body .order-detail-page.order-detail-page.order-detail-page .detail-footer .order-actions) {
+  margin: 0 !important;
+  padding: 0 !important;
+  border-top: 0 !important;
+  background: transparent !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .detail-footer .action-buttons) {
+  justify-content: flex-start !important;
+}
+
+:global(body .order-detail-page.order-detail-page.order-detail-page .detail-footer .order-actions) {
+  justify-content: flex-end !important;
+}
+
+@media (max-width: 760px) {
+  :global(body .order-detail-page.order-detail-page.order-detail-page .container) {
+    width: calc(100vw - 28px) !important;
+  }
+
+  :global(body .order-detail-page.order-detail-page.order-detail-page .detail-card .el-card__body) {
+    padding: 18px !important;
+  }
+
+  :global(body .order-detail-page.order-detail-page.order-detail-page .amount-section) {
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  :global(body .order-detail-page.order-detail-page.order-detail-page .amount-title),
+  :global(body .order-detail-page.order-detail-page.order-detail-page .amount-row.total) {
+    grid-row: auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+
+  :global(body .order-detail-page.order-detail-page.order-detail-page .amount-row) {
+    justify-content: space-between !important;
+  }
+
+  :global(body .order-detail-page.order-detail-page.order-detail-page .detail-footer) {
+    align-items: stretch !important;
+    flex-direction: column !important;
+  }
+
+  :global(body .order-detail-page.order-detail-page.order-detail-page .order-actions),
+  :global(body .order-detail-page.order-detail-page.order-detail-page .action-buttons) {
+    justify-content: flex-start !important;
+  }
+}
+
+/* Order page message boxes: page-scoped class for confirm/prompt dialogs. */
+:global(.order-message-box.el-message-box) {
+  width: min(430px, calc(100vw - 32px)) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(21, 26, 34, 0.12) !important;
+  border-radius: 6px !important;
+  background: #fffdfa !important;
+  box-shadow: 0 24px 70px rgba(17, 24, 39, 0.18) !important;
+}
+
+:global(.order-message-box .el-message-box__header) {
+  padding: 18px 22px !important;
+  border-bottom: 1px solid rgba(21, 26, 34, 0.1) !important;
+  background: #f8f5ef !important;
+}
+
+:global(.order-message-box .el-message-box__title) {
+  color: #111827 !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+}
+
+:global(.order-message-box .el-message-box__headerbtn) {
+  top: 16px !important;
+  right: 16px !important;
+}
+
+:global(.order-message-box .el-message-box__content) {
+  padding: 18px 22px !important;
+  color: #374151 !important;
+}
+
+:global(.order-message-box .el-message-box__status) {
+  color: #9c6b35 !important;
+}
+
+:global(.order-message-box .el-message-box__message p) {
+  color: #374151 !important;
+  font-size: 14px !important;
+  line-height: 1.7 !important;
+}
+
+:global(.order-message-box .el-message-box__btns) {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  padding: 0 22px 22px !important;
+}
+
+:global(.order-message-box .el-message-box__btns .el-button) {
+  min-width: 76px !important;
+  height: 34px !important;
+  margin: 0 !important;
+  border-radius: 4px !important;
+  font-weight: 750 !important;
+}
+
+:global(.order-message-box .order-message-confirm) {
+  border-color: #111827 !important;
+  background: #111827 !important;
+  color: #fffdfa !important;
+}
+
+:global(.order-message-box .order-message-confirm span) {
+  color: #fffdfa !important;
+}
+
+:global(.order-message-box .order-message-cancel) {
+  border-color: rgba(21, 26, 34, 0.16) !important;
+  background: #fffdfa !important;
+  color: #111827 !important;
+}
+
+:global(.order-message-box .order-message-cancel span) {
+  color: #111827 !important;
+}
+
+:global(.order-message-prompt .el-message-box__input) {
+  padding-top: 10px !important;
+}
+
+:global(.order-message-prompt .el-input__wrapper) {
+  min-height: 36px !important;
+  border-radius: 5px !important;
+  box-shadow: 0 0 0 1px rgba(21, 26, 34, 0.14) inset !important;
+}
+
+:global(.order-message-prompt .el-input__inner) {
+  color: #111827 !important;
+}
+
+:global(.order-message-prompt .el-message-box__errormsg) {
+  color: #9c4f1e !important;
 }
 </style>

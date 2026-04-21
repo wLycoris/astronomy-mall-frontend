@@ -4,8 +4,11 @@
     <!-- 顶部 Banner -->
     <div class="page-banner">
       <div class="banner-text">
-        <div class="banner-icon">♻️</div>
+        <div class="banner-icon">
+          <el-icon><Finished /></el-icon>
+        </div>
         <div>
+          <span class="section-kicker">SECOND-HAND RECOVERY</span>
           <h2>二手回收</h2>
           <p>提交闲置器材，附上实拍图片获得更准确的报价</p>
         </div>
@@ -19,7 +22,7 @@
     <!-- 申请列表 -->
     <div v-loading="loading" class="list-wrapper">
       <el-empty v-if="!loading && list.length === 0"
-                description="暂无回收申请，快去提交吧~"
+                description="暂无回收申请，可以提交闲置器材进行估价"
                 :image-size="100" />
 
       <div v-else class="card-list">
@@ -153,10 +156,10 @@
         </el-form-item>
 
         <!-- ===== 图片上传区 ===== -->
-        <el-form-item>
+        <el-form-item class="upload-form-item">
           <template #label>
             <span class="upload-label">
-              器材实拍图片
+              <span class="upload-label-title">器材实拍图片</span>
               <span class="upload-label-hint">最多 6 张，每张不超过 10MB，有图片更易获得准确报价</span>
             </span>
           </template>
@@ -185,7 +188,6 @@
                   @dragleave="isDragOver = false"
                   @drop.prevent="handleDrop"
               >
-                <el-icon class="upload-icon"><Camera /></el-icon>
                 <span class="upload-text">点击或拖入</span>
                 <span class="upload-sub">JPG / PNG / WEBP</span>
               </div>
@@ -350,7 +352,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Plus, Van, Select, Close, Camera, Loading, ZoomIn,
+  Plus, Van, Select, Close, Loading, ZoomIn,
   Clock, WarningFilled, CircleCheckFilled, CircleCloseFilled, Finished
 } from '@element-plus/icons-vue'
 import {
@@ -364,6 +366,11 @@ const list = ref([])
 const total = ref(0)
 const pageNum = ref(1)
 const pageSize = ref(10)
+const recyclingMessageOptions = {
+  customClass: 'recycling-message-box',
+  confirmButtonClass: 'recycling-message-confirm',
+  cancelButtonClass: 'recycling-message-cancel'
+}
 
 // ────────── 弹窗状态 ──────────
 const applyDialogVisible = ref(false)
@@ -511,10 +518,19 @@ const openDetail = (item) => { currentDetail.value = item; detailDialogVisible.v
 
 // ────────── 确认报价 ──────────
 const handleConfirmQuote = async (item) => {
-  await ElMessageBox.confirm(
-      `确认接受 ¥${Number(item.assessedPrice).toFixed(2)} 的回收报价？确认后管理员将安排上门取件。`,
-      '确认报价', { confirmButtonText: '确认接受', cancelButtonText: '再考虑', type: 'success' }
-  )
+  try {
+    await ElMessageBox.confirm(
+        `确认接受 ¥${Number(item.assessedPrice).toFixed(2)} 的回收报价？确认后管理员将安排上门取件。`,
+        '确认报价',
+        {
+          confirmButtonText: '确认接受',
+          cancelButtonText: '再考虑',
+          type: 'success',
+          appendToBody: true,
+          ...recyclingMessageOptions
+        }
+    )
+  } catch { return }
   submitLoading.value = true
   try {
     await confirmRecyclingQuote(item.id)
@@ -526,8 +542,16 @@ const handleConfirmQuote = async (item) => {
 
 // ────────── 拒绝报价 ──────────
 const handleRejectQuote = async (item) => {
-  await ElMessageBox.confirm('确认拒绝此次报价？申请将被关闭。', '拒绝报价',
-      { confirmButtonText: '确认拒绝', cancelButtonText: '取消', type: 'warning' })
+  try {
+    await ElMessageBox.confirm('确认拒绝此次报价？申请将被关闭。', '拒绝报价',
+        {
+          confirmButtonText: '确认拒绝',
+          cancelButtonText: '取消',
+          type: 'warning',
+          appendToBody: true,
+          ...recyclingMessageOptions
+        })
+  } catch { return }
   submitLoading.value = true
   try {
     await rejectRecyclingQuote(item.id)
@@ -539,8 +563,16 @@ const handleRejectQuote = async (item) => {
 
 // ────────── 取消申请 ──────────
 const handleCancel = async (item) => {
-  await ElMessageBox.confirm('确认取消此回收申请？', '取消申请',
-      { confirmButtonText: '确认取消', cancelButtonText: '不取消', type: 'warning' })
+  try {
+    await ElMessageBox.confirm('确认取消此回收申请？', '取消申请',
+        {
+          confirmButtonText: '确认取消',
+          cancelButtonText: '不取消',
+          type: 'warning',
+          appendToBody: true,
+          ...recyclingMessageOptions
+        })
+  } catch { return }
   submitLoading.value = true
   try {
     await cancelRecycling(item.id)
@@ -871,4 +903,619 @@ onMounted(loadList)
 .logistics-tracking { font-size: 13px; color: #409eff; font-family: 'Courier New', monospace; font-weight: 600; }
 
 .dialog-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 0 24px; }
+
+/* Final after-sale recycling pass */
+:global(body .recycling-container.recycling-container) {
+  max-width: 100%;
+  padding: 0;
+  color: #111827;
+}
+
+:global(body .recycling-container.recycling-container .page-banner) {
+  margin: 0 0 16px;
+  padding: 18px 22px;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 7px;
+  background: #fffdfa;
+  box-shadow: 0 14px 38px rgba(17, 24, 39, 0.06);
+}
+
+:global(body .recycling-container.recycling-container .banner-text) {
+  align-items: center;
+}
+
+:global(body .recycling-container.recycling-container .banner-icon) {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(156, 107, 53, 0.22);
+  border-radius: 7px;
+  background: #fff8ec;
+  color: #8a5a22;
+  font-size: 21px;
+}
+
+:global(body .recycling-container.recycling-container .section-kicker) {
+  display: block;
+  margin-bottom: 7px;
+  color: #9c6b35;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+:global(body .recycling-container.recycling-container .banner-text h2) {
+  margin: 0;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+:global(body .recycling-container.recycling-container .banner-text p) {
+  margin-top: 8px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+:global(body .recycling-container.recycling-container .el-button) {
+  min-height: 34px;
+  border-radius: 4px;
+  font-weight: 760;
+  letter-spacing: 0;
+}
+
+:global(body .recycling-container.recycling-container .el-button span) {
+  color: inherit;
+}
+
+:global(body .recycling-container.recycling-container .apply-btn.el-button--primary),
+:global(body .recycling-container.recycling-container .el-button--primary) {
+  border-color: #111827;
+  background: #111827;
+  color: #fff;
+}
+
+:global(body .recycling-container.recycling-container .apply-btn.el-button--primary:hover),
+:global(body .recycling-container.recycling-container .el-button--primary:hover) {
+  border-color: #273142;
+  background: #273142;
+}
+
+:global(body .recycling-container.recycling-container .el-button--success) {
+  border-color: #4d7c5a;
+  background: #4d7c5a;
+  color: #fff;
+}
+
+:global(body .recycling-container.recycling-container .el-button--warning.is-plain) {
+  border-color: rgba(156, 107, 53, 0.34);
+  background: #fff8ec;
+  color: #8a5a22;
+}
+
+:global(body .recycling-container.recycling-container .el-button--danger.is-plain) {
+  border-color: rgba(156, 79, 30, 0.34);
+  background: #fff8ec;
+  color: #9c4f1e;
+}
+
+:global(body .recycling-container.recycling-container .list-wrapper) {
+  min-height: 260px;
+}
+
+:global(body .recycling-container.recycling-container .card-list) {
+  gap: 12px;
+}
+
+:global(body .recycling-container.recycling-container .recycling-card) {
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 7px;
+  background: #fffdfa;
+  box-shadow: 0 12px 30px rgba(17, 24, 39, 0.055);
+}
+
+:global(body .recycling-container.recycling-container .recycling-card:hover) {
+  border-color: rgba(156, 107, 53, 0.26);
+  box-shadow: 0 18px 42px rgba(17, 24, 39, 0.09);
+  transform: translateY(-2px);
+}
+
+:global(body .recycling-container.recycling-container .status-bar) {
+  width: 4px;
+}
+
+:global(body .recycling-container.recycling-container .status-0 .status-bar) {
+  background: #6b7280;
+}
+
+:global(body .recycling-container.recycling-container .status-1 .status-bar) {
+  background: #9c6b35;
+}
+
+:global(body .recycling-container.recycling-container .status-2 .status-bar),
+:global(body .recycling-container.recycling-container .status-3 .status-bar) {
+  background: #111827;
+}
+
+:global(body .recycling-container.recycling-container .status-4 .status-bar) {
+  background: #4d7c5a;
+}
+
+:global(body .recycling-container.recycling-container .status-5 .status-bar),
+:global(body .recycling-container.recycling-container .status-6 .status-bar) {
+  background: #9c4f1e;
+}
+
+:global(body .recycling-container.recycling-container .card-main) {
+  padding: 16px 18px;
+}
+
+:global(body .recycling-container.recycling-container .product-name) {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 850;
+  line-height: 1.5;
+}
+
+:global(body .recycling-container.recycling-container .meta-chip),
+:global(body .recycling-container.recycling-container .condition-chip) {
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 999px;
+  background: #f8f5ef;
+  color: #4b5563;
+  font-weight: 700;
+}
+
+:global(body .recycling-container.recycling-container .cond-S),
+:global(body .recycling-container.recycling-container .cond-A),
+:global(body .recycling-container.recycling-container .cond-B),
+:global(body .recycling-container.recycling-container .cond-C) {
+  border-color: rgba(156, 107, 53, 0.24);
+  background: #fff8ec;
+  color: #8a5a22;
+}
+
+:global(body .recycling-container.recycling-container .el-tag) {
+  border-radius: 999px;
+  font-weight: 760;
+}
+
+:global(body .recycling-container.recycling-container .el-tag--info),
+:global(body .recycling-container.recycling-container .el-tag--primary),
+:global(body .recycling-container.recycling-container .el-tag--warning) {
+  border-color: rgba(156, 107, 53, 0.26);
+  background: #fff8ec;
+  color: #8a5a22;
+}
+
+:global(body .recycling-container.recycling-container .el-tag--success) {
+  border-color: rgba(77, 124, 90, 0.28);
+  background: #f4f8f2;
+  color: #4d7c5a;
+}
+
+:global(body .recycling-container.recycling-container .el-tag--danger) {
+  border-color: rgba(156, 79, 30, 0.28);
+  background: #fff1e8;
+  color: #9c4f1e;
+}
+
+:global(body .recycling-container.recycling-container .thumb-item) {
+  border-color: rgba(17, 24, 39, 0.12);
+  border-radius: 6px;
+  background: #f8f5ef;
+}
+
+:global(body .recycling-container.recycling-container .price-banner) {
+  border-color: rgba(156, 107, 53, 0.24);
+  border-radius: 7px;
+  background: #fff8ec;
+}
+
+:global(body .recycling-container.recycling-container .price-label),
+:global(body .recycling-container.recycling-container .price-hint) {
+  color: #8a5a22;
+  font-weight: 700;
+}
+
+:global(body .recycling-container.recycling-container .price-amount) {
+  color: #9c6b35;
+  font-weight: 850;
+  letter-spacing: 0;
+}
+
+:global(body .recycling-container.recycling-container .price-hint) {
+  border-color: rgba(156, 107, 53, 0.2);
+  background: #fffdfa;
+}
+
+:global(body .recycling-container.recycling-container .logistics-row),
+:global(body .recycling-container.recycling-container .create-time),
+:global(body .recycling-container.recycling-container .recycle-no) {
+  color: #6b7280;
+  font-weight: 650;
+}
+
+:global(body .recycling-container.recycling-container .tracking-no) {
+  color: #8a5a22;
+}
+
+:global(body .recycling-container.recycling-container .card-footer) {
+  border-top-color: rgba(17, 24, 39, 0.08);
+}
+
+:global(body .recycling-container.recycling-container .el-empty) {
+  min-height: 340px;
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 7px;
+  background: #fffdfa;
+  box-shadow: 0 14px 38px rgba(17, 24, 39, 0.06);
+}
+
+:global(body .recycling-container.recycling-container .el-empty__description p) {
+  color: #4b5563;
+  font-weight: 650;
+}
+
+:global(body .recycling-container.recycling-container .pagination) {
+  margin-top: 22px;
+}
+
+:global(body .recycling-container.recycling-container .el-pagination.is-background .el-pager li),
+:global(body .recycling-container.recycling-container .el-pagination.is-background button) {
+  border-radius: 4px;
+  background: #fffdfa;
+  color: #374151;
+}
+
+:global(body .recycling-container.recycling-container .el-pagination.is-background .el-pager li.is-active) {
+  background: #111827;
+  color: #fff;
+}
+
+:global(.apply-dialog .el-dialog),
+:global(.apply-dialog.el-dialog),
+:global(.detail-dialog .el-dialog),
+:global(.detail-dialog.el-dialog) {
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  border-radius: 7px;
+  background: #fffdfa;
+  box-shadow: 0 28px 70px rgba(17, 24, 39, 0.22);
+}
+
+:global(.apply-dialog .el-dialog__header),
+:global(.apply-dialog.el-dialog .el-dialog__header),
+:global(.detail-dialog .el-dialog__header),
+:global(.detail-dialog.el-dialog .el-dialog__header) {
+  margin: 0;
+  padding: 18px 22px;
+  border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+  background: #f8f5ef;
+}
+
+:global(.apply-dialog .el-dialog__title),
+:global(.apply-dialog.el-dialog .el-dialog__title),
+:global(.detail-dialog .el-dialog__title),
+:global(.detail-dialog.el-dialog .el-dialog__title) {
+  color: #111827;
+  font-size: 18px;
+  font-weight: 850;
+}
+
+:global(.apply-dialog .el-dialog__body),
+:global(.apply-dialog.el-dialog .el-dialog__body),
+:global(.detail-dialog .el-dialog__body),
+:global(.detail-dialog.el-dialog .el-dialog__body) {
+  padding: 20px 22px;
+}
+
+:global(.apply-dialog .el-dialog__footer),
+:global(.apply-dialog.el-dialog .el-dialog__footer),
+:global(.detail-dialog .el-dialog__footer),
+:global(.detail-dialog.el-dialog .el-dialog__footer) {
+  padding: 0 22px 20px;
+}
+
+:global(.apply-dialog .el-form-item__label),
+:global(.apply-dialog.el-dialog .el-form-item__label) {
+  color: #111827;
+  font-weight: 760;
+}
+
+:global(.apply-dialog .el-input__wrapper),
+:global(.apply-dialog .el-textarea__inner),
+:global(.apply-dialog.el-dialog .el-input__wrapper),
+:global(.apply-dialog.el-dialog .el-textarea__inner) {
+  min-height: 38px;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(17, 24, 39, 0.14);
+}
+
+:global(.apply-dialog .el-input__inner),
+:global(.apply-dialog .el-textarea__inner),
+:global(.apply-dialog.el-dialog .el-input__inner),
+:global(.apply-dialog.el-dialog .el-textarea__inner) {
+  color: #111827;
+  font-weight: 600;
+}
+
+:global(.apply-dialog .el-input__wrapper.is-focus),
+:global(.apply-dialog .el-textarea__inner:focus),
+:global(.apply-dialog.el-dialog .el-input__wrapper.is-focus),
+:global(.apply-dialog.el-dialog .el-textarea__inner:focus) {
+  box-shadow: inset 0 0 0 1px #9c6b35, 0 0 0 3px rgba(156, 107, 53, 0.1);
+}
+
+:global(.apply-dialog .condition-card),
+:global(.apply-dialog.el-dialog .condition-card) {
+  border-width: 1px;
+  border-color: rgba(17, 24, 39, 0.12);
+  border-radius: 7px;
+  background: #fff;
+}
+
+:global(.apply-dialog .condition-card:hover),
+:global(.apply-dialog .condition-card.active),
+:global(.apply-dialog.el-dialog .condition-card:hover),
+:global(.apply-dialog.el-dialog .condition-card.active) {
+  border-color: rgba(156, 107, 53, 0.48);
+  background: #fff8ec;
+}
+
+:global(.apply-dialog .cond-grade),
+:global(.apply-dialog.el-dialog .cond-grade) {
+  color: #111827;
+}
+
+:global(.apply-dialog .cond-desc),
+:global(.apply-dialog.el-dialog .cond-desc),
+:global(.apply-dialog .upload-label-hint),
+:global(.apply-dialog.el-dialog .upload-label-hint) {
+  color: #6b7280;
+}
+
+:global(.apply-dialog .upload-form-item),
+:global(.apply-dialog.el-dialog .upload-form-item) {
+  margin-top: 2px;
+}
+
+:global(.apply-dialog .upload-form-item .el-form-item__label),
+:global(.apply-dialog.el-dialog .upload-form-item .el-form-item__label) {
+  display: block;
+  height: auto;
+  min-height: 0;
+  margin-bottom: 10px;
+  padding-bottom: 0;
+  line-height: 1.45;
+  white-space: normal;
+}
+
+:global(.apply-dialog .upload-label),
+:global(.apply-dialog.el-dialog .upload-label) {
+  display: flex;
+  max-width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  line-height: 1.45;
+}
+
+:global(.apply-dialog .upload-label-title),
+:global(.apply-dialog.el-dialog .upload-label-title) {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+:global(.apply-dialog .upload-label-hint),
+:global(.apply-dialog.el-dialog .upload-label-hint) {
+  display: block;
+  max-width: 100%;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.55;
+  white-space: normal;
+}
+
+:global(.apply-dialog .upload-area),
+:global(.apply-dialog.el-dialog .upload-area) {
+  margin-top: 8px;
+}
+
+:global(.apply-dialog .upload-preview-item),
+:global(.apply-dialog .upload-trigger),
+:global(.apply-dialog.el-dialog .upload-preview-item),
+:global(.apply-dialog.el-dialog .upload-trigger) {
+  border-color: rgba(17, 24, 39, 0.14);
+  border-radius: 7px;
+  background: #f8f5ef;
+}
+
+:global(.apply-dialog .upload-trigger),
+:global(.apply-dialog.el-dialog .upload-trigger) {
+  width: 104px;
+  height: 84px;
+  gap: 6px;
+  padding: 0 10px;
+  text-align: center;
+  line-height: 1.35;
+}
+
+:global(.apply-dialog .upload-trigger:hover),
+:global(.apply-dialog .upload-trigger.drag-over),
+:global(.apply-dialog.el-dialog .upload-trigger:hover),
+:global(.apply-dialog.el-dialog .upload-trigger.drag-over) {
+  border-color: #9c6b35;
+  background: #fff8ec;
+}
+
+:global(.apply-dialog .upload-text),
+:global(.apply-dialog.el-dialog .upload-text) {
+  color: #374151;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+:global(.apply-dialog .upload-sub),
+:global(.apply-dialog.el-dialog .upload-sub),
+:global(.apply-dialog .compress-hint),
+:global(.apply-dialog.el-dialog .compress-hint) {
+  color: #6b7280;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+:global(.detail-dialog .detail-status-header),
+:global(.detail-dialog.el-dialog .detail-status-header),
+:global(.detail-dialog .gallery-section),
+:global(.detail-dialog.el-dialog .gallery-section),
+:global(.detail-dialog .quote-section),
+:global(.detail-dialog.el-dialog .quote-section),
+:global(.detail-dialog .reject-section),
+:global(.detail-dialog.el-dialog .reject-section) {
+  background: #f8f5ef;
+}
+
+:global(.detail-dialog .detail-section),
+:global(.detail-dialog.el-dialog .detail-section) {
+  border-top-color: rgba(17, 24, 39, 0.08);
+}
+
+:global(.detail-dialog .status-name),
+:global(.detail-dialog .info-val),
+:global(.detail-dialog .logistics-company),
+:global(.detail-dialog.el-dialog .status-name),
+:global(.detail-dialog.el-dialog .info-val),
+:global(.detail-dialog.el-dialog .logistics-company) {
+  color: #111827;
+}
+
+:global(.detail-dialog .status-sub),
+:global(.detail-dialog .section-label),
+:global(.detail-dialog .info-key),
+:global(.detail-dialog .desc-text),
+:global(.detail-dialog .quote-remark),
+:global(.detail-dialog.el-dialog .status-sub),
+:global(.detail-dialog.el-dialog .section-label),
+:global(.detail-dialog.el-dialog .info-key),
+:global(.detail-dialog.el-dialog .desc-text),
+:global(.detail-dialog.el-dialog .quote-remark) {
+  color: #6b7280;
+}
+
+:global(.detail-dialog .quote-price),
+:global(.detail-dialog.el-dialog .quote-price) {
+  color: #9c6b35;
+  letter-spacing: 0;
+}
+
+:global(.detail-dialog .logistics-info),
+:global(.detail-dialog.el-dialog .logistics-info) {
+  border: 1px solid rgba(17, 24, 39, 0.1);
+  border-radius: 7px;
+  background: #fffdfa;
+}
+
+:global(.detail-dialog .logistics-tracking),
+:global(.detail-dialog.el-dialog .logistics-tracking) {
+  color: #8a5a22;
+}
+
+:global(.detail-dialog .gallery-item),
+:global(.detail-dialog.el-dialog .gallery-item) {
+  border-color: rgba(17, 24, 39, 0.12);
+  border-radius: 7px;
+}
+
+:global(.apply-dialog .dialog-footer .el-button--primary),
+:global(.apply-dialog.el-dialog .dialog-footer .el-button--primary),
+:global(.detail-dialog .dialog-footer .el-button--primary),
+:global(.detail-dialog.el-dialog .dialog-footer .el-button--primary) {
+  border-color: #111827;
+  background: #111827;
+  color: #fff;
+}
+
+:global(.apply-dialog .dialog-footer .el-button--success),
+:global(.apply-dialog.el-dialog .dialog-footer .el-button--success),
+:global(.detail-dialog .dialog-footer .el-button--success),
+:global(.detail-dialog.el-dialog .dialog-footer .el-button--success) {
+  border-color: #4d7c5a;
+  background: #4d7c5a;
+  color: #fff;
+}
+
+:global(body .recycling-message-box.el-message-box) {
+  width: 420px;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  border-radius: 7px;
+  box-shadow: 0 28px 70px rgba(17, 24, 39, 0.24);
+}
+
+:global(body .recycling-message-box .el-message-box__header) {
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+  background: #f8f5ef;
+}
+
+:global(body .recycling-message-box .el-message-box__title) {
+  color: #111827;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+:global(body .recycling-message-box .el-message-box__content) {
+  padding: 18px 20px;
+  color: #374151;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+:global(body .recycling-message-box .el-message-box__btns) {
+  padding: 0 20px 18px;
+}
+
+:global(body .recycling-message-confirm.el-button--primary) {
+  border-color: #111827;
+  background: #111827;
+  color: #fff;
+}
+
+:global(body .recycling-message-cancel.el-button) {
+  border-color: rgba(17, 24, 39, 0.16);
+  background: #fff;
+  color: #111827;
+}
+
+@media (max-width: 720px) {
+  :global(body .recycling-container.recycling-container .page-banner) {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  :global(body .recycling-container.recycling-container .card-footer) {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  :global(.apply-dialog .el-dialog),
+  :global(.apply-dialog.el-dialog),
+  :global(.detail-dialog .el-dialog),
+  :global(.detail-dialog.el-dialog) {
+    width: calc(100vw - 28px) !important;
+  }
+
+  :global(.apply-dialog .form-row),
+  :global(.apply-dialog.el-dialog .form-row),
+  :global(.detail-dialog .info-grid),
+  :global(.detail-dialog.el-dialog .info-grid) {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+}
 </style>

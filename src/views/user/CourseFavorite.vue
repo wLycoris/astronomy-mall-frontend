@@ -14,11 +14,12 @@
       <div class="header-left">
         <el-icon class="header-icon"><StarFilled /></el-icon>
         <div>
+          <div class="section-kicker">SAVED COURSES</div>
           <h2 class="page-title">课程收藏</h2>
-          <p class="page-subtitle">共收藏 {{ total }} 门课程</p>
+          <p class="page-subtitle">共收藏 {{ total }} 门课程，适合把想看的内容先收进书架。</p>
         </div>
       </div>
-      <el-button type="primary" plain size="small" @click="router.push('/course')">
+      <el-button class="primary-action" size="small" @click="router.push('/course')">
         <el-icon><Search /></el-icon>
         发现更多课程
       </el-button>
@@ -46,9 +47,9 @@
         class="empty-state"
     >
       <template #image>
-        <div class="empty-icon">⭐</div>
+        <div class="empty-icon">SAVE</div>
       </template>
-      <el-button type="primary" @click="router.push('/course')">去发现课程</el-button>
+      <el-button class="primary-action" @click="router.push('/course')">去发现课程</el-button>
     </el-empty>
 
     <!-- 课程卡片网格 -->
@@ -74,7 +75,7 @@
               class="type-tag"
               effect="dark"
           >
-            {{ item.type === 0 ? '🎬 视频课' : '📖 书本课' }}
+            {{ item.type === 0 ? '视频课' : '图文课' }}
           </el-tag>
           <!-- 取消收藏（悬停显示） -->
           <el-tooltip content="取消收藏" placement="top">
@@ -122,7 +123,7 @@
                     :percentage="calcProgress(item.completedCount, item.chapterCount)"
                     :stroke-width="3"
                     :show-text="false"
-                    color="#409eff"
+                    color="#c7a572"
                     class="progress-bar"
                 />
                 <span class="progress-text">{{ item.completedCount || 0 }}/{{ item.chapterCount }}</span>
@@ -131,7 +132,7 @@
             <template v-else>
               <!-- 无进度：未学习 badge -->
               <el-tag type="info" size="small" effect="plain" class="no-study-tag">
-                📌 未学习
+                未学习
               </el-tag>
             </template>
           </div>
@@ -190,9 +191,9 @@ const pageSize    = ref(12)
 /** 正在取消中的课程 ID（防重复点击） */
 const cancelingIds = ref(new Set())
 
-const difficultyMap = { 1: '⭐ 入门', 2: '⭐⭐ 进阶', 3: '⭐⭐⭐ 高级' }
+const difficultyMap = { 1: '入门', 2: '进阶', 3: '高级' }
 
-const defaultCover = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="180" viewBox="0 0 300 180"><rect width="300" height="180" fill="%231a1a2e"/><text x="150" y="100" font-size="40" text-anchor="middle" fill="%23444">🌌</text></svg>'
+const defaultCover = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="180" viewBox="0 0 300 180"><rect width="300" height="180" fill="%23111827"/><circle cx="150" cy="84" r="36" fill="%23f3e9cf" opacity="0.86"/><path d="M52 138h196" stroke="%23c7a572" stroke-width="3" opacity="0.6"/><text x="150" y="154" font-size="15" text-anchor="middle" fill="%23f3e9cf">COURSE</text></svg>'
 
 // ─────────────────────────────────────────────────
 
@@ -220,7 +221,13 @@ async function handleUnfavorite(item) {
     await ElMessageBox.confirm(
         `确定取消收藏「${item.title}」吗？`,
         '取消收藏',
-        { confirmButtonText: '确定', cancelButtonText: '我再想想', type: 'warning', center: true }
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '我再想想',
+          type: 'warning',
+          center: true,
+          customClass: 'course-favorite-message-box'
+        }
     )
   } catch { return }
 
@@ -269,67 +276,378 @@ onMounted(() => fetchList(1))
 </script>
 
 <style scoped>
-.course-favorite-page { padding: 0 4px; min-height: 400px; }
+.course-favorite-page {
+  min-height: 420px;
+  color: #172033;
+}
 
-/* 页头 */
-.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--el-border-color-lighter, #f0f0f0); }
-.header-left { display: flex; align-items: center; gap: 12px; }
-.header-icon { font-size: 28px; color: #f7ba2a; flex-shrink: 0; }
-.page-title { font-size: 20px; font-weight: 600; color: var(--el-text-color-primary, #303133); margin: 0; }
-.page-subtitle { font-size: 13px; color: var(--el-text-color-secondary, #909399); margin: 2px 0 0; }
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+  padding: 22px 24px;
+  border: 1px solid #e9e1d4;
+  border-radius: 8px;
+  background:
+    radial-gradient(520px 180px at 8% 0%, rgba(199, 165, 114, .13), transparent 64%),
+    linear-gradient(180deg, #fffdfa 0%, #f8f4ec 100%);
+  box-shadow: 0 16px 38px rgba(35, 30, 22, .08);
+}
 
-/* 骨架屏 */
-.skeleton-card { background: var(--el-bg-color, #fff); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
-.skeleton-cover { width: 100%; height: 160px; }
-.skeleton-body { padding: 12px; }
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
 
-/* 空状态 */
-.empty-state { padding: 60px 0; }
-.empty-icon { font-size: 64px; line-height: 1; }
+.header-icon {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #111827;
+  color: #f4d08a;
+  font-size: 22px;
+  flex-shrink: 0;
+}
 
-/* 网格 */
-.grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-@media (max-width: 1200px) { .grid-container { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 768px)  { .grid-container { grid-template-columns: 1fr; } }
+.section-kicker {
+  margin-bottom: 5px;
+  color: #9a6b36;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.8px;
+}
 
-/* 卡片 */
-.course-card { background: var(--el-bg-color, #fff); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.08); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; display: flex; flex-direction: column; }
-.course-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.14); }
+.page-title {
+  margin: 0;
+  color: #101827;
+  font-size: 24px;
+  font-weight: 800;
+}
 
-/* 封面 */
-.card-cover-wrapper { position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; background: #1a1a2e; }
-.card-cover { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
-.course-card:hover .card-cover { transform: scale(1.04); }
-.type-tag { position: absolute; bottom: 8px; left: 8px; font-size: 11px; pointer-events: none; }
-.unfavorite-btn { position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.92); border: none; width: 28px; height: 28px; opacity: 0; transition: opacity 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
-.course-card:hover .unfavorite-btn { opacity: 1; }
+.page-subtitle {
+  margin: 6px 0 0;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.6;
+}
 
-/* 信息区 */
-.card-body { padding: 12px 14px 14px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
-.card-title { font-size: 14px; font-weight: 600; color: var(--el-text-color-primary, #303133); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.card-subtitle { font-size: 12px; color: var(--el-text-color-secondary, #909399); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card-meta { display: flex; align-items: center; gap: 14px; font-size: 12px; color: var(--el-text-color-regular, #606266); }
-.meta-item { display: flex; align-items: center; gap: 3px; }
-.meta-item .el-icon { font-size: 13px; color: var(--el-color-primary, #409eff); }
+.primary-action {
+  border: 1px solid #111827;
+  border-radius: 4px;
+  background: #111827;
+  color: #fffdfa;
+  font-weight: 800;
+}
 
-/* 学习状态 */
-.study-status { display: flex; flex-direction: column; gap: 4px; }
-.last-chapter-hint { display: flex; align-items: center; gap: 4px; font-size: 12px; overflow: hidden; }
-.lc-icon { color: var(--el-color-primary, #409eff); font-size: 13px; flex-shrink: 0; }
-.lc-text { color: var(--el-text-color-secondary, #909399); flex-shrink: 0; }
-.lc-title { color: var(--el-color-primary, #409eff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
-.progress-row { display: flex; align-items: center; gap: 6px; }
-.progress-bar { flex: 1; }
-.progress-text { font-size: 11px; color: var(--el-text-color-placeholder, #c0c4cc); white-space: nowrap; }
-.no-study-tag { font-size: 11px; }
+.primary-action:hover {
+  border-color: #9a6b36;
+  background: #9a6b36;
+  color: #fffdfa;
+}
 
-/* 标签 */
-.card-tags { display: flex; flex-wrap: wrap; gap: 4px; }
-.tag-chip { font-size: 11px; border-radius: 20px; }
+.skeleton-card {
+  overflow: hidden;
+  border: 1px solid #ebe3d7;
+  border-radius: 8px;
+  background: #fffdfa;
+  box-shadow: 0 12px 28px rgba(35, 30, 22, .07);
+}
 
-/* 底部 */
-.card-footer { display: flex; justify-content: flex-end; margin-top: auto; padding-top: 8px; border-top: 1px dashed var(--el-border-color-lighter, #f0f0f0); }
+.skeleton-cover {
+  width: 100%;
+  height: 160px;
+}
 
-/* 分页 */
-.pagination-wrap { display: flex; justify-content: center; margin-top: 32px; }
+.skeleton-body {
+  padding: 14px;
+}
+
+.empty-state {
+  padding: 70px 0;
+  border: 1px solid #ebe3d7;
+  border-radius: 8px;
+  background: #fffdfa;
+}
+
+.empty-icon {
+  width: 112px;
+  height: 112px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 42% 34%, #fff7e0, #f3e9cf 58%, #d7c192 100%);
+  color: #111827;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 1.8px;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.course-card {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ebe3d7;
+  border-radius: 8px;
+  background: #fffdfa;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(35, 30, 22, .07);
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+}
+
+.course-card:hover {
+  border-color: rgba(154, 107, 54, .44);
+  box-shadow: 0 18px 36px rgba(35, 30, 22, .12);
+  transform: translateY(-3px);
+}
+
+.card-cover-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: #111827;
+}
+
+.card-cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .3s;
+}
+
+.course-card:hover .card-cover {
+  transform: scale(1.04);
+}
+
+.type-tag {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  border-color: rgba(247, 236, 210, .32);
+  border-radius: 999px;
+  background: rgba(17, 24, 39, .84) !important;
+  color: #f3e9cf !important;
+  font-size: 11px;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.unfavorite-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(247, 236, 210, .28);
+  background: rgba(17, 24, 39, .76);
+  opacity: 0;
+  transition: opacity .2s, background .2s;
+  box-shadow: 0 8px 18px rgba(0,0,0,.24);
+}
+
+.unfavorite-btn:hover {
+  background: rgba(17, 24, 39, .95);
+}
+
+.course-card:hover .unfavorite-btn {
+  opacity: 1;
+}
+
+.card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 14px 15px 15px;
+}
+
+.card-title {
+  min-height: 40px;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-subtitle {
+  color: #667085;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #5f6b7a;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.meta-item .el-icon {
+  color: #9a6b36;
+  font-size: 13px;
+}
+
+.study-status {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.last-chapter-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  color: #5f6b7a;
+  font-size: 12px;
+}
+
+.lc-icon {
+  color: #9a6b36;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.lc-text {
+  color: #8b95a5;
+  flex-shrink: 0;
+}
+
+.lc-title {
+  max-width: 180px;
+  color: #8a5f2e;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.progress-bar {
+  flex: 1;
+}
+
+.progress-text {
+  color: #8b95a5;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.no-study-tag {
+  width: fit-content;
+  border-color: #e8ded0;
+  background: #faf6ef;
+  color: #6b5132;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.tag-chip {
+  border-color: #e8ded0;
+  border-radius: 999px;
+  background: #faf6ef;
+  color: #6b5132;
+  font-size: 11px;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px dashed #ebe3d7;
+}
+
+.card-footer :deep(.el-button) {
+  color: #8a5f2e;
+  font-weight: 800;
+}
+
+.pagination-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+}
+
+:deep(.el-progress-bar__outer) {
+  background-color: #efe8dc;
+}
+
+:deep(.el-pagination.is-background .el-pager li.is-active) {
+  background-color: #111827;
+}
+
+:global(.course-favorite-message-box) {
+  border-radius: 8px !important;
+  border: 1px solid #e9e1d4 !important;
+}
+
+:global(.course-favorite-message-box .el-message-box__title) {
+  color: #111827 !important;
+  font-weight: 800 !important;
+}
+
+:global(.course-favorite-message-box .el-button--primary) {
+  border-color: #111827 !important;
+  background: #111827 !important;
+}
+
+@media (max-width: 1200px) {
+  .grid-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .grid-container {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

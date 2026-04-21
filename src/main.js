@@ -7,6 +7,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import router from './router'
 import App from './App.vue'
 import './assets/styles/global.scss'
+import './assets/styles/commerce-gallery.scss'
 
 // ==================== 高德地图 JS API 2.0 全局加载（6.0新增）====================
 // 📌 设计说明:

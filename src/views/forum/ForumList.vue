@@ -313,77 +313,89 @@ onUnmounted(() => {
 <style lang="scss" scoped>
 .forum-list-page {
   min-height: 100%;
-  background: #f5f5f5;
+  background: transparent;
 }
 
 /* ── Tab栏（与小红书一致：主tab+标签同行） ── */
 .tab-section {
-  background: #fff;
-  padding: 0 20px;
-  border-bottom: 1px solid #f0f0f0;
+  width: min(1320px, calc(100% - 48px));
+  margin: 18px auto 0;
+  background: rgba(255, 253, 250, 0.92);
+  padding: 0 16px;
+  border: 1px solid var(--forum-line, #e7e1d7);
+  border-radius: 8px;
   position: sticky;
-  top: 0;
+  top: 72px;
   z-index: 50;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 12px 28px rgba(16, 23, 34, 0.06);
 }
 
 .main-tabs {
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 4px;
   flex-wrap: wrap;
-  min-height: 44px;
+  min-height: 50px;
 }
 
 .tab-item {
   font-size: 15px;
-  color: #999;
+  color: var(--forum-muted, #697386);
   cursor: pointer;
-  padding: 12px 16px;
-  border-bottom: 3px solid transparent;
-  transition: all 0.15s;
+  padding: 8px 13px;
+  border-radius: 16px;
+  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
   white-space: nowrap;
   font-weight: 500;
 
-  &:hover { color: #333; }
+  &:hover {
+    color: var(--forum-ink, #101722);
+    background: #f3efe7;
+  }
 
   &.active {
-    color: #333;
+    color: #fff;
     font-weight: 700;
-    border-bottom-color: #ff2442;
+    background: var(--forum-ink, #101722);
+    box-shadow: 0 8px 18px rgba(16, 23, 34, 0.14);
   }
 
   /* 标签tab样式稍小 */
   &.tag {
     font-size: 14px;
-    padding: 12px 14px;
-    color: #666;
+    padding: 7px 12px;
+    color: #536071;
 
     &.active {
-      color: #ff2442;
+      color: var(--forum-ink, #101722);
       font-weight: 600;
-      border-bottom-color: #ff2442;
+      background: #f3eadc;
+      box-shadow: none;
     }
   }
 
   &.more {
     font-size: 13px;
-    color: #bbb;
-    &:hover { color: #ff2442; }
+    color: var(--forum-gold, #c89b53);
+    &:hover { color: var(--forum-ink, #101722); }
   }
 }
 
 /* 主tab和标签之间的竖分隔线 */
 .tab-divider {
   width: 1px;
-  height: 14px;
-  background: #e0e0e0;
-  margin: 0 6px;
+  height: 18px;
+  background: var(--forum-line, #e7e1d7);
+  margin: 0 8px;
   flex-shrink: 0;
 }
 
 /* ── 瀑布流内容区 ── */
 .waterfall-wrapper {
-  padding: 16px 20px;
+  width: min(1320px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 18px 0 34px;
   min-height: 400px;
 }
 
@@ -391,7 +403,7 @@ onUnmounted(() => {
   text-align: center;
   padding: 24px 0 40px;
   font-size: 13px;
-  color: #bbb;
+  color: #8c95a3;
 }
 
 /* 🆕 8.3.4 推荐 Tab 触底「刷新一批」按钮 */
@@ -404,21 +416,21 @@ onUnmounted(() => {
 
   .hint {
     font-size: 13px;
-    color: #999;
+    color: var(--forum-muted, #697386);
   }
 
   :deep(.el-button) {
     padding: 10px 26px;
     font-size: 14px;
-    background: #ff2442;
-    border-color: #ff2442;
+    background: var(--forum-ink, #101722);
+    border-color: var(--forum-ink, #101722);
     transition: all 0.2s;
 
     &:hover {
-      background: #ff3a55;
-      border-color: #ff3a55;
+      background: #1b2637;
+      border-color: #1b2637;
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(255, 36, 66, 0.28);
+      box-shadow: 0 10px 24px rgba(16, 23, 34, 0.2);
     }
   }
 
@@ -430,8 +442,15 @@ onUnmounted(() => {
 
 /* 响应式 */
 @media (max-width: 768px) {
-  .tab-section { padding: 0 12px; }
-  .waterfall-wrapper { padding: 12px; }
+  .tab-section {
+    width: calc(100% - 24px);
+    padding: 0 10px;
+    top: 68px;
+  }
+  .waterfall-wrapper {
+    width: calc(100% - 24px);
+    padding: 12px 0;
+  }
   .tab-item { padding: 10px 10px; font-size: 14px; }
   .tab-item.tag { padding: 10px 8px; font-size: 13px; }
 }

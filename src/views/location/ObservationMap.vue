@@ -1,71 +1,67 @@
 <template>
-  <div class="obs-page">
+  <div class="obs">
+    <!-- painterly sky + stars + grain -->
+    <div class="sky"></div>
+    <div class="stars"></div>
+    <div class="grain"></div>
 
-    <!-- ══════════════════════════════════════════
-         顶部导航栏
-         ══════════════════════════════════════════ -->
-    <header class="obs-header">
-      <div class="obs-header-inner">
-        <div class="header-left">
-          <el-button text @click="router.push('/home')" class="back-btn">
-            <el-icon><ArrowLeft /></el-icon> 返回首页
-          </el-button>
-          <div class="header-divider"></div>
-          <span class="header-title">🔭 天文观测点</span>
+    <!-- topbar -->
+    <header class="topbar">
+      <div class="topbar__left">
+        <span class="crumb" @click="router.push('/home')">← 返回首页</span>
+        <span class="sep">·</span>
+        <span class="title-ish">观测 · 地图</span>
+        <span class="kicker"><em>find the darkest sky above you</em></span>
+      </div>
+
+      <div class="topbar__right">
+        <div class="loc-badge" :class="locationBadgeClass">
+          <el-icon v-if="locating" class="spin"><Loading /></el-icon>
+          <el-icon v-else-if="locationError"><WarnTriangleFilled /></el-icon>
+          <el-icon v-else><Location /></el-icon>
+          <span>{{ locationStatusText }}</span>
         </div>
-
-        <div class="header-right">
-          <div class="location-badge" :class="locationBadgeClass">
-            <el-icon v-if="locating" class="spin"><Loading /></el-icon>
-            <el-icon v-else-if="locationError"><WarnTriangleFilled /></el-icon>
-            <el-icon v-else><Location /></el-icon>
-            <span>{{ locationStatusText }}</span>
-          </div>
-          <el-segmented
-              v-model="viewMode"
-              :options="[{ label: '🗺 地图', value: 'map' }, { label: '📋 列表', value: 'list' }]"
-              size="small"
-          />
+        <div class="seg">
+          <span class="seg__item" :class="{ 'seg__item--on': viewMode === 'map' }" @click="viewMode = 'map'">地图</span>
+          <span class="seg__item" :class="{ 'seg__item--on': viewMode === 'list' }" @click="viewMode = 'list'">列表</span>
         </div>
       </div>
     </header>
 
-    <!-- ══════════════════════════════════════════
-         筛选栏
-         ══════════════════════════════════════════ -->
-    <div class="filter-bar">
-      <div class="filter-inner">
+    <!-- filters -->
+    <div class="filters">
+      <div class="filters__inner">
         <el-select
             v-model="filter.province" placeholder="省份" clearable size="small"
-            class="filter-select" @change="onProvinceChange"
+            class="f-select" @change="onProvinceChange"
         >
           <el-option v-for="p in provinceList" :key="p.value" :label="p.label" :value="p.label" />
         </el-select>
 
         <el-select
             v-model="filter.city" placeholder="城市" clearable size="small"
-            class="filter-select" :disabled="!filter.province" @change="onCityChange"
+            class="f-select" :disabled="!filter.province" @change="onCityChange"
         >
           <el-option v-for="c in cityList" :key="c.value" :label="c.label" :value="c.label" />
         </el-select>
 
-        <el-select v-model="filter.radius" size="small" class="filter-select-sm" @change="loadSpots">
-          <el-option label="50km" :value="50" />
-          <el-option label="100km" :value="100" />
-          <el-option label="200km" :value="200" />
-          <el-option label="500km" :value="500" />
+        <el-select v-model="filter.radius" size="small" class="f-select f-select--sm" @change="loadSpots">
+          <el-option label="50 公里" :value="50" />
+          <el-option label="100 公里" :value="100" />
+          <el-option label="200 公里" :value="200" />
+          <el-option label="500 公里" :value="500" />
         </el-select>
 
-        <div class="bortle-wrap">
-          <span class="bortle-label">暗天 ≤</span>
+        <div class="bortle">
+          <span class="bortle__label"><em>dark sky ≤</em></span>
           <el-slider v-model="filter.maxBortle" :min="1" :max="9" :step="1"
                      show-stops size="small" style="width:130px" @change="loadSpots" />
-          <el-tag :type="bortleTagType" size="small" effect="dark" round>
-            B{{ filter.maxBortle }} {{ bortleLevelShort }}
-          </el-tag>
+          <span class="bortle__pill" :class="'bortle__pill--' + bortleTagType">
+            B{{ filter.maxBortle }} · {{ bortleLevelShort }}
+          </span>
         </div>
 
-        <el-button size="small" plain @click="resetFilter">重置</el-button>
+        <span class="link" @click="resetFilter">重置</span>
       </div>
 
       <div v-if="locationError" class="fallback-tip">
@@ -74,212 +70,195 @@
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════════
-         今晚观测条件卡片（6.2）
-         ══════════════════════════════════════════ -->
-    <div class="tonight-bar" v-if="tonightData || tonightLoading">
-      <div class="tonight-inner">
-        <!-- 加载态 -->
-        <div v-if="tonightLoading" class="tonight-loading">
+    <!-- tonight bar -->
+    <div class="tonight" v-if="tonightData || tonightLoading">
+      <div class="tonight__inner">
+        <div v-if="tonightLoading" class="tonight__loading">
           <el-icon class="spin"><Loading /></el-icon>
-          <span>正在获取今晚观测条件…</span>
+          <span><em>— reading · tonight's · sky</em></span>
         </div>
 
-        <!-- 数据展示 -->
         <template v-else-if="tonightData">
-          <!-- 综合评分星级 -->
-          <div class="tonight-score">
-            <div class="tonight-stars">
-              <span v-for="i in starsArray(tonightData.overallStars)" :key="i" class="star-icon">★</span>
-              <span v-for="i in starsArray(5 - tonightData.overallStars)" :key="'e'+i" class="star-icon star-empty">★</span>
+          <div class="tonight__score">
+            <div class="tonight__stars">
+              <span v-for="i in starsArray(tonightData.overallStars)" :key="i" class="t-star">★</span>
+              <span v-for="i in starsArray(5 - tonightData.overallStars)" :key="'e'+i" class="t-star t-star--off">★</span>
             </div>
-            <span class="tonight-score-num">{{ tonightData.overallScore }}分</span>
+            <span class="tonight__num">{{ tonightData.overallScore }}<em class="tn-unit">分</em></span>
           </div>
 
-          <!-- 天气适宜度 -->
-          <div class="tonight-item">
-            <span class="tonight-label">天气</span>
-            <span class="tonight-val">{{ tonightData.weatherSuitability }}分</span>
+          <div class="tonight__item">
+            <span class="tonight__k"><em>天气</em></span>
+            <span class="tonight__v">{{ tonightData.weatherSuitability }} 分</span>
           </div>
 
-          <!-- 月相信息 -->
-          <div class="tonight-item">
-            <span class="tonight-label">月相</span>
-            <span class="tonight-val">{{ tonightData.moonPhaseName }}（{{ tonightData.moonIllumination }}%）</span>
+          <div class="tonight__item">
+            <span class="tonight__k"><em>月相</em></span>
+            <span class="tonight__v">{{ tonightData.moonPhaseName }} · {{ tonightData.moonIllumination }}%</span>
           </div>
 
-          <!-- 建议文字 -->
-          <div class="tonight-suggestion">
+          <div class="tonight__sugg">
             {{ tonightData.suggestion }}
           </div>
         </template>
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════════
-         主体
-         ══════════════════════════════════════════ -->
-    <div class="obs-body">
-      <!-- 地图 -->
-      <div v-show="viewMode === 'map'" id="amap-container" class="map-box" ref="mapContainerRef"></div>
+    <!-- body -->
+    <div class="body">
+      <!-- map -->
+      <div v-show="viewMode === 'map'" id="amap-container" class="map" ref="mapContainerRef"></div>
 
-      <!-- 列表面板 -->
-      <div class="list-panel" :class="{ 'list-full': viewMode === 'list' }">
-        <div class="list-header">
-          <span class="list-count" v-if="!loading">
+      <!-- list panel -->
+      <div class="list" :class="{ 'list--full': viewMode === 'list' }">
+        <div class="list__head">
+          <span class="list__count" v-if="!loading">
             共 <strong>{{ spots.length }}</strong> 个观测点
           </span>
-          <span class="list-count" v-else>加载中…</span>
-          <span class="list-sort-tip">按距离排序</span>
+          <span class="list__count" v-else><em>— loading —</em></span>
+          <span class="list__sort"><em>by · distance</em></span>
         </div>
 
-        <div v-if="loading" class="skeleton-wrap">
-          <el-skeleton v-for="i in 5" :key="i" :rows="2" animated class="skeleton-item" />
+        <div v-if="loading" class="sk-wrap">
+          <div v-for="i in 5" :key="i" class="sk-item">
+            <div class="sk-thumb"></div>
+            <div class="sk-body">
+              <div class="sk-line sk-line--l"></div>
+              <div class="sk-line sk-line--s"></div>
+            </div>
+          </div>
         </div>
 
-        <el-empty v-else-if="spots.length === 0" description="暂无观测点，试试扩大范围" class="empty-state">
-          <template #image><div class="empty-icon">🌌</div></template>
-        </el-empty>
+        <div v-else-if="spots.length === 0" class="empty">
+          <div class="empty__orb">
+            <div class="empty__halo"></div>
+            <div class="empty__disc"></div>
+          </div>
+          <div class="empty__title">这片天区还很寂静</div>
+          <div class="empty__desc">试试扩大范围，或切换到别的省份看看。</div>
+        </div>
 
-        <div v-else class="card-list">
+        <div v-else class="cards">
           <div
               v-for="spot in spots" :key="spot.id"
-              class="spot-card" :class="{ 'spot-card--active': selectedSpotId === spot.id }"
+              class="card" :class="{ 'card--on': selectedSpotId === spot.id }"
               @click="onCardClick(spot)"
           >
-            <div class="card-thumb">
+            <div class="card__thumb">
               <el-image :src="spot.mainImage || defaultImg" fit="cover" lazy class="thumb-img">
-                <template #error><div class="thumb-err">🔭</div></template>
+                <template #error><div class="thumb-err">✦</div></template>
               </el-image>
-              <div class="bortle-badge" :class="bortleBadgeClass(spot.bortleLevel)">B{{ spot.bortleLevel }}</div>
+              <div class="bortle-tag" :class="'bortle-tag--' + bortleBadgeClass(spot.bortleLevel)">B{{ spot.bortleLevel }}</div>
             </div>
 
-            <div class="card-body">
-              <div class="card-name">{{ spot.name }}</div>
-              <div class="card-sub">{{ spot.province }} · {{ spot.city }}</div>
-              <div class="card-tags">
-                <span class="tag-distance">📍 {{ spot.distance }} km</span>
-                <span class="tag-alt" v-if="spot.altitude">🏔 {{ spot.altitude }}m</span>
+            <div class="card__body">
+              <div class="card__name">{{ spot.name }}</div>
+              <div class="card__sub"><em>{{ spot.province }} · {{ spot.city }}</em></div>
+              <div class="card__tags">
+                <span class="tag-dist">{{ spot.distance }} 公里</span>
+                <span class="tag-alt" v-if="spot.altitude"><em>海拔</em> {{ spot.altitude }} m</span>
               </div>
-              <div class="card-rating-row">
+              <div class="card__rate">
                 <el-rate :model-value="spot.rating ? parseFloat(spot.rating) : 0"
-                         disabled allow-half :max="5" :colors="['#f7ba2a','#f7ba2a','#f7ba2a']"
+                         disabled allow-half :max="5"
+                         :colors="['#f7ecd2','#f7ecd2','#f7ecd2']"
                          style="--el-rate-icon-size:14px" />
-                <span class="rating-val">{{ spot.rating ? parseFloat(spot.rating).toFixed(1) : '暂无' }}</span>
-                <span class="rating-cnt" v-if="spot.ratingCount">({{ spot.ratingCount }})</span>
+                <span class="rate-val">{{ spot.rating ? parseFloat(spot.rating).toFixed(1) : '—' }}</span>
+                <span class="rate-cnt" v-if="spot.ratingCount">({{ spot.ratingCount }})</span>
               </div>
             </div>
 
-            <div v-if="spot.myScore" class="my-score-badge">⭐ {{ spot.myScore }}</div>
+            <div v-if="spot.myScore" class="my-score">★ {{ spot.myScore }}</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 6.3 签到区块已移入详情弹窗内 -->
-
-    <!-- ══════════════════════════════════════════
-         详情弹窗
-         ══════════════════════════════════════════ -->
+    <!-- detail dialog -->
     <el-dialog v-model="dialogVisible" :title="detailSpot?.name || '观测点详情'"
-               width="580px" top="5vh" class="detail-dialog" @close="onDialogClose" destroy-on-close>
+               width="580px" top="5vh" class="obs-dialog" @close="onDialogClose" destroy-on-close>
 
       <el-skeleton v-if="detailLoading" :rows="5" animated />
 
-      <div v-else-if="detailSpot" class="dialog-body">
+      <div v-else-if="detailSpot" class="dlg-body">
 
-        <!-- 图片 -->
-        <el-carousel v-if="detailSpot.images?.length" height="150px" :autoplay="false" class="detail-carousel">
+        <el-carousel v-if="detailSpot.images?.length" height="180px" :autoplay="false" class="dlg-carousel">
           <el-carousel-item v-for="img in detailSpot.images" :key="img">
-            <el-image :src="img" fit="cover" style="width:100%;height:150px" />
+            <el-image :src="img" fit="cover" style="width:100%;height:180px" />
           </el-carousel-item>
         </el-carousel>
 
-        <!-- 四格指标 -->
-        <div class="metric-row">
-          <div class="metric-cell">
-            <div class="metric-label">暗天等级</div>
-            <div class="metric-main">
-              <span class="bortle-pill" :class="bortleBadgeClass(detailSpot.bortleLevel)">
+        <!-- metrics -->
+        <div class="metric">
+          <div class="metric__cell">
+            <div class="metric__k"><em>dark · sky</em></div>
+            <div class="metric__v">
+              <span class="bortle-pill" :class="'bortle-tag--' + bortleBadgeClass(detailSpot.bortleLevel)">
                 B{{ detailSpot.bortleLevel }}
               </span>
             </div>
-            <div class="metric-sub">{{ bortleLevelDesc(detailSpot.bortleLevel) }}</div>
+            <div class="metric__sub">{{ bortleLevelDesc(detailSpot.bortleLevel) }}</div>
           </div>
-          <div class="metric-cell">
-            <div class="metric-label">综合评分</div>
-            <div class="metric-main score-big">
+          <div class="metric__cell">
+            <div class="metric__k"><em>rating</em></div>
+            <div class="metric__v metric__v--big">
               {{ detailSpot.rating ? parseFloat(detailSpot.rating).toFixed(1) : '—' }}
             </div>
-            <div class="metric-sub">{{ detailSpot.ratingCount ? detailSpot.ratingCount + ' 人评分' : '暂无评分' }}</div>
+            <div class="metric__sub">{{ detailSpot.ratingCount ? detailSpot.ratingCount + ' 人评分' : '暂无评分' }}</div>
           </div>
-          <div class="metric-cell">
-            <div class="metric-label">海拔</div>
-            <div class="metric-main score-big">{{ detailSpot.altitude || '—' }}</div>
-            <div class="metric-sub">{{ detailSpot.altitude ? '米' : '' }}</div>
+          <div class="metric__cell">
+            <div class="metric__k"><em>altitude</em></div>
+            <div class="metric__v metric__v--big">{{ detailSpot.altitude || '—' }}</div>
+            <div class="metric__sub">{{ detailSpot.altitude ? '米' : '' }}</div>
           </div>
-          <div class="metric-cell">
-            <div class="metric-label">今日签到</div>
-            <div class="metric-main score-big">{{ detailSpot.todayCheckinCount || 0 }}</div>
-            <div class="metric-sub">累计 {{ detailSpot.totalCheckinCount || 0 }} 次</div>
+          <div class="metric__cell">
+            <div class="metric__k"><em>checkins · today</em></div>
+            <div class="metric__v metric__v--big">{{ detailSpot.todayCheckinCount || 0 }}</div>
+            <div class="metric__sub">累计 {{ detailSpot.totalCheckinCount || 0 }} 次</div>
           </div>
         </div>
 
-        <!-- 位置 -->
-        <div class="detail-section">
-          <div class="section-key">位置</div>
-          <div class="section-val">{{ detailSpot.province }} {{ detailSpot.city }} · {{ detailSpot.address }}</div>
+        <div class="section">
+          <div class="section__k"><em>location</em></div>
+          <div class="section__v">{{ detailSpot.province }} {{ detailSpot.city }} · {{ detailSpot.address }}</div>
         </div>
 
-        <!-- 介绍 -->
-        <div v-if="detailSpot.fullDescription || detailSpot.description" class="detail-section">
-          <div class="section-key">观测点介绍</div>
-          <div class="section-val desc-text">{{ detailSpot.fullDescription || detailSpot.description }}</div>
+        <div v-if="detailSpot.fullDescription || detailSpot.description" class="section">
+          <div class="section__k"><em>about · this · place</em></div>
+          <div class="section__v section__v--desc">{{ detailSpot.fullDescription || detailSpot.description }}</div>
         </div>
 
-        <!-- 天气（懒加载，6.2）-->
-        <div class="weather-panel">
-          <div class="weather-panel-title">当前天气</div>
-          <div v-if="spotWeatherLoading" class="weather-loading">
-            <el-icon class="spin"><Loading /></el-icon> 加载天气中…
+        <!-- weather -->
+        <div class="panel">
+          <div class="panel__title"><em>current · weather</em></div>
+          <div v-if="spotWeatherLoading" class="panel__loading">
+            <el-icon class="spin"><Loading /></el-icon> 正在读取天气…
           </div>
-          <div v-else-if="spotWeather" class="weather-grid">
-            <div class="weather-cell">
-              <span class="weather-icon">🌤</span>
-              <span class="weather-info">{{ spotWeather.condition }}</span>
-            </div>
-            <div class="weather-cell">
-              <span class="weather-icon">🌡</span>
-              <span class="weather-info">{{ spotWeather.temperature }}°C</span>
-            </div>
-            <div class="weather-cell">
-              <span class="weather-icon">💧</span>
-              <span class="weather-info">{{ spotWeather.humidity }}%</span>
-            </div>
-            <div class="weather-cell">
-              <span class="weather-icon">🌬</span>
-              <span class="weather-info">{{ spotWeather.windDirection }} {{ spotWeather.windLevel }}级</span>
-            </div>
-            <div class="weather-suitability">
-              <span class="suit-label">观测适宜度</span>
-              <span class="suit-badge" :style="{ background: spotWeather.suitabilityColor, color: '#fff' }">
-                {{ spotWeather.suitabilityLevel }} {{ spotWeather.suitabilityScore }}分
+          <div v-else-if="spotWeather" class="w-grid">
+            <div class="w-cell"><span class="w-icon">☁</span><span>{{ spotWeather.condition }}</span></div>
+            <div class="w-cell"><span class="w-icon">°</span><span>{{ spotWeather.temperature }}°C</span></div>
+            <div class="w-cell"><span class="w-icon">◐</span><span>{{ spotWeather.humidity }}%</span></div>
+            <div class="w-cell"><span class="w-icon">↗</span><span>{{ spotWeather.windDirection }} {{ spotWeather.windLevel }}级</span></div>
+            <div class="w-suit">
+              <span class="w-suit__k"><em>suitability</em></span>
+              <span class="w-suit__badge" :style="{ background: spotWeather.suitabilityColor, color: '#070b1d' }">
+                {{ spotWeather.suitabilityLevel }} · {{ spotWeather.suitabilityScore }}分
               </span>
             </div>
           </div>
-          <div v-else class="weather-empty">暂无天气数据</div>
+          <div v-else class="panel__empty"><em>— no · weather · data —</em></div>
         </div>
 
-        <!-- 签到（6.3）-->
-        <div class="checkin-panel">
+        <!-- checkin -->
+        <div class="panel panel--checkin">
           <div v-if="!isLoggedIn" class="checkin-unauth">
-            <router-link to="/login" class="login-link">登录</router-link> 后可签到打卡
+            <router-link to="/login" class="login-link">登录</router-link> 后可在此签到
           </div>
           <div v-else-if="checkinDone" class="checkin-done">
-            <span class="checkin-done-icon">✅</span>
-            <div class="checkin-done-info">
-              <div class="checkin-done-title">今日已签到</div>
-              <div class="checkin-done-meta">
+            <span class="checkin-done__glyph">✓</span>
+            <div class="checkin-done__info">
+              <div class="checkin-done__title">今日已签到</div>
+              <div class="checkin-done__meta">
                 <span v-if="checkinResult.weather">{{ checkinResult.weather }}</span>
                 <span v-if="checkinResult.moonPhaseName"> · {{ checkinResult.moonPhaseName }}</span>
                 <span v-if="checkinResult.todayCheckinCount"> · 今日第 {{ checkinResult.todayCheckinCount }} 人</span>
@@ -287,70 +266,66 @@
             </div>
           </div>
           <div v-else class="checkin-action">
-            <el-button type="success" :loading="checkinSubmitting" @click="doCheckin" round>
-              📍 签到打卡
-            </el-button>
-            <span class="checkin-tip">需在观测点 5km 范围内</span>
+            <button class="submit submit--sm" :disabled="checkinSubmitting" @click="doCheckin">
+              <span class="submit__en"><em>mark · this · night</em></span>
+              <span class="submit__cn">{{ checkinSubmitting ? '签到中…' : '签到打卡' }}</span>
+            </button>
+            <span class="checkin-tip"><em>need to be within 5 km</em></span>
           </div>
         </div>
 
-        <!-- 🆕 8.3.3 跨模块联动: 签到成功后展示适合该观测点的器材 -->
-        <div v-if="checkinDone && spotEquipmentList.length > 0" class="spot-equipment-panel">
-          <div class="spot-equipment-title">
-            <span>🔭 适合该观测点的器材</span>
-            <span class="spot-equipment-hint">根据海拔 / 光污染 / 常见观测对象智能匹配</span>
+        <!-- equipment reel -->
+        <div v-if="checkinDone && spotEquipmentList.length > 0" class="panel">
+          <div class="panel__title panel__title--row">
+            <span><em>gear · for · this · sky</em></span>
+            <span class="panel__hint">根据海拔 / 光污染 / 常见天体智能匹配</span>
           </div>
-          <div class="spot-equipment-scroll">
-            <div
-                v-for="prod in spotEquipmentList"
-                :key="prod.id"
-                class="spot-equip-card"
-                @click="goToProduct(prod.id)"
-            >
-              <div class="spot-equip-img">
+          <div class="equip-scroll">
+            <div v-for="prod in spotEquipmentList" :key="prod.id" class="equip" @click="goToProduct(prod.id)">
+              <div class="equip__img">
                 <img v-if="prod.mainImage" :src="prod.mainImage" :alt="prod.productName" />
-                <div v-else class="spot-equip-placeholder">🔭</div>
+                <div v-else class="equip__ph">✦</div>
               </div>
-              <div class="spot-equip-info">
-                <p class="spot-equip-name">{{ prod.productName }}</p>
-                <p class="spot-equip-price">¥{{ Number(prod.price || 0).toFixed(2) }}</p>
-                <p class="spot-equip-reason">{{ prod.reason || '适合该观测点' }}</p>
+              <div class="equip__info">
+                <div class="equip__name">{{ prod.productName }}</div>
+                <div class="equip__price">¥ {{ Number(prod.price || 0).toFixed(2) }}</div>
+                <div class="equip__reason">{{ prod.reason || '适合该观测点' }}</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 签到后器材加载中 -->
-        <div v-else-if="checkinDone && spotEquipmentLoading" class="spot-equipment-panel">
-          <div class="spot-equipment-title">🔭 正在匹配适合的器材...</div>
+        <div v-else-if="checkinDone && spotEquipmentLoading" class="panel">
+          <div class="panel__title"><em>— matching · gear —</em></div>
           <el-skeleton :rows="2" animated />
         </div>
 
-        <!-- 评分 -->
-        <div class="rating-panel">
-          <div class="rating-panel-title">评分</div>
-          <div v-if="!isLoggedIn" class="rating-unauth">
+        <!-- rating -->
+        <div class="panel">
+          <div class="panel__title"><em>your · rating</em></div>
+          <div v-if="!isLoggedIn" class="rate-unauth">
             <router-link to="/login" class="login-link">登录</router-link> 后可提交评分
           </div>
-          <!-- 已评分 + 非编辑模式：展示已评信息 + 修改按钮 -->
-          <div v-else-if="detailSpot.myScore && !ratingEditing" class="rating-done-row">
+          <div v-else-if="detailSpot.myScore && !ratingEditing" class="rate-done">
             <el-rate :model-value="detailSpot.myScore" disabled :max="5"
-                     :colors="['#f7ba2a','#f7ba2a','#f7ba2a']" />
-            <span class="done-label">您已评 {{ detailSpot.myScore }} 星 · 感谢评价</span>
-            <el-button type="primary" link size="small" @click="startEditRating" class="edit-rating-btn">
-              修改
-            </el-button>
+                     :colors="['#f7ecd2','#f7ecd2','#f7ecd2']" />
+            <span class="rate-done__label">您已评 {{ detailSpot.myScore }} 星 · 感谢评价</span>
+            <span class="link" @click="startEditRating">修改</span>
           </div>
-          <!-- 未评分 或 编辑模式：输入评分 -->
-          <div v-else class="rating-input-row">
+          <div v-else class="rate-input">
             <el-rate v-model="ratingInput" :max="5"
                      :texts="['很差','较差','一般','不错','非常好']" show-text
-                     :colors="['#f7ba2a','#f7ba2a','#f7ba2a']" />
-            <el-button type="primary" size="small" :loading="ratingSubmitting"
-                       :disabled="!ratingInput" @click="doSubmitRating" style="margin-left:10px">
-              {{ ratingEditing ? '更新' : '提交' }}
-            </el-button>
-            <el-button v-if="ratingEditing" size="small" @click="cancelEditRating">取消</el-button>
+                     :colors="['#f7ecd2','#f7ecd2','#f7ecd2']" />
+            <button
+                class="quiet-btn quiet-btn--primary"
+                :disabled="!ratingInput || ratingSubmitting"
+                @click="doSubmitRating"
+                style="margin-left:10px"
+            >
+              <span class="qb-mark">✧</span>
+              <span>{{ ratingEditing ? '更新' : '提交' }}</span>
+            </button>
+            <span v-if="ratingEditing" class="link" @click="cancelEditRating">取消</span>
           </div>
         </div>
 
@@ -540,14 +515,14 @@ const locationStatusText = computed(() => {
   return `${userLng.value?.toFixed(2)}, ${userLat.value?.toFixed(2)}`
 })
 const locationBadgeClass = computed(() => ({
-  'badge--loading': locating.value,
-  'badge--error':   locationError.value,
-  'badge--ok':      !locating.value && !locationError.value,
+  'loc-badge--loading': locating.value,
+  'loc-badge--error':   locationError.value,
+  'loc-badge--ok':      !locating.value && !locationError.value,
 }))
 const bortleTagType = computed(() => {
   const v = filter.value.maxBortle
-  if (v <= 3) return 'success'
-  if (v <= 6) return 'warning'
+  if (v <= 3) return 'ok'
+  if (v <= 6) return 'warn'
   return 'danger'
 })
 const bortleLevelShort = computed(() => {
@@ -638,12 +613,12 @@ function initMap() {
   if (mapInstance) return
   mapInstance = new window.AMap.Map('amap-container', {
     zoom: 7, center: [userLng.value || 116.4074, userLat.value || 39.9042],
-    mapStyle: 'amap://styles/grey',
+    mapStyle: 'amap://styles/darkblue',
   })
   if (!locationError.value) {
     new window.AMap.Marker({
       map: mapInstance, position: [userLng.value, userLat.value],
-      content: `<div style="width:14px;height:14px;background:#4a9eff;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 6px rgba(74,158,255,.25)"></div>`,
+      content: `<div style="width:14px;height:14px;background:#f7ecd2;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 7px rgba(247,236,210,.22)"></div>`,
       offset: new window.AMap.Pixel(-7, -7), zIndex: 200
     })
   }
@@ -657,8 +632,8 @@ function updateMarkers() {
     const m = new window.AMap.Marker({
       position: [parseFloat(spot.longitude), parseFloat(spot.latitude)],
       content: `<div style="display:flex;flex-direction:column;align-items:center;cursor:pointer">
-        <span style="font-size:22px;color:${color};filter:drop-shadow(0 0 5px ${color});line-height:1">★</span>
-        <span style="font-size:10px;color:#fff;background:rgba(0,0,0,.65);padding:1px 5px;border-radius:3px;margin-top:2px;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${spot.name}</span>
+        <span style="font-size:22px;color:${color};filter:drop-shadow(0 0 6px ${color});line-height:1">★</span>
+        <span style="font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-size:11px;color:#f7ecd2;background:rgba(7,11,29,.75);padding:2px 8px;border-radius:999px;margin-top:3px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.5px">${spot.name}</span>
       </div>`,
       offset: new window.AMap.Pixel(-11, -24), zIndex: 100,
     })
@@ -668,11 +643,11 @@ function updateMarkers() {
   mapInstance.add(markers)
 }
 function bortleColor(l) {
-  if (l <= 2) return '#00e676'
-  if (l <= 4) return '#aeea00'
-  if (l <= 6) return '#ffd740'
-  if (l <= 8) return '#ff6d00'
-  return '#ff1744'
+  if (l <= 2) return '#a6dcbc'
+  if (l <= 4) return '#d9e2a6'
+  if (l <= 6) return '#f7ecd2'
+  if (l <= 8) return '#e9b7b7'
+  return '#d99db4'
 }
 function destroyMap() {
   if (mapInstance) { mapInstance.destroy(); mapInstance = null; markers = [] }
@@ -870,8 +845,10 @@ function bortleTagTypeByLevel(l) {
   if (l <= 7) return 'danger';  return 'info'
 }
 function bortleBadgeClass(l) {
-  if (l <= 3) return 'bortle-green'; if (l <= 5) return 'bortle-yellow'
-  if (l <= 7) return 'bortle-orange'; return 'bortle-red'
+  if (l <= 3) return 'ok'
+  if (l <= 5) return 'warm'
+  if (l <= 7) return 'hot'
+  return 'bad'
 }
 function bortleLevelDesc(l) {
   return {1:'极佳暗天，银河清晰可见',2:'典型暗天遗址',3:'乡村天空',4:'乡村/城郊过渡',
@@ -879,511 +856,1077 @@ function bortleLevelDesc(l) {
 }
 </script>
 
-<style scoped>
-.obs-page {
+<style lang="scss" scoped>
+/* ── palette (shared) ──────────────────────────────────────────── */
+$moon:      #f7ecd2;
+$moon-soft: #ede2c3;
+$cream:     #f3e9cf;
+$cream-dim: rgba(243,233,207,0.72);
+$cream-low: rgba(243,233,207,0.42);
+$cream-xlow:rgba(243,233,207,0.22);
+
+$sky-top: #1a2547;
+$sky-mid: #0e1731;
+$sky-bot: #070b1d;
+
+$violet:  #9a86d1;
+$rose:    #d99db4;
+$bloom:   #6b8ed6;
+
+$ok:   #a6dcbc;
+$warn: #e9b7b7;
+$mid:  #b9c8e8;
+
+$sans:  'Inter','PingFang SC','Microsoft YaHei','Hiragino Sans GB','Helvetica Neue',Arial,sans-serif;
+$serif: 'Cormorant Garamond','Playfair Display',Georgia,'Songti SC',serif;
+
+/* ── page base ─────────────────────────────────────────────────── */
+.obs {
   min-height: 100vh;
-  background: #080c1a;
-  color: #dde6f0;
+  position: relative;
+  color: $cream;
+  font-family: $sans;
   display: flex;
   flex-direction: column;
-}
-
-/* ── 顶部导航 ── */
-.obs-header {
-  background: rgba(12,16,35,.95);
-  border-bottom: 1px solid rgba(91,141,238,.2);
-  backdrop-filter: blur(10px);
-  position: sticky;
-  top: 0;
-  z-index: 999;
-}
-.obs-header-inner {
-  max-width: 1600px; margin: 0 auto;
-  padding: 0 20px; height: 56px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-.header-left  { display: flex; align-items: center; gap: 12px; }
-.header-right { display: flex; align-items: center; gap: 14px; }
-.back-btn { color: #8ab4f8 !important; font-size: 13px; padding: 0 !important; }
-.back-btn:hover { color: #fff !important; }
-.header-divider { width: 1px; height: 18px; background: rgba(255,255,255,.15); }
-.header-title { font-size: 17px; font-weight: 600; color: #c8e6ff; letter-spacing:.5px; }
-
-.location-badge {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 12px; padding: 4px 10px; border-radius: 20px; border: 1px solid transparent;
-}
-.badge--loading { color: #aaa; border-color: rgba(255,255,255,.1); }
-.badge--error   { color: #f56c6c; border-color: rgba(245,108,108,.3); background: rgba(245,108,108,.08); }
-.badge--ok      { color: #67c23a; border-color: rgba(103,194,58,.3);  background: rgba(103,194,58,.08);  }
-.spin { animation: rot 1.2s linear infinite; }
-@keyframes rot { to { transform: rotate(360deg); } }
-
-:deep(.el-segmented) {
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.1);
-}
-:deep(.el-segmented-item.is-selected) { background: #5b8dee; color: #fff; }
-
-/* ── 筛选栏 ── */
-.filter-bar {
-  background: rgba(14,18,40,.9);
-  border-bottom: 1px solid rgba(91,141,238,.12);
-  padding: 10px 20px;
-}
-.filter-inner {
-  max-width: 1600px; margin: 0 auto;
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-}
-.filter-select    { width: 120px; }
-.filter-select-sm { width: 88px; }
-
-.bortle-wrap {
-  display: flex; align-items: center; gap: 8px;
-  background: rgba(255,255,255,.04); padding: 4px 12px;
-  border-radius: 8px; border: 1px solid rgba(255,255,255,.08);
-}
-.bortle-label { font-size: 12px; color: #aaa; white-space: nowrap; }
-.fallback-tip {
-  display: flex; align-items: center; gap: 5px;
-  margin-top: 7px; font-size: 12px; color: #e6a23c;
-  max-width: 1600px; margin-left: auto; margin-right: auto;
-}
-
-:deep(.el-select .el-input__wrapper) {
-  background: rgba(255,255,255,.06) !important;
-  box-shadow: 0 0 0 1px rgba(255,255,255,.1) !important;
-}
-:deep(.el-select .el-input__inner) { color: #dde6f0 !important; }
-:deep(.el-slider__bar)   { background: #5b8dee; }
-:deep(.el-slider__button) { border-color: #5b8dee; }
-
-/* ── 主体 ── */
-.obs-body {
-  flex: 1; display: flex;
-  height: calc(100vh - 116px); /* 56px header + ~60px filter */
+  background: $sky-bot;
   overflow: hidden;
 }
 
-/* 地图 */
-.map-box {
-  flex: 1; min-width: 0;
-  border-right: 1px solid rgba(91,141,238,.15);
+.sky {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(1200px 600px at 20% -10%, rgba(154,134,209,0.18), transparent 60%),
+    radial-gradient(900px 520px at 85% 10%, rgba(217,157,180,0.10), transparent 60%),
+    radial-gradient(1400px 900px at 50% 110%, rgba(107,142,214,0.14), transparent 70%),
+    linear-gradient(180deg, $sky-top 0%, $sky-mid 45%, $sky-bot 100%);
+}
+.stars {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    radial-gradient(1.2px 1.2px at 18% 22%, rgba(255,255,255,0.85), transparent 55%),
+    radial-gradient(1px 1px at 72% 18%, rgba(247,236,210,0.75), transparent 55%),
+    radial-gradient(1px 1px at 34% 68%, rgba(255,255,255,0.55), transparent 55%),
+    radial-gradient(1.4px 1.4px at 88% 54%, rgba(185,200,232,0.7), transparent 55%),
+    radial-gradient(1px 1px at 9% 82%, rgba(255,255,255,0.55), transparent 55%),
+    radial-gradient(1px 1px at 57% 88%, rgba(217,157,180,0.55), transparent 55%),
+    radial-gradient(1.2px 1.2px at 44% 36%, rgba(255,255,255,0.4), transparent 55%),
+    radial-gradient(1px 1px at 95% 86%, rgba(247,236,210,0.55), transparent 55%);
+  background-size: 720px 720px, 940px 940px, 620px 620px, 1100px 1100px,
+                   820px 820px, 1020px 1020px, 520px 520px, 1220px 1220px;
+  opacity: .75;
+  animation: twinkle 6.5s ease-in-out infinite alternate;
+}
+@keyframes twinkle { 0% { opacity: .5; } 100% { opacity: .85; } }
+
+.grain {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  mix-blend-mode: overlay;
+  opacity: .15;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.95  0 0 0 0 0.92  0 0 0 0 0.82  0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 }
 
-/* 列表面板 */
-.list-panel {
-  width: 360px; flex-shrink: 0;
-  display: flex; flex-direction: column;
-  background: rgba(8,12,26,.9);
-  overflow: hidden;
-}
-.list-panel.list-full { width: 100%; }
-
-.list-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 12px 16px 8px;
-  border-bottom: 1px solid rgba(255,255,255,.05);
-  flex-shrink: 0;
-}
-.list-count { font-size: 13px; color: #8ab4f8; }
-.list-count strong { color: #c8e6ff; }
-.list-sort-tip { font-size: 11px; color: #444; }
-
-.skeleton-wrap { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
-.skeleton-item { background: rgba(255,255,255,.03); border-radius: 10px; padding: 10px; }
-.empty-state { padding: 40px 0; }
-.empty-icon  { font-size: 52px; }
-
-/* ── 卡片 ── */
-.card-list {
-  flex: 1; overflow-y: auto;
-  padding: 10px; display: flex; flex-direction: column; gap: 8px;
-}
-.card-list::-webkit-scrollbar { width: 3px; }
-.card-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 2px; }
-
-.spot-card {
-  display: flex; gap: 12px; padding: 11px 12px;
-  background: rgba(255,255,255,.03);
-  border: 1px solid rgba(255,255,255,.06);
-  border-radius: 12px; cursor: pointer; transition: all .18s;
-  position: relative; overflow: hidden;
-}
-.spot-card:hover {
-  border-color: rgba(91,141,238,.45);
-  background: rgba(91,141,238,.07);
-  transform: translateX(2px);
-}
-.spot-card--active {
-  border-color: #5b8dee;
-  background: rgba(91,141,238,.12);
-  box-shadow: 0 0 0 1px rgba(91,141,238,.25);
-}
-
-.card-thumb {
-  width: 76px; height: 76px; flex-shrink: 0;
-  border-radius: 8px; overflow: hidden; position: relative;
-}
-.thumb-img { width: 100%; height: 100%; display: block; }
-.thumb-err {
-  width: 100%; height: 100%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 26px; background: rgba(255,255,255,.04);
-}
-
-.bortle-badge {
-  position: absolute; bottom: 3px; left: 3px;
-  font-size: 10px; font-weight: 700; padding: 1px 5px;
-  border-radius: 4px; line-height: 1.6;
-}
-.bortle-green  { background: rgba(0,230,118,.85); color: #002010; }
-.bortle-yellow { background: rgba(255,215,64,.85); color: #3d2e00; }
-.bortle-orange { background: rgba(255,109,0,.85);  color: #fff; }
-.bortle-red    { background: rgba(255,23,68,.85);   color: #fff; }
-
-.card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.card-name { font-size: 14px; font-weight: 600; color: #c8e6ff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card-sub  { font-size: 12px; color: #5a7080; }
-.card-tags { display: flex; gap: 8px; align-items: center; }
-.tag-distance { font-size: 12px; color: #5b8dee; }
-.tag-alt      { font-size: 12px; color: #666; }
-.card-rating-row { display: flex; align-items: center; gap: 4px; margin-top: 1px; }
-.rating-val { font-size: 12px; color: #f7ba2a; font-weight: 600; }
-.rating-cnt { font-size: 11px; color: #555; }
-
-.my-score-badge {
-  position: absolute; top: 9px; right: 9px;
-  background: linear-gradient(135deg,#f7ba2a,#f0a020);
-  color: #1a1000; font-size: 11px; font-weight: 700;
-  padding: 2px 7px; border-radius: 10px;
-}
-
-/* ── 详情弹窗 ── */
-:deep(.detail-dialog .el-dialog) {
-  background: #1c1c21;
-  border: 1px solid rgba(255,255,255,.1);
-  border-radius: 14px;
-  box-shadow: 0 32px 80px rgba(0,0,0,.85);
-}
-:deep(.detail-dialog .el-dialog__header) {
-  padding: 20px 22px 14px;
-  border-bottom: 1px solid rgba(255,255,255,.07);
-  margin-right: 0;
-}
-:deep(.detail-dialog .el-dialog__title) {
-  color: #f0f0f0;
-  font-size: 17px;
-  font-weight: 600;
-}
-:deep(.detail-dialog .el-dialog__body) { padding: 0 20px 20px; }
-:deep(.detail-dialog .el-dialog__headerbtn) { top: 18px; right: 18px; }
-:deep(.detail-dialog .el-dialog__headerbtn .el-icon) { color: #555; font-size: 16px; }
-:deep(.detail-dialog .el-dialog__headerbtn:hover .el-icon) { color: #aaa; }
-
-.dialog-body { display: flex; flex-direction: column; gap: 14px; padding-top: 14px; }
-.detail-carousel { border-radius: 8px; overflow: hidden; }
-
-/* 四格指标 */
-.metric-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: rgba(255,255,255,.07);
-  border-radius: 10px;
-  overflow: hidden;
-}
-.metric-cell {
-  background: #252529;
-  padding: 13px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  text-align: center;
-}
-.metric-label {
-  font-size: 11px;
-  color: #666;
-  letter-spacing: .04em;
-}
-.metric-main { display: flex; justify-content: center; align-items: center; }
-.score-big { font-size: 21px; font-weight: 600; color: #e8e8e8; }
-.metric-sub { font-size: 11px; color: #666; line-height: 1.4; }
-
-.bortle-pill {
-  font-size: 12px; font-weight: 700;
-  padding: 3px 10px; border-radius: 20px;
-  display: inline-block;
-}
-.bortle-green  { background: rgba(0,180,80,.2);  color: #00d46a; border: 1px solid rgba(0,180,80,.4); }
-.bortle-yellow { background: rgba(220,180,0,.18); color: #f5c800; border: 1px solid rgba(220,180,0,.4); }
-.bortle-orange { background: rgba(220,100,0,.2);  color: #ff8c40; border: 1px solid rgba(220,100,0,.4); }
-.bortle-red    { background: rgba(200,40,40,.2);  color: #ff6060; border: 1px solid rgba(200,40,40,.4); }
-
-/* 位置/介绍分区 */
-.detail-section {
-  border-left: 2px solid #3a3a42;
-  padding: 2px 0 2px 14px;
-}
-.section-key {
-  font-size: 11px;
-  color: #666;
-  letter-spacing: .04em;
-  margin-bottom: 5px;
-}
-.section-val { font-size: 13px; color: #c0c0c0; line-height: 1.75; }
-.desc-text { white-space: pre-wrap; }
-
-/* 评分区 */
-.rating-panel {
-  background: #252529 !important;
-  border: 1px solid rgba(255,255,255,.07);
-  border-radius: 10px;
-  padding: 14px 16px;
-}
-.rating-panel-title {
-  font-size: 11px;
-  color: #666;
-  letter-spacing: .04em;
-  margin-bottom: 10px;
-}
-.rating-unauth { font-size: 13px; color: #666; }
-.login-link  { color: #7aa8ff; text-decoration: none; }
-.login-link:hover { text-decoration: underline; }
-.rating-done-row {
+/* ── topbar ───────────────────────────────────────────────────── */
+.topbar {
+  position: relative; z-index: 10;
+  padding: 22px 36px 14px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: rgba(247,186,42,.07);
-  border: 1px solid rgba(247,186,42,.2);
-  border-radius: 8px;
-  padding: 10px 14px;
+  justify-content: space-between;
+  background: rgba(7,11,29,0.6);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid $cream-xlow;
+  flex-shrink: 0;
 }
-.done-label { font-size: 13px; color: #f7ba2a; font-weight: 500; flex: 1; }
-.edit-rating-btn { font-size: 12px; color: #8ab4f8 !important; margin-left: auto; }
-.rating-input-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
-:deep(.detail-dialog .el-rate__text) { color: #888 !important; font-size: 13px; }
-
-/* 强制整个弹窗覆盖层背景深色，消除白色外框 */
-:deep(.detail-dialog) { background: transparent !important; }
-:deep(.detail-dialog .el-overlay) { background: rgba(0,0,0,.7) !important; }
-
-/* ── 今晚观测条件卡片（6.2）── */
-.tonight-bar {
-  background: linear-gradient(135deg, rgba(14,18,40,.95), rgba(20,30,60,.95));
-  border-bottom: 1px solid rgba(91,141,238,.18);
-  padding: 12px 20px;
+.topbar__left {
+  display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  font-family: $serif;
+  color: $cream-dim;
 }
-.tonight-inner {
-  max-width: 1600px; margin: 0 auto;
-  display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
-}
-.tonight-loading {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 13px; color: #8ab4f8;
-}
-.tonight-score {
-  display: flex; align-items: center; gap: 8px;
-}
-.tonight-stars { display: flex; gap: 2px; }
-.star-icon {
-  font-size: 18px; color: #f7ba2a;
-  text-shadow: 0 0 6px rgba(247,186,42,.4);
-}
-.star-empty { color: #3a3a42; text-shadow: none; }
-.tonight-score-num {
-  font-size: 15px; font-weight: 700;
-  color: #c8e6ff;
-  background: rgba(91,141,238,.15);
-  padding: 2px 10px; border-radius: 12px;
-}
-.tonight-item {
-  display: flex; align-items: center; gap: 6px;
+.crumb {
   font-size: 13px;
+  font-style: italic;
+  letter-spacing: .6px;
+  cursor: pointer;
+  transition: color .2s;
+  &:hover { color: $moon; }
 }
-.tonight-label {
-  color: #5a7080;
-}
-.tonight-val {
-  color: #c0d8f0;
+.sep { color: $cream-xlow; }
+.title-ish {
+  font-family: $serif;
   font-weight: 500;
+  font-size: 22px;
+  letter-spacing: 6px;
+  color: $moon;
+  line-height: 1;
+  text-shadow: 0 2px 20px rgba(247,236,210,0.18);
 }
-.tonight-suggestion {
-  font-size: 12px; color: #8ab4f8;
-  line-height: 1.5;
-  flex: 1; min-width: 200px;
-  padding: 4px 12px;
-  background: rgba(91,141,238,.08);
-  border-radius: 8px;
-  border-left: 3px solid rgba(91,141,238,.4);
+.kicker {
+  font-family: $serif;
+  font-style: italic;
+  font-size: 12.5px;
+  letter-spacing: 1.5px;
+  color: $cream-low;
+  padding-left: 2px;
 }
 
-/* ── 详情弹窗天气面板（6.2）── */
-.weather-panel {
-  background: #252529;
-  border: 1px solid rgba(255,255,255,.07);
-  border-radius: 10px;
-  padding: 14px 16px;
+.topbar__right { display: flex; align-items: center; gap: 14px; }
+
+.loc-badge {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: $serif;
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: .5px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid $cream-xlow;
+  background: rgba(247,236,210,0.04);
+  color: $cream-dim;
+  transition: all .2s;
+
+  &--loading { color: $cream-low; }
+  &--error   { color: $warn; border-color: rgba(233,183,183,0.4); background: rgba(233,183,183,0.06); }
+  &--ok      { color: $moon; border-color: $cream-low; background: rgba(247,236,210,0.08); }
 }
-.weather-panel-title {
-  font-size: 11px;
-  color: #666;
-  letter-spacing: .04em;
-  margin-bottom: 10px;
+.spin { animation: rot 1.4s linear infinite; }
+@keyframes rot { to { transform: rotate(360deg); } }
+
+.seg {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid $cream-xlow;
+  border-radius: 999px;
+  background: rgba(247,236,210,0.04);
 }
-.weather-loading {
+.seg__item {
+  padding: 6px 16px;
+  font-family: $sans;
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: $cream-dim;
+  cursor: pointer;
+  border-radius: 999px;
+  transition: all .2s;
+  user-select: none;
+
+  &:hover { color: $moon; }
+  &--on {
+    background: rgba(247,236,210,0.15);
+    color: $moon;
+  }
+}
+
+/* ── filters ──────────────────────────────────────────────────── */
+.filters {
+  position: relative; z-index: 2;
+  padding: 14px 36px;
+  border-bottom: 1px solid $cream-xlow;
+  background: rgba(7,11,29,0.4);
+  backdrop-filter: blur(6px);
+  flex-shrink: 0;
+
+  &__inner {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+}
+
+.f-select    { width: 128px; }
+.f-select--sm { width: 108px; }
+
+.bortle {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 5px 16px;
+  background: rgba(247,236,210,0.04);
+  border: 1px solid $cream-xlow;
+  border-radius: 999px;
+
+  &__label {
+    font-family: $serif;
+    font-style: italic;
+    font-size: 13px;
+    color: $cream-dim;
+    letter-spacing: .5px;
+    white-space: nowrap;
+  }
+  &__pill {
+    font-family: $sans;
+    font-size: 11.5px;
+    letter-spacing: 1.5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid currentColor;
+    white-space: nowrap;
+
+    &--ok     { color: $ok; }
+    &--warn   { color: $moon; }
+    &--danger { color: $warn; }
+  }
+}
+
+.fallback-tip {
   display: flex; align-items: center; gap: 6px;
-  font-size: 13px; color: #888;
+  margin-top: 8px;
+  font-family: $serif; font-style: italic;
+  font-size: 13px;
+  color: $warn;
+  letter-spacing: .5px;
 }
-.weather-grid {
+
+/* element plus overrides for filters */
+:deep(.el-select .el-input__wrapper) {
+  background: rgba(247,236,210,0.04) !important;
+  box-shadow: 0 0 0 1px $cream-xlow inset !important;
+  border-radius: 999px !important;
+  padding: 2px 14px !important;
+  &:hover { box-shadow: 0 0 0 1px $cream-low inset !important; }
+}
+:deep(.el-select .el-input__inner) {
+  color: $cream !important;
+  font-family: $sans;
+}
+:deep(.el-select .el-input__inner::placeholder) { color: $cream-low !important; }
+
+:deep(.el-slider) {
+  --el-slider-main-bg-color: #{$moon};
+  --el-slider-runway-bg-color: #{$cream-xlow};
+}
+:deep(.el-slider__button) {
+  border-color: $moon;
+  background: $moon;
+}
+:deep(.el-slider__stop) { background: $cream-xlow; }
+
+/* ── tonight bar ──────────────────────────────────────────────── */
+.tonight {
+  position: relative; z-index: 2;
+  padding: 14px 36px;
+  border-bottom: 1px solid $cream-xlow;
+  background:
+    linear-gradient(90deg, rgba(154,134,209,0.08), rgba(247,236,210,0.05));
+  flex-shrink: 0;
+
+  &__inner {
+    display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+  }
+  &__loading {
+    display: flex; align-items: center; gap: 8px;
+    font-family: $serif; font-style: italic;
+    font-size: 14px;
+    color: $cream-dim;
+    letter-spacing: 1px;
+  }
+  &__score {
+    display: flex; align-items: center; gap: 12px;
+  }
+  &__stars {
+    display: flex; gap: 3px;
+  }
+  &__num {
+    font-family: $serif;
+    font-weight: 500;
+    font-size: 22px;
+    color: $moon;
+    letter-spacing: 1px;
+    .tn-unit {
+      font-size: 13px;
+      color: $cream-dim;
+      font-style: italic;
+      margin-left: 2px;
+    }
+  }
+  &__item {
+    display: flex; align-items: baseline; gap: 8px;
+    font-family: $sans;
+    font-size: 13.5px;
+  }
+  &__k {
+    font-family: $serif;
+    font-style: italic;
+    font-size: 13px;
+    color: $cream-low;
+  }
+  &__v {
+    color: $cream;
+    letter-spacing: .5px;
+  }
+  &__sugg {
+    flex: 1; min-width: 240px;
+    font-family: $serif; font-style: italic;
+    font-size: 13.5px;
+    color: $cream-dim;
+    line-height: 1.6;
+    letter-spacing: .5px;
+    padding: 6px 16px;
+    background: rgba(247,236,210,0.04);
+    border-left: 2px solid $cream-low;
+    border-radius: 2px;
+  }
+}
+.t-star {
+  font-size: 18px;
+  color: $moon;
+  text-shadow: 0 0 8px rgba(247,236,210,0.45);
+  &--off {
+    color: $cream-xlow;
+    text-shadow: none;
+  }
+}
+
+/* ── body ─────────────────────────────────────────────────────── */
+.body {
+  flex: 1;
+  display: flex;
+  position: relative;
+  z-index: 2;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* map */
+.map {
+  flex: 1;
+  min-width: 0;
+  border-right: 1px solid $cream-xlow;
+  position: relative;
+
+  :deep(.amap-logo), :deep(.amap-copyright) { opacity: .4; }
+}
+
+/* list panel */
+.list {
+  width: 380px; flex-shrink: 0;
+  display: flex; flex-direction: column;
+  background: rgba(7,11,29,0.72);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+
+  &--full { width: 100%; }
+
+  &__head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 18px 22px 14px;
+    border-bottom: 1px solid $cream-xlow;
+    flex-shrink: 0;
+  }
+  &__count {
+    font-family: $sans;
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: $cream-dim;
+    strong {
+      color: $moon;
+      font-family: $serif;
+      font-weight: 500;
+      font-size: 16px;
+      margin: 0 4px;
+    }
+  }
+  &__sort {
+    font-family: $serif;
+    font-style: italic;
+    font-size: 12.5px;
+    letter-spacing: .5px;
+    color: $cream-low;
+  }
+}
+
+.sk-wrap {
+  padding: 14px; display: flex; flex-direction: column; gap: 10px;
+}
+.sk-item {
+  display: flex; gap: 12px;
+  padding: 12px;
+  border: 1px solid $cream-xlow;
+  border-radius: 4px;
+  background: rgba(247,236,210,0.02);
+}
+.sk-thumb {
+  width: 72px; height: 72px;
+  border-radius: 4px;
+  background: linear-gradient(90deg,
+    rgba(247,236,210,0.04),
+    rgba(247,236,210,0.10),
+    rgba(247,236,210,0.04));
+  background-size: 200% 100%;
+  animation: skeleton 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.sk-body { flex: 1; display: flex; flex-direction: column; gap: 10px; justify-content: center; }
+.sk-line {
+  height: 10px;
+  background: linear-gradient(90deg,
+    rgba(247,236,210,0.04),
+    rgba(247,236,210,0.10),
+    rgba(247,236,210,0.04));
+  background-size: 200% 100%;
+  animation: skeleton 1.5s ease-in-out infinite;
+  border-radius: 2px;
+  &--l { width: 75%; }
+  &--s { width: 45%; }
+}
+@keyframes skeleton {
+  0%,100% { background-position: 0% 0; }
+  50%     { background-position: -100% 0; }
+}
+
+/* empty */
+.empty {
+  padding: 60px 24px;
+  text-align: center;
+
+  &__orb {
+    position: relative;
+    width: 96px; height: 96px;
+    margin: 0 auto 22px;
+  }
+  &__halo {
+    position: absolute; inset: -12px;
+    border-radius: 50%;
+    background: radial-gradient(circle at center, rgba(247,236,210,0.22), transparent 70%);
+    animation: breath 5s ease-in-out infinite alternate;
+  }
+  &__disc {
+    position: absolute; inset: 8px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 32%, #fff7e0, $moon 55%, $moon-soft 100%);
+    box-shadow: 0 0 24px rgba(247,236,210,0.25);
+    opacity: .75;
+  }
+  &__title {
+    font-family: $serif;
+    font-size: 22px;
+    letter-spacing: 3px;
+    color: $moon;
+    margin-bottom: 10px;
+  }
+  &__desc {
+    font-family: $sans;
+    font-size: 13px;
+    color: $cream-dim;
+    letter-spacing: .5px;
+  }
+}
+@keyframes breath {
+  0%   { opacity: .55; transform: scale(.96); }
+  100% { opacity: .95; transform: scale(1.04); }
+}
+
+/* cards */
+.cards {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex; flex-direction: column; gap: 10px;
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb { background: $cream-xlow; border-radius: 2px; }
+  &::-webkit-scrollbar-thumb:hover { background: $cream-low; }
+}
+
+.card {
+  display: flex; gap: 14px;
+  padding: 12px 14px;
+  background: rgba(247,236,210,0.03);
+  border: 1px solid $cream-xlow;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all .2s;
+  position: relative;
+
+  &:hover {
+    border-color: $cream-low;
+    background: rgba(247,236,210,0.06);
+    transform: translateX(2px);
+  }
+  &--on {
+    border-color: $moon;
+    background: rgba(247,236,210,0.1);
+    box-shadow: 0 0 0 1px rgba(247,236,210,0.15), 0 0 30px rgba(247,236,210,0.08);
+  }
+
+  &__thumb {
+    position: relative;
+    width: 78px; height: 78px; flex-shrink: 0;
+    border-radius: 4px;
+    overflow: hidden;
+    background: rgba(7,11,29,0.5);
+  }
+  .thumb-img { width: 100%; height: 100%; display: block; }
+  .thumb-err {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    color: $moon-soft;
+    background: rgba(7,11,29,0.5);
+  }
+
+  &__body {
+    flex: 1; min-width: 0;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  &__name {
+    font-family: $serif;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    color: $moon;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  &__sub {
+    font-family: $serif;
+    font-style: italic;
+    font-size: 12.5px;
+    letter-spacing: .5px;
+    color: $cream-low;
+  }
+  &__tags {
+    display: flex; gap: 10px; align-items: center;
+    margin-top: 2px;
+    .tag-dist {
+      font-family: $sans;
+      font-size: 12px;
+      letter-spacing: 1px;
+      color: $moon-soft;
+      padding: 2px 8px;
+      border: 1px solid $cream-xlow;
+      border-radius: 999px;
+    }
+    .tag-alt {
+      font-family: $serif;
+      font-style: italic;
+      font-size: 12px;
+      color: $cream-low;
+      em { font-style: italic; margin-right: 2px; }
+    }
+  }
+  &__rate {
+    display: flex; align-items: center; gap: 5px;
+    margin-top: 2px;
+    .rate-val {
+      font-family: $serif;
+      font-size: 13px;
+      color: $moon;
+      letter-spacing: .5px;
+      font-weight: 500;
+    }
+    .rate-cnt {
+      font-family: $serif;
+      font-style: italic;
+      font-size: 11.5px;
+      color: $cream-low;
+    }
+  }
+}
+
+.bortle-tag {
+  position: absolute;
+  bottom: 4px; left: 4px;
+  font-family: $sans;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  line-height: 1.5;
+
+  &--ok   { background: rgba(166,220,188,0.9);  color: $sky-bot; }
+  &--warm { background: rgba(247,236,210,0.9);  color: $sky-bot; }
+  &--hot  { background: rgba(217,157,180,0.9);  color: $sky-bot; }
+  &--bad  { background: rgba(233,183,183,0.9);  color: $sky-bot; }
+}
+
+.my-score {
+  position: absolute;
+  top: 10px; right: 12px;
+  font-family: $serif;
+  font-size: 12px;
+  color: $moon;
+  letter-spacing: 1px;
+  padding: 2px 9px;
+  border: 1px solid $cream-low;
+  border-radius: 999px;
+  background: rgba(247,236,210,0.1);
+}
+
+/* ── dialog ───────────────────────────────────────────────────── */
+:deep(.el-overlay:has(.obs-dialog)) {
+  background: rgba(4,7,18,0.92) !important;
+  backdrop-filter: blur(10px);
+}
+:deep(.obs-dialog) {
+  background: $sky-bot !important;
+  background-image:
+    radial-gradient(circle at 50% -10%, rgba(154,134,209,0.18), transparent 55%),
+    linear-gradient(180deg, $sky-mid 0%, $sky-bot 100%) !important;
+  border: 1px solid $cream-low !important;
+  border-radius: 6px !important;
+  box-shadow:
+    0 0 0 1px rgba(247,236,210,0.05) inset,
+    0 32px 80px rgba(0,0,0,.85) !important;
+  --el-dialog-bg-color: #{$sky-bot};
+}
+:deep(.obs-dialog .el-dialog__body) {
+  background: transparent;
+}
+:deep(.obs-dialog .el-dialog__header) {
+  padding: 22px 26px 16px;
+  border-bottom: 1px solid $cream-xlow;
+  margin-right: 0;
+}
+:deep(.obs-dialog .el-dialog__title) {
+  font-family: $serif;
+  color: $moon;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: 3px;
+}
+:deep(.obs-dialog .el-dialog__body) { padding: 0 24px 24px; }
+:deep(.obs-dialog .el-dialog__headerbtn) { top: 20px; right: 20px; }
+:deep(.obs-dialog .el-dialog__headerbtn .el-icon) { color: $cream-low; font-size: 18px; }
+:deep(.obs-dialog .el-dialog__headerbtn:hover .el-icon) { color: $moon; }
+
+.dlg-body { display: flex; flex-direction: column; gap: 16px; padding-top: 14px; }
+.dlg-carousel { border-radius: 4px; overflow: hidden; border: 1px solid $cream-xlow; }
+
+/* metric grid */
+.metric {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  border: 1px solid $cream-xlow;
+  border-radius: 4px;
+  overflow: hidden;
+  background: rgba(247,236,210,0.03);
+
+  &__cell {
+    padding: 14px 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: center;
+    border-right: 1px solid $cream-xlow;
+    &:last-child { border-right: none; }
+  }
+  &__k {
+    font-family: $serif;
+    font-style: italic;
+    font-size: 11.5px;
+    letter-spacing: 1.5px;
+    color: $cream-low;
+  }
+  &__v {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 26px;
+    &--big {
+      font-family: $serif;
+      font-weight: 500;
+      font-size: 24px;
+      color: $moon;
+      letter-spacing: 1px;
+    }
+  }
+  &__sub {
+    font-family: $sans;
+    font-size: 11px;
+    color: $cream-low;
+    letter-spacing: .5px;
+    line-height: 1.4;
+  }
+}
+.bortle-pill {
+  font-family: $sans;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+/* sections */
+.section {
+  padding: 4px 0 4px 16px;
+  border-left: 2px solid $cream-xlow;
+
+  &__k {
+    font-family: $serif;
+    font-style: italic;
+    font-size: 12.5px;
+    letter-spacing: 1.5px;
+    color: $cream-low;
+    margin-bottom: 6px;
+  }
+  &__v {
+    font-family: $sans;
+    font-size: 13.5px;
+    color: $cream-dim;
+    line-height: 1.75;
+    letter-spacing: .3px;
+    &--desc { white-space: pre-wrap; }
+  }
+}
+
+/* panels */
+.panel {
+  background: rgba(247,236,210,0.03);
+  border: 1px solid $cream-xlow;
+  border-radius: 4px;
+  padding: 16px 18px;
+
+  &__title {
+    font-family: $serif;
+    font-style: italic;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: $cream-low;
+    margin-bottom: 12px;
+
+    &--row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+    }
+  }
+  &__hint {
+    font-family: $sans;
+    font-size: 11.5px;
+    color: $cream-low;
+    letter-spacing: .5px;
+    font-style: normal;
+  }
+  &__loading {
+    display: flex; align-items: center; gap: 8px;
+    font-family: $serif; font-style: italic;
+    font-size: 13.5px;
+    color: $cream-dim;
+  }
+  &__empty {
+    font-family: $serif; font-style: italic;
+    font-size: 13px;
+    color: $cream-low;
+    letter-spacing: 1px;
+  }
+
+  &--checkin {
+    display: flex; align-items: center;
+  }
+}
+
+/* weather grid */
+.w-grid {
   display: flex; flex-wrap: wrap; gap: 10px;
   align-items: center;
 }
-.weather-cell {
-  display: flex; align-items: center; gap: 5px;
-  background: rgba(255,255,255,.04);
-  padding: 6px 12px;
-  border-radius: 8px;
+.w-cell {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 14px;
+  border: 1px solid $cream-xlow;
+  border-radius: 999px;
+  background: rgba(247,236,210,0.04);
+  font-family: $sans;
   font-size: 13px;
+  color: $cream;
+  letter-spacing: .5px;
+
+  .w-icon {
+    font-family: $serif;
+    font-size: 15px;
+    color: $moon;
+  }
 }
-.weather-icon { font-size: 16px; }
-.weather-info { color: #c0c0c0; }
-.weather-suitability {
-  display: flex; align-items: center; gap: 8px;
+.w-suit {
   margin-left: auto;
-}
-.suit-label { font-size: 12px; color: #666; }
-.suit-badge {
-  font-size: 12px; font-weight: 600;
-  padding: 3px 10px; border-radius: 12px;
-}
-.weather-empty { font-size: 13px; color: #555; }
+  display: inline-flex; align-items: center; gap: 8px;
 
-/* ── 签到面板（6.3）── */
-.checkin-panel {
-  background: #252529;
-  border: 1px solid rgba(255,255,255,.07);
-  border-radius: 10px;
-  padding: 14px 16px;
-  display: flex; align-items: center;
+  &__k {
+    font-family: $serif;
+    font-style: italic;
+    font-size: 12.5px;
+    color: $cream-low;
+    letter-spacing: .5px;
+  }
+  &__badge {
+    font-family: $sans;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 1px;
+    padding: 4px 12px;
+    border-radius: 999px;
+  }
 }
-.checkin-unauth { font-size: 13px; color: #666; }
+
+/* checkin */
+.checkin-unauth, .rate-unauth {
+  font-family: $sans;
+  font-size: 13.5px;
+  color: $cream-dim;
+  letter-spacing: .3px;
+}
+.login-link {
+  color: $moon; text-decoration: none;
+  border-bottom: 1px solid $cream-low;
+  &:hover { color: #fff7e0; }
+}
 .checkin-action {
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; gap: 14px;
   width: 100%;
+  flex-wrap: wrap;
 }
-.checkin-tip { font-size: 12px; color: #555; }
+.checkin-tip {
+  font-family: $serif;
+  font-style: italic;
+  font-size: 12.5px;
+  color: $cream-low;
+  letter-spacing: .5px;
+}
 .checkin-done {
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; gap: 14px;
   width: 100%;
-  background: rgba(103,194,58,.07);
-  border: 1px solid rgba(103,194,58,.2);
-  border-radius: 8px;
-  padding: 10px 14px;
-  margin: -2px;
-}
-.checkin-done-icon { font-size: 20px; }
-.checkin-done-info { display: flex; flex-direction: column; gap: 2px; }
-.checkin-done-title { font-size: 14px; font-weight: 600; color: #67c23a; }
-.checkin-done-meta { font-size: 12px; color: #888; }
+  background: rgba(166,220,188,0.06);
+  border: 1px solid rgba(166,220,188,0.3);
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin: -4px;
 
-/* ============================================================ */
-/* 🆕 8.3.3 签到后器材推荐面板                                   */
-/* ============================================================ */
-.spot-equipment-panel {
-  background: #252529;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin-top: 10px;
+  &__glyph {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: rgba(166,220,188,0.15);
+    border: 1px solid rgba(166,220,188,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-family: $serif;
+    font-size: 20px;
+    color: $ok;
+    flex-shrink: 0;
+  }
+  &__info { display: flex; flex-direction: column; gap: 3px; }
+  &__title {
+    font-family: $serif;
+    font-size: 15px;
+    letter-spacing: 2px;
+    color: $ok;
+  }
+  &__meta {
+    font-family: $serif;
+    font-style: italic;
+    font-size: 12.5px;
+    color: $cream-low;
+    letter-spacing: .5px;
+  }
 }
-.spot-equipment-title {
+
+/* equipment */
+.equip-scroll {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-  color: #e0eaff;
-  font-size: 14px;
-  font-weight: 600;
-}
-.spot-equipment-hint {
-  font-weight: normal;
-  color: #8a9cb0;
-  font-size: 12px;
-}
-.spot-equipment-scroll {
-  display: flex;
-  gap: 10px;
+  gap: 12px;
   overflow-x: auto;
-  padding-bottom: 6px;
+  padding-bottom: 8px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(91, 141, 238, 0.3) transparent;
+  scrollbar-color: $cream-xlow transparent;
+  &::-webkit-scrollbar { height: 4px; }
+  &::-webkit-scrollbar-thumb { background: $cream-xlow; border-radius: 2px; }
 }
-.spot-equipment-scroll::-webkit-scrollbar {
-  height: 4px;
-}
-.spot-equipment-scroll::-webkit-scrollbar-thumb {
-  background: rgba(91, 141, 238, 0.3);
-  border-radius: 2px;
-}
-.spot-equip-card {
+.equip {
   flex-shrink: 0;
-  width: 140px;
-  background: rgba(20, 28, 48, 0.9);
-  border: 1px solid rgba(91, 141, 238, 0.15);
-  border-radius: 8px;
+  width: 150px;
+  background: rgba(247,236,210,0.04);
+  border: 1px solid $cream-xlow;
+  border-radius: 4px;
   overflow: hidden;
   cursor: pointer;
-  transition: border-color 0.2s, transform 0.2s;
+  transition: all .2s;
+
+  &:hover {
+    border-color: $cream-low;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(7,11,29,0.4);
+  }
+
+  &__img {
+    width: 100%; height: 96px;
+    background: rgba(7,11,29,0.6);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+  &__ph {
+    font-size: 26px;
+    color: $moon-soft;
+    opacity: .6;
+  }
+  &__info { padding: 10px 12px 12px; }
+  &__name {
+    font-family: $serif;
+    font-size: 13px;
+    letter-spacing: .8px;
+    color: $moon;
+    margin: 0 0 5px;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 36px;
+  }
+  &__price {
+    font-family: $serif;
+    font-size: 14.5px;
+    font-weight: 500;
+    color: $moon-soft;
+    margin: 0 0 4px;
+    letter-spacing: .5px;
+  }
+  &__reason {
+    font-family: $serif;
+    font-style: italic;
+    font-size: 11.5px;
+    color: $cream-low;
+    margin: 0;
+    letter-spacing: .5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
-.spot-equip-card:hover {
-  border-color: rgba(91, 141, 238, 0.5);
-  transform: translateY(-2px);
+
+/* rating */
+.rate-done {
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 16px;
+  background: rgba(247,236,210,0.05);
+  border: 1px solid $cream-xlow;
+  border-radius: 4px;
+  flex-wrap: wrap;
+
+  &__label {
+    font-family: $serif;
+    font-size: 13.5px;
+    color: $moon;
+    letter-spacing: 1px;
+    flex: 1;
+  }
 }
-.spot-equip-img {
-  width: 100%;
-  height: 90px;
-  background: rgba(8, 12, 26, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+.rate-input {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
 }
-.spot-equip-img img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+
+:deep(.obs-dialog .el-rate__text) {
+  color: $cream-dim !important;
+  font-family: $serif !important;
+  font-style: italic;
+  font-size: 13px !important;
 }
-.spot-equip-placeholder {
-  font-size: 24px;
-  color: #2a3a5a;
-}
-.spot-equip-info {
-  padding: 8px 10px 10px;
-}
-.spot-equip-name {
+
+/* buttons */
+.quiet-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 18px;
+  background: transparent;
+  border: 1px solid $cream-xlow;
+  color: $cream-dim;
+  font-family: $sans;
   font-size: 12px;
-  color: #c8d6e8;
-  margin: 0 0 4px;
-  line-height: 1.35;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 32px;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  transition: all .25s;
+  border-radius: 999px;
+
+  .qb-mark { color: $moon; font-size: 11px; }
+  &:hover:not(:disabled) {
+    color: $moon;
+    border-color: $cream-low;
+    background: rgba(247,236,210,0.06);
+  }
+  &:disabled { opacity: .45; cursor: not-allowed; }
+
+  &--primary {
+    color: $moon;
+    border-color: $cream-low;
+    background: rgba(247,236,210,0.1);
+    &:hover:not(:disabled) { background: rgba(247,236,210,0.2); }
+  }
 }
-.spot-equip-price {
-  font-size: 13px;
-  font-weight: 700;
-  color: #f59e0b;
-  margin: 0 0 3px;
+
+.submit {
+  display: inline-flex; flex-direction: column; align-items: center;
+  gap: 2px;
+  padding: 12px 32px;
+  background: linear-gradient(180deg, rgba(247,236,210,0.14), rgba(247,236,210,0.05));
+  border: 1px solid $cream-low;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all .3s;
+  color: $moon;
+  font-family: $sans;
+
+  &__en {
+    font-family: $serif; font-style: italic;
+    font-size: 11px; letter-spacing: 1.8px;
+    color: $cream-dim;
+  }
+  &__cn { font-size: 13px; letter-spacing: 3px; }
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(180deg, rgba(247,236,210,0.24), rgba(247,236,210,0.1));
+    box-shadow: 0 0 30px rgba(247,236,210,0.18);
+    transform: translateY(-1px);
+  }
+  &:disabled { opacity: .55; cursor: not-allowed; }
+  &--sm { padding: 10px 24px; .submit__cn { font-size: 13px; letter-spacing: 2.5px; } }
 }
-.spot-equip-reason {
-  font-size: 11px;
-  color: #6a8ab0;
-  margin: 0;
+
+.link {
+  font-family: $sans;
+  font-size: 12.5px;
+  letter-spacing: 1.2px;
+  color: $cream-dim;
+  cursor: pointer;
+  padding: 6px 4px;
+  transition: color .2s;
+  user-select: none;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  border-bottom: 1px solid transparent;
+
+  &:hover { color: $moon; border-bottom-color: $cream-low; }
+}
+
+/* element plus loading mask inside dialog */
+:deep(.obs-dialog .el-loading-mask) {
+  background: rgba(7,11,29,0.65);
+  .el-loading-spinner .path { stroke: $moon; }
+}
+
+/* skeleton inside dialog */
+:deep(.obs-dialog .el-skeleton__item) {
+  background: linear-gradient(90deg,
+    rgba(247,236,210,0.05),
+    rgba(247,236,210,0.12),
+    rgba(247,236,210,0.05));
+}
+
+/* responsive */
+@media (max-width: 980px) {
+  .body { flex-direction: column; }
+  .map { min-height: 300px; border-right: none; border-bottom: 1px solid $cream-xlow; }
+  .list { width: 100%; }
+  .title-ish { font-size: 18px; letter-spacing: 4px; }
+  .kicker { display: none; }
+}
+@media (max-width: 640px) {
+  .topbar { padding: 14px 20px 10px; flex-wrap: wrap; gap: 10px; }
+  .filters { padding: 12px 20px; }
+  .tonight { padding: 12px 20px; }
+  .metric { grid-template-columns: repeat(2, 1fr);
+    .metric__cell:nth-child(2) { border-right: none; }
+    .metric__cell:nth-child(1),
+    .metric__cell:nth-child(2) { border-bottom: 1px solid $cream-xlow; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stars, .empty__halo, .sk-thumb, .sk-line { animation: none !important; }
 }
 </style>

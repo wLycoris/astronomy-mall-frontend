@@ -9,7 +9,7 @@
             <span class="section-title">图片编辑</span>
             <span v-if="uploadedImages.length > 0" class="image-num">{{ uploadedImages.length }}/9</span>
           </div>
-          <span v-if="uploadedImages.length > 0" class="cover-hint">📍 第一张将作为封面</span>
+          <span v-if="uploadedImages.length > 0" class="cover-hint">第一张将作为封面</span>
         </div>
         <div
           class="image-zone"
@@ -92,7 +92,7 @@
         </div>
         <div v-if="settingsOpen" class="settings-body">
           <div class="setting-row">
-            <span>📝 原创声明</span>
+            <span>原创声明</span>
             <el-switch v-model="originalDeclare" size="small" />
           </div>
         </div>
@@ -152,11 +152,11 @@
           </div>
           <!-- 底部操作栏 -->
           <div class="dp-actions">
-            <span class="dp-input-hint">✏️ 说点什么...</span>
+            <span class="dp-input-hint">说点什么...</span>
             <div class="dp-btns">
-              <span>♡ 点赞</span>
-              <span>☆ 收藏</span>
-              <span>💬 评论</span>
+              <span>点赞</span>
+              <span>收藏</span>
+              <span>评论</span>
             </div>
           </div>
         </div>
@@ -178,7 +178,7 @@
                 <div class="wf-meta">
                   <div class="wf-avatar"><el-icon :size="10"><User /></el-icon></div>
                   <span class="wf-nick">我</span>
-                  <span class="wf-like">♡ 0</span>
+                  <span class="wf-like">0</span>
                 </div>
               </div>
             </div>
@@ -190,7 +190,7 @@
                 <div class="wf-meta">
                   <div class="wf-avatar"><el-icon :size="10"><User /></el-icon></div>
                   <span class="wf-nick">用户名</span>
-                  <span class="wf-like">♡ 0</span>
+                  <span class="wf-like">0</span>
                 </div>
               </div>
             </div>
@@ -204,7 +204,7 @@
                 <div class="wf-meta">
                   <div class="wf-avatar"><el-icon :size="10"><User /></el-icon></div>
                   <span class="wf-nick">用户名</span>
-                  <span class="wf-like">♡ 0</span>
+                  <span class="wf-like">0</span>
                 </div>
               </div>
             </div>
@@ -215,7 +215,7 @@
                 <div class="wf-meta">
                   <div class="wf-avatar"><el-icon :size="10"><User /></el-icon></div>
                   <span class="wf-nick">用户名</span>
-                  <span class="wf-like">♡ 0</span>
+                  <span class="wf-like">0</span>
                 </div>
               </div>
             </div>
@@ -378,18 +378,26 @@ const goBack = () => router.back()
 /* ═══════════════════════════════════════
    完全仿小红书创作服务平台 Web 版
    ═══════════════════════════════════════ */
-$red: #ff2442;
-$border: #f0f0f0;
-$bg: #fafafa;
-$text: #333;
-$text2: #666;
-$text3: #999;
-$text4: #ccc;
+$red: #d84b5f;
+$ink: #101722;
+$gold: #c89b53;
+$blue: #2f6f9f;
+$border: #e7e1d7;
+$bg: #f7f5ef;
+$card: #fffdfa;
+$text: #101722;
+$text2: #536071;
+$text3: #7a8494;
+$text4: #a8b0ba;
 
 .creator-platform {
   display: flex;
   min-height: 100vh;
-  background: #fff;
+  background:
+    linear-gradient(rgba(16, 23, 34, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 23, 34, 0.025) 1px, transparent 1px),
+    #f7f5ef;
+  background-size: 36px 36px, 36px 36px, auto;
 }
 
 /* ─── 编辑区 ─── */
@@ -399,6 +407,12 @@ $text4: #ccc;
   border-right: 1px solid $border;
   display: flex;
   flex-direction: column;
+  margin: 20px 0 20px 24px;
+  background: $card;
+  border: 1px solid $border;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 14px 32px rgba(16, 23, 34, 0.07);
 }
 
 .section-block {
@@ -408,7 +422,7 @@ $text4: #ccc;
 /* ① 图片编辑 */
 .image-block {
   padding-top: 20px;
-  padding-bottom: 16px;
+  padding-bottom: 18px;
   border-bottom: 1px solid $border;
 }
 
@@ -427,7 +441,7 @@ $text4: #ccc;
 
 .section-title {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   color: $text;
 }
 
@@ -438,14 +452,15 @@ $text4: #ccc;
 
 .cover-hint {
   font-size: 12px;
-  color: $text3;
+  color: $gold;
 }
 
 .image-zone {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: $bg;
+  background: #f5f1e9;
+  border: 1px dashed rgba(16, 23, 34, 0.16);
   border-radius: 8px;
   padding: 16px;
   min-height: 88px;
@@ -453,8 +468,8 @@ $text4: #ccc;
   transition: outline 0.2s;
 
   &.drag-active {
-    outline: 2px dashed $red;
-    background: #fff5f5;
+    outline: 2px solid rgba(47, 111, 159, 0.2);
+    background: #eef5f7;
   }
 
   &::-webkit-scrollbar { height: 4px; }
@@ -464,16 +479,17 @@ $text4: #ccc;
 .add-btn {
   width: 72px;
   height: 72px;
-  border: 1.5px dashed #d0d0d0;
+  border: 1.5px dashed #b8aa98;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   cursor: pointer;
-  color: $text4;
+  color: $text3;
   transition: all 0.2s;
-  &:hover { border-color: $red; color: $red; }
+  background: rgba(255, 253, 250, 0.72);
+  &:hover { border-color: $gold; color: $ink; background: #fffdfa; }
 }
 
 .thumb {
@@ -485,7 +501,7 @@ $text4: #ccc;
   flex-shrink: 0;
   cursor: pointer;
   border: 2px solid transparent;
-  &:hover { border-color: $red; }
+  &:hover { border-color: $gold; }
   img { width: 100%; height: 100%; object-fit: cover; }
 
   .thumb-num {
@@ -504,7 +520,7 @@ $text4: #ccc;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     opacity: 0; transition: opacity 0.15s; cursor: pointer;
-    &:hover { background: $red; }
+    &:hover { background: $ink; }
   }
   &:hover .thumb-del { opacity: 1; }
 }
@@ -526,13 +542,13 @@ $text4: #ccc;
   border: none;
   padding: 0 0 14px;
   font-size: 17px;
-  font-weight: 500;
+  font-weight: 700;
   color: $text;
   outline: none;
   border-bottom: 1px solid $border;
   background: transparent;
   &::placeholder { color: $text4; font-weight: 400; }
-  &:focus { border-bottom-color: $red; }
+  &:focus { border-bottom-color: $gold; }
 }
 
 /* ③ 正文 */
@@ -560,9 +576,9 @@ $text4: #ccc;
   align-items: center;
   gap: 4px;
   padding: 3px 10px;
-  background: #fff8e6;
+  background: #f6ead4;
   border-radius: 3px;
-  color: #e6a23c;
+  color: #8a5d1f;
   font-size: 12px;
   margin-top: 8px;
 }
@@ -580,19 +596,19 @@ $text4: #ccc;
 
 .tag-item {
   padding: 4px 12px;
-  border-radius: 4px;
+  border-radius: 16px;
   font-size: 13px;
   color: $text3;
-  background: #f5f5f5;
+  background: #f3efe7;
   cursor: pointer;
   user-select: none;
   display: inline-flex;
   align-items: center;
   gap: 3px;
   transition: all 0.15s;
-  &:hover { color: $red; background: #fff0f2; }
-  &.selected { color: $red; background: #fff0f2; font-weight: 500; }
-  &.more { background: transparent; color: $text4; &:hover { color: $red; } }
+  &:hover { color: $ink; background: #ece5d9; }
+  &.selected { color: $ink; background: #f4eadb; font-weight: 700; }
+  &.more { background: transparent; color: $gold; &:hover { color: $ink; } }
 }
 
 /* ⑤ 工具栏 */
@@ -611,7 +627,7 @@ $text4: #ccc;
   font-size: 13px;
   color: $text2;
   cursor: pointer;
-  &:hover { background: #f5f5f5; }
+  &:hover { background: #f3efe7; }
 }
 
 .tool-count {
@@ -659,7 +675,7 @@ $text4: #ccc;
   justify-content: center;
   gap: 16px;
   border-top: 1px solid $border;
-  background: #fff;
+  background: $card;
   position: sticky;
   bottom: 0;
 }
@@ -669,8 +685,9 @@ $text4: #ccc;
   height: 40px;
   font-size: 14px;
   color: $text2;
-  border-color: #ddd;
-  &:hover { color: $text; border-color: #bbb; }
+  border-color: #d8cebf;
+  background: #fffdfa;
+  &:hover { color: $text; border-color: $gold; }
 }
 
 .btn-pub {
@@ -678,21 +695,21 @@ $text4: #ccc;
   height: 40px;
   font-size: 14px;
   font-weight: 600;
-  background: $red;
-  border-color: $red;
-  &:hover { background: #e61f3a; border-color: #e61f3a; }
+  background: $ink;
+  border-color: $ink;
+  &:hover { background: #1b2637; border-color: #1b2637; }
 }
 
 /* ─── 右侧预览 ─── */
 .preview-side {
-  width: 320px;
+  width: 340px;
   flex-shrink: 0;
-  padding: 20px 16px;
+  padding: 20px 20px;
   position: sticky;
   top: 0;
   height: 100vh;
   overflow-y: auto;
-  background: #fff;
+  background: transparent;
 }
 
 .preview-tabs {
@@ -712,7 +729,7 @@ $text4: #ccc;
   &.active {
     color: $text;
     font-weight: 600;
-    border-bottom: 2px solid $red;
+    border-bottom: 2px solid $gold;
   }
 }
 
@@ -724,10 +741,10 @@ $text4: #ccc;
 
 /* 详情预览（模拟帖子详情页） */
 .detail-preview {
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 1px 6px rgba(0,0,0,.06);
-  background: #fff;
+  box-shadow: 0 16px 34px rgba(16,23,34,.12);
+  background: $card;
   border: 1px solid $border;
 }
 
@@ -737,6 +754,7 @@ $text4: #ccc;
   padding: 10px 12px;
   gap: 8px;
   border-bottom: 1px solid $border;
+  background: #fffdfa;
 }
 
 .dp-back {
@@ -754,7 +772,7 @@ $text4: #ccc;
 
 .dp-avatar {
   width: 24px; height: 24px;
-  border-radius: 50%; background: #f0f0f0;
+  border-radius: 50%; background: #f1eadf;
   display: flex; align-items: center; justify-content: center;
   color: #bbb;
 }
@@ -767,8 +785,8 @@ $text4: #ccc;
 
 .dp-follow {
   font-size: 12px;
-  color: $red;
-  border: 1px solid $red;
+  color: $blue;
+  border: 1px solid rgba(47, 111, 159, 0.32);
   border-radius: 12px;
   padding: 2px 12px;
   cursor: default;
@@ -778,7 +796,7 @@ $text4: #ccc;
   position: relative;
   width: 100%;
   aspect-ratio: 4/3;
-  background: #000;
+  background: $ink;
 
   img { width: 100%; height: 100%; object-fit: contain; }
 
@@ -818,7 +836,7 @@ $text4: #ccc;
   margin-bottom: 8px;
   span {
     font-size: 12px;
-    color: #3b82f6;
+    color: $blue;
   }
 }
 
@@ -834,10 +852,10 @@ $text4: #ccc;
   padding: 10px 12px;
   border-top: 1px solid $border;
 
-  .dp-input-hint {
+.dp-input-hint {
     font-size: 12px;
     color: $text4;
-    background: #f5f5f5;
+    background: #f3efe7;
     padding: 4px 12px;
     border-radius: 14px;
   }
@@ -856,7 +874,7 @@ $text4: #ccc;
 .dp-images-empty {
   width: 100%;
   aspect-ratio: 4/3;
-  background: #f5f5f5;
+  background: #f3efe7;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -878,7 +896,7 @@ $text4: #ccc;
 
 .dp-avatar-sm {
   width: 24px; height: 24px;
-  border-radius: 50%; background: #f0f0f0;
+  border-radius: 50%; background: #f1eadf;
   display: flex; align-items: center; justify-content: center;
   color: #ccc; flex-shrink: 0;
 }
@@ -899,11 +917,12 @@ $text4: #ccc;
 .wf-card {
   border-radius: 8px;
   overflow: hidden;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  background: $card;
+  border: 1px solid $border;
+  box-shadow: 0 10px 24px rgba(16,23,34,.07);
 
   &.mine {
-    box-shadow: 0 0 0 2px $red, 0 2px 8px rgba(255,36,66,.12);
+    box-shadow: 0 0 0 2px rgba(200,155,83,.55), 0 12px 26px rgba(16,23,34,.12);
   }
 
   &.placeholder {
@@ -914,7 +933,7 @@ $text4: #ccc;
 .wf-cover {
   width: 100%;
   overflow: hidden;
-  background: #f0f0f0;
+  background: #f1eadf;
 
   img {
     width: 100%;
@@ -926,7 +945,7 @@ $text4: #ccc;
 .wf-cover-empty {
   width: 100%;
   height: 120px;
-  background: #e8e8e8;
+  background: linear-gradient(135deg, #e6ded2, #f5f1e9);
 
   &.short { height: 90px; }
   &.tall { height: 150px; }

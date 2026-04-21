@@ -1,285 +1,217 @@
 <template>
-  <div class="course-list-page">
+  <div class="cl">
+    <div class="paper-grain"></div>
 
-    <!-- ===== 页面头部 ===== -->
-    <div class="page-header">
-      <el-button class="back-home-btn" link @click="router.push('/home')">
-        <el-icon><ArrowLeft /></el-icon> 返回首页
-      </el-button>
-      <h1 class="page-title">🔭 天文课程</h1>
-      <p class="page-subtitle">全部免费 · 边学边探索宇宙的奥秘</p>
-      <div v-if="getToken()" class="header-quick-links">
-        <el-button link size="small" @click="router.push('/user/course-history')">
-          <el-icon><VideoPlay /></el-icon> 学习历史
-        </el-button>
-        <el-button link size="small" @click="router.push('/user/course-favorite')">
-          <el-icon><Star /></el-icon> 我的收藏
-        </el-button>
-        <!-- ✅ 5.6 新增：我的评价入口 -->
-        <el-button link size="small" @click="router.push('/user/course-reviews')">
-          <el-icon><ChatDotRound /></el-icon> 我的评价
-        </el-button>
+    <!-- topbar -->
+    <header class="topbar">
+      <div class="topbar__left">
+        <span class="crumb" @click="router.push('/home')">← 返回首页</span>
+        <span class="sep">·</span>
+        <span class="crumb crumb--on">课程中心</span>
       </div>
-    </div>
+      <nav v-if="getToken()" class="quick-links">
+        <span class="q" @click="router.push('/user/course-history')"><em>learning</em><i>·</i>历史</span>
+        <span class="q" @click="router.push('/user/course-favorite')"><em>saved</em><i>·</i>收藏</span>
+        <span class="q" @click="router.push('/user/course-reviews')"><em>my</em><i>·</i>评价</span>
+      </nav>
+    </header>
 
-    <!-- ===== 筛选区域 ===== -->
-    <div class="filter-section">
+    <!-- masthead -->
+    <section class="mast">
+      <div class="mast__kicker"><em>a small field guide to the night sky</em></div>
+      <h1 class="mast__title">天文 · 课程</h1>
+      <div class="mast__rule"><span>☾</span></div>
+      <p class="mast__sub">全部免费 · 边学边探索宇宙的奥秘</p>
+    </section>
 
-      <!-- 课程类型 Tab -->
-      <div class="filter-row">
-        <div class="type-tabs">
-          <button
-              v-for="tab in typeTabs"
-              :key="tab.value"
-              :class="['type-tab', { active: filters.type === tab.value }]"
-              @click="handleTypeChange(tab.value)"
-          >
-            <span class="tab-icon">{{ tab.icon }}</span>
-            {{ tab.label }}
-          </button>
-        </div>
-        <div class="search-box">
-          <el-input
+    <!-- filters -->
+    <section class="filters">
+      <!-- type segmented -->
+      <div class="filters__type">
+        <button
+            v-for="tab in typeTabs" :key="tab.label"
+            class="type-pill" :class="{ 'type-pill--on': filters.type === tab.value }"
+            @click="handleTypeChange(tab.value)">
+          <span class="type-pill__ico">{{ tab.icon }}</span>
+          <span class="type-pill__lb">{{ tab.label }}</span>
+        </button>
+
+        <div class="filters__search">
+          <el-icon class="filters__search-ico"><Search /></el-icon>
+          <input
               v-model="filters.keyword"
-              placeholder="搜索课程标题..."
-              clearable
+              class="filters__search-in"
+              placeholder="搜索课程标题 …"
               @input="handleSearchInput"
-              @clear="handleSearch"
-              style="width: 240px"
-          >
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-          </el-input>
+          />
+          <span v-if="filters.keyword" class="filters__search-x" @click="() => { filters.keyword = ''; handleSearch() }">✕</span>
         </div>
       </div>
 
-      <!-- 难度筛选 -->
-      <div class="filter-row">
-        <span class="filter-label">难度：</span>
-        <div class="difficulty-tabs">
+      <!-- difficulty -->
+      <div class="filters__row">
+        <span class="filters__label"><em>difficulty</em> · 难度</span>
+        <div class="diff-line">
           <button
-              v-for="diff in difficultyOptions"
-              :key="diff.value"
-              :class="['diff-btn', { active: filters.difficulty === diff.value }]"
-              @click="handleDifficultyChange(diff.value)"
-          >
+              v-for="diff in difficultyOptions" :key="diff.label"
+              class="diff-lk" :class="{ 'diff-lk--on': filters.difficulty === diff.value }"
+              @click="handleDifficultyChange(diff.value)">
             {{ diff.label }}
           </button>
         </div>
       </div>
 
-      <!-- 标签多选 chips（AND筛选） -->
-      <div class="filter-row tags-row">
-        <span class="filter-label">标签：</span>
-        <div class="tag-chips-container">
-          <div
-              v-for="tag in PRESET_TAGS"
-              :key="tag"
-              :class="['tag-chip', { selected: selectedTags.includes(tag) }]"
-              @click="toggleTag(tag)"
-          >
+      <!-- tags -->
+      <div class="filters__row">
+        <span class="filters__label"><em>tags</em> · 标签</span>
+        <div class="tag-line">
+          <span
+              v-for="tag in PRESET_TAGS" :key="tag"
+              class="tg" :class="{ 'tg--on': selectedTags.includes(tag) }"
+              @click="toggleTag(tag)">
             {{ tag }}
-          </div>
-          <button
-              v-if="selectedTags.length > 0"
-              class="clear-tags-btn"
-              @click="clearTags"
-          >
-            清空标签筛选 ✕
-          </button>
+          </span>
+          <span v-if="selectedTags.length > 0" class="tg-clear" @click="clearTags">清空 ✕</span>
         </div>
       </div>
 
-      <!-- 筛选条件摘要 -->
-      <div v-if="hasActiveFilters" class="filter-summary">
-        <span class="summary-text">
-          共找到 <strong>{{ total }}</strong> 门课程
-          <template v-if="selectedTags.length > 0">
-            · 已选标签：
-            <el-tag
-                v-for="tag in selectedTags"
-                :key="tag"
-                size="small"
-                closable
-                @close="toggleTag(tag)"
-                style="margin-right: 4px"
-            >{{ tag }}</el-tag>
-          </template>
-        </span>
+      <div v-if="hasActiveFilters" class="filters__summary">
+        <em>found</em>
+        <strong>{{ total }}</strong>
+        <em>courses</em>
       </div>
-    </div>
+    </section>
 
-    <!-- ===== 课程卡片列表 ===== -->
-    <div v-loading="loading" class="course-grid-wrapper">
-      <el-empty
-          v-if="!loading && courseList.length === 0"
-          description="暂无课程，换个条件试试？"
-          :image-size="120"
-      />
-      <div v-else class="course-grid">
-        <div
-            v-for="course in courseList"
-            :key="course.id"
-            class="course-card"
-            @click="goToDetail(course.id)"
-        >
-          <!-- 封面图 -->
-          <div class="card-cover">
-            <el-image :src="course.cover" fit="cover" lazy class="cover-img">
+    <!-- course plates -->
+    <section v-loading="loading" class="plates-wrap">
+      <el-empty v-if="!loading && courseList.length === 0"
+                description="暂无课程，换个条件试试？" :image-size="120" />
+
+      <div v-else class="plates">
+        <article
+            v-for="course in courseList" :key="course.id"
+            class="plate"
+            @click="goToDetail(course.id)">
+          <!-- frame -->
+          <div class="plate__frame">
+            <el-image :src="course.cover" fit="cover" class="plate__img" lazy>
               <template #error>
-                <img :src="defaultCover" style="width:100%;height:100%;object-fit:cover;" />
+                <img :src="defaultCover" class="plate__img-fallback" alt="cover" />
               </template>
             </el-image>
-            <el-tag class="type-badge" :type="course.type === 0 ? 'danger' : 'success'" size="small" effect="dark">
-              {{ course.type === 0 ? '▶ 视频课' : '📖 书本课' }}
-            </el-tag>
-            <el-tag v-if="course.isApodCourse === 1" class="nasa-badge" type="warning" size="small" effect="dark">🌌 NASA</el-tag>
-            <el-tag v-if="course.isMarsCourse === 1" class="mars-badge" type="warning" size="small" effect="dark">🔴 火星</el-tag>
+
+            <!-- corner tags -->
+            <div class="plate__tags">
+              <span class="pt" :class="course.type === 0 ? 'pt--video' : 'pt--book'">
+                {{ course.type === 0 ? '视频课' : '书本课' }}
+              </span>
+              <span v-if="course.isApodCourse === 1" class="pt pt--apod">NASA</span>
+              <span v-if="course.isMarsCourse === 1" class="pt pt--mars">MARS</span>
+            </div>
           </div>
 
-          <!-- 卡片信息 -->
-          <div class="card-body">
-            <h3 class="card-title" :title="course.title">{{ course.title }}</h3>
-            <p v-if="course.subtitle" class="card-subtitle">{{ course.subtitle }}</p>
-            <div class="card-meta">
-              <el-tag size="small" :type="difficultyTagType(course.difficulty)">{{ course.difficultyText }}</el-tag>
-              <span class="chapter-count">
-                <el-icon><Document /></el-icon>
-                {{ course.chapterCount }} 章节
+          <!-- caption -->
+          <div class="plate__cap">
+            <h3 class="plate__title" :title="course.title">{{ course.title }}</h3>
+            <p v-if="course.subtitle" class="plate__sub">{{ course.subtitle }}</p>
+
+            <div class="plate__meta">
+              <span class="pm pm--diff" :class="'pm--d' + course.difficulty">
+                {{ course.difficultyText }}
               </span>
-              <!-- ✅ 5.6 新增：评分展示 -->
-              <span v-if="course.avgRating > 0" class="card-rating">
-                <span class="rating-star">★</span>{{ course.avgRating }}
-                <span class="rating-count">( {{ course.reviewCount }} )</span>
-              </span>
+              <span class="pm-dot">·</span>
+              <span class="pm"><em>ch.</em> {{ course.chapterCount }}</span>
+              <template v-if="course.avgRating > 0">
+                <span class="pm-dot">·</span>
+                <span class="pm pm--rate">★ {{ course.avgRating }}<em>({{ course.reviewCount }})</em></span>
+              </template>
             </div>
-            <div v-if="parseTags(course.tags).length > 0" class="card-tags">
-              <el-tag
-                  v-for="tag in parseTags(course.tags).slice(0, 3)"
-                  :key="tag"
-                  size="small"
-                  type="info"
-                  class="card-tag"
-              >{{ tag }}</el-tag>
-              <span v-if="parseTags(course.tags).length > 3" class="more-tags">+{{ parseTags(course.tags).length - 3 }}</span>
+
+            <div v-if="parseTags(course.tags).length > 0" class="plate__tagline">
+              <span v-for="t in parseTags(course.tags).slice(0, 3)" :key="t" class="pl-tag">#{{ t }}</span>
+              <span v-if="parseTags(course.tags).length > 3" class="pl-more">+{{ parseTags(course.tags).length - 3 }}</span>
             </div>
-            <div class="card-footer">
-              <span v-if="course.lastChapterId" class="progress-hint">📍 继续学习</span>
-              <span v-else class="view-count">{{ course.viewCount || 0 }} 人学习</span>
-              <button
-                  :class="['favorite-btn', { active: course.isFavorite }]"
-                  @click.stop="handleToggleFavorite(course)"
-              >
-                <el-icon>
-                  <StarFilled v-if="course.isFavorite" />
-                  <Star v-else />
-                </el-icon>
+
+            <div class="plate__foot">
+              <span v-if="course.lastChapterId" class="plate__resume"><em>↪ continue reading</em></span>
+              <span v-else class="plate__learners">{{ course.viewCount || 0 }} <em>learners</em></span>
+              <button class="fav" :class="{ 'fav--on': course.isFavorite }" @click.stop="handleToggleFavorite(course)">
+                <el-icon v-if="course.isFavorite"><StarFilled /></el-icon>
+                <el-icon v-else><Star /></el-icon>
               </button>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== 分页 ===== -->
-    <div v-if="totalPages > 1" class="pagination-wrapper">
-      <el-pagination
-          v-model:current-page="filters.pageNum"
-          :page-size="filters.pageSize"
-          :total="total"
-          layout="prev, pager, next, jumper, total"
-          background
-          @current-change="handlePageChange"
-      />
-    </div>
-
-    <!-- ===== 5.4 「为你推荐」横向滑动区块（放在页面最底部）===== -->
-    <div
-        v-if="getToken() && recommendList.length > 0"
-        class="recommend-section"
-    >
-      <div class="recommend-header">
-        <h2 class="recommend-title">
-          <span class="recommend-icon">✨</span>
-          为你推荐
-        </h2>
-        <p class="recommend-subtitle">根据你近3个月购买的器材，为你精选相关课程</p>
+        </article>
       </div>
 
-      <!-- 横向滑动容器 -->
-      <div
-          class="recommend-scroll-wrapper"
-          ref="scrollWrapperRef"
-          @mousedown="onMouseDown"
-          @mousemove="onMouseMove"
-          @mouseup="onMouseUp"
-          @mouseleave="onMouseUp"
-      >
-        <div class="recommend-scroll">
-          <div
-              v-for="course in recommendList"
-              :key="course.id"
-              class="recommend-card"
-              @click="goToDetail(course.id)"
-          >
-            <!-- 封面图 -->
-            <div class="rec-card-cover">
-              <el-image :src="course.cover" fit="cover" lazy class="rec-cover-img">
+      <div v-if="totalPages > 1" class="pager">
+        <el-pagination
+            v-model:current-page="filters.pageNum"
+            :page-size="filters.pageSize"
+            :total="total"
+            layout="prev, pager, next, jumper, total"
+            background
+            @current-change="handlePageChange"
+        />
+      </div>
+    </section>
+
+    <!-- recommend shelf -->
+    <section v-if="getToken() && recommendList.length > 0" class="shelf">
+      <div class="shelf__head">
+        <span class="shelf__kicker"><em>selected · for · you</em></span>
+        <h2 class="shelf__title">为你推荐</h2>
+        <p class="shelf__sub">根据你近 3 个月购买的器材，精选相关课程。</p>
+      </div>
+
+      <div class="shelf__track" ref="scrollWrapperRef"
+           @mousedown="onMouseDown" @mousemove="onMouseMove"
+           @mouseup="onMouseUp" @mouseleave="onMouseUp">
+        <div class="shelf__row">
+          <article
+              v-for="course in recommendList" :key="course.id"
+              class="mini-plate"
+              @click="goToDetail(course.id)">
+            <div class="mini-plate__frame">
+              <el-image :src="course.cover" fit="cover" class="mini-plate__img">
                 <template #error>
-                  <img :src="defaultCover" style="width:100%;height:100%;object-fit:cover;" />
+                  <img :src="defaultCover" class="mini-plate__img-fallback" alt="cover" />
                 </template>
               </el-image>
-              <el-tag class="rec-type-badge" :type="course.type === 0 ? 'danger' : 'success'" size="small" effect="dark">
-                {{ course.type === 0 ? '▶ 视频课' : '📖 书本课' }}
-              </el-tag>
-              <el-tag v-if="course.isApodCourse === 1" class="rec-nasa-badge" type="warning" size="small" effect="dark">🌌 NASA</el-tag>
-              <el-tag v-if="course.isMarsCourse === 1" class="rec-mars-badge" type="warning" size="small" effect="dark">🔴 火星</el-tag>
+              <span class="mini-plate__type" :class="course.type === 0 ? 'pt--video' : 'pt--book'">
+                {{ course.type === 0 ? '视频' : '书本' }}
+              </span>
+              <span v-if="course.isApodCourse === 1" class="mini-plate__nasa">NASA</span>
+              <span v-if="course.isMarsCourse === 1" class="mini-plate__mars">MARS</span>
             </div>
-
-            <!-- 卡片内容 -->
-            <div class="rec-card-body">
-              <h3 class="rec-card-title" :title="course.title">{{ course.title }}</h3>
-              <div class="rec-card-meta">
-                <el-tag size="small" :type="difficultyTagType(course.difficulty)">{{ course.difficultyText }}</el-tag>
-                <span class="rec-chapter-count">
-                  <el-icon><Document /></el-icon>
-                  {{ course.chapterCount }} 章节
-                </span>
-                <!-- ✅ 5.6 新增：推荐卡片评分 -->
-                <span v-if="course.avgRating > 0" class="rec-rating">
-                  <span class="rating-star">★</span>{{ course.avgRating }}
-                </span>
+            <div class="mini-plate__cap">
+              <h4 class="mini-plate__title" :title="course.title">{{ course.title }}</h4>
+              <div class="mini-plate__meta">
+                <span :class="'pm--d' + course.difficulty">{{ course.difficultyText }}</span>
+                <span class="pm-dot">·</span>
+                <span><em>ch.</em> {{ course.chapterCount }}</span>
+                <template v-if="course.avgRating > 0">
+                  <span class="pm-dot">·</span>
+                  <span>★ {{ course.avgRating }}</span>
+                </template>
               </div>
-              <div v-if="parseTags(course.tags).length > 0" class="rec-card-tags">
-                <el-tag
-                    v-for="tag in parseTags(course.tags).slice(0, 2)"
-                    :key="tag"
-                    size="small"
-                    type="info"
-                    class="rec-card-tag"
-                >{{ tag }}</el-tag>
-                <span v-if="parseTags(course.tags).length > 2" class="rec-more-tags">+{{ parseTags(course.tags).length - 2 }}</span>
+              <div v-if="parseTags(course.tags).length > 0" class="mini-plate__tags">
+                <span v-for="t in parseTags(course.tags).slice(0, 2)" :key="t">#{{ t }}</span>
+                <span v-if="parseTags(course.tags).length > 2" class="pl-more">+{{ parseTags(course.tags).length - 2 }}</span>
               </div>
-              <div class="rec-card-footer">
-                <span v-if="course.lastChapterId" class="rec-progress-hint">📍 继续学习</span>
-                <span v-else class="rec-view-count">{{ course.viewCount || 0 }} 人学习</span>
-                <button
-                    :class="['rec-favorite-btn', { active: course.isFavorite }]"
-                    @click.stop="handleToggleFavorite(course)"
-                >
-                  <el-icon>
-                    <StarFilled v-if="course.isFavorite" />
-                    <Star v-else />
-                  </el-icon>
+              <div class="mini-plate__foot">
+                <span v-if="course.lastChapterId" class="mini-plate__resume"><em>↪ continue</em></span>
+                <span v-else class="mini-plate__learners">{{ course.viewCount || 0 }} <em>learners</em></span>
+                <button class="fav fav--mini" :class="{ 'fav--on': course.isFavorite }" @click.stop="handleToggleFavorite(course)">
+                  <el-icon v-if="course.isFavorite"><StarFilled /></el-icon>
+                  <el-icon v-else><Star /></el-icon>
                 </button>
               </div>
             </div>
-          </div>
+          </article>
         </div>
       </div>
-    </div>
-
+    </section>
   </div>
 </template>
 
@@ -302,9 +234,9 @@ const PRESET_TAGS = [
 ]
 
 const typeTabs = [
-  { value: null, label: '全部',   icon: '📚' },
-  { value: 0,    label: '视频课', icon: '▶'  },
-  { value: 1,    label: '书本课', icon: '📖' }
+  { value: null, label: '全部',   icon: '☾' },
+  { value: 0,    label: '视频课', icon: '▷'  },
+  { value: 1,    label: '书本课', icon: '§' }
 ]
 
 const difficultyOptions = [
@@ -318,27 +250,21 @@ const defaultCover = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1a1a2e"/>
-      <stop offset="100%" style="stop-color:#16213e"/>
+      <stop offset="0%" style="stop-color:#f6ecd8"/>
+      <stop offset="100%" style="stop-color:#e7dbc4"/>
     </linearGradient>
   </defs>
   <rect width="400" height="225" fill="url(#bg)"/>
-  <circle cx="40"  cy="30"  r="1.5" fill="#ffffff" opacity="0.6"/>
-  <circle cx="120" cy="15"  r="1"   fill="#ffffff" opacity="0.4"/>
-  <circle cx="200" cy="40"  r="2"   fill="#ffffff" opacity="0.7"/>
-  <circle cx="300" cy="20"  r="1.5" fill="#ffffff" opacity="0.5"/>
-  <circle cx="360" cy="50"  r="1"   fill="#ffffff" opacity="0.6"/>
-  <circle cx="80"  cy="70"  r="1"   fill="#ffffff" opacity="0.3"/>
-  <circle cx="340" cy="80"  r="1.5" fill="#ffffff" opacity="0.5"/>
-  <circle cx="60"  cy="180" r="1"   fill="#ffffff" opacity="0.4"/>
-  <circle cx="380" cy="160" r="1.5" fill="#ffffff" opacity="0.5"/>
-  <circle cx="160" cy="190" r="1"   fill="#ffffff" opacity="0.3"/>
-  <circle cx="260" cy="200" r="2"   fill="#ffffff" opacity="0.4"/>
-  <text x="200" y="115" font-size="48" text-anchor="middle" dominant-baseline="middle">🔭</text>
-  <text x="200" y="158" font-size="16" font-family="sans-serif" font-weight="600"
-        text-anchor="middle" fill="#c4b5fd">天文课程</text>
-  <text x="200" y="178" font-size="11" font-family="sans-serif"
-        text-anchor="middle" fill="#7c6aad">Astronomy Course</text>
+  <rect x="24" y="22" width="352" height="181" fill="none" stroke="#b8a989" stroke-width="1.2" opacity=".75"/>
+  <line x1="58" y1="48" x2="342" y2="48" stroke="#b8a989" stroke-width="1" opacity=".55"/>
+  <line x1="58" y1="177" x2="342" y2="177" stroke="#b8a989" stroke-width="1" opacity=".55"/>
+  <circle cx="200" cy="112" r="36" fill="none" stroke="#131a2e" stroke-width="1.4" opacity=".75"/>
+  <ellipse cx="200" cy="112" rx="76" ry="24" fill="none" stroke="#b88d3e" stroke-width="1.2" opacity=".7"/>
+  <circle cx="200" cy="112" r="3.5" fill="#b88d3e"/>
+  <text x="200" y="84" font-size="12" font-family="Georgia,serif" font-style="italic"
+        text-anchor="middle" fill="#7a5e3d">Astronomy Course</text>
+  <text x="200" y="156" font-size="19" font-family="Georgia,serif" font-weight="500"
+        text-anchor="middle" fill="#131a2e">天文课程</text>
 </svg>
 `)}`
 
@@ -513,371 +439,675 @@ onMounted(() => {
 })
 </script>
 
-<style scoped>
-.course-list-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px 16px;
-}
+<style lang="scss" scoped>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap');
 
-/* ===== 页面头部 ===== */
-.page-header {
-  text-align: center;
-  margin-bottom: 32px;
+// ── palette ─────────────────────────────────────────────────────
+$paper       : #f4ebd9;
+$paper-deep  : #ebe1cc;
+$paper-xdeep : #dcd0b7;
+$paper-edge  : #cdbe9f;
+$rule        : #b8a989;
+$rule-soft   : rgba(184,169,137,0.35);
+
+$ink         : #131a2e;
+$ink-med     : #2a3354;
+$ink-soft    : #5c5b4f;
+$ink-dim     : #8a8470;
+
+$gold        : #b88d3e;
+$gold-soft   : #cfa657;
+$rose        : #a0556d;
+$moss        : #6b7c4a;
+$sepia       : #7a5e3d;
+
+$serif : 'Cormorant Garamond', Georgia, serif;
+$sans  : 'Inter', system-ui, -apple-system, sans-serif;
+
+// ── root ────────────────────────────────────────────────────────
+.cl {
+  min-height: 100vh;
+  background: $paper;
+  background-image:
+    radial-gradient(ellipse at top, rgba(255,248,229,0.5), transparent 60%),
+    linear-gradient(180deg, #f6ecd8 0%, #f0e5cd 100%);
+  color: $ink;
+  font-family: $sans;
   position: relative;
+  padding-bottom: 80px;
 }
-.back-home-btn {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 13px;
-  color: #888;
-  padding: 0;
+
+.paper-grain {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: .22;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.55  0 0 0 0 0.48  0 0 0 0 0.35  0 0 0 0.45 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 }
-.back-home-btn:hover { color: #7c3aed; }
-.page-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1a1a2e;
-  margin: 0 0 8px;
+
+// ── topbar ──────────────────────────────────────────────────────
+.topbar {
+  position: relative; z-index: 2;
+  padding: 22px 48px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid $rule-soft;
 }
-.page-subtitle {
-  color: #888;
+.topbar__left {
+  display: flex; align-items: center; gap: 12px;
+  font-family: $serif;
+  font-style: italic;
   font-size: 14px;
-  margin: 0;
+  letter-spacing: .6px;
+  color: $ink-soft;
 }
-.header-quick-links {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  gap: 4px;
-}
-.header-quick-links .el-button { font-size: 13px; color: #888; }
-.header-quick-links .el-button:hover { color: #7c3aed; }
-
-/* ===== 筛选区域 ===== */
-.filter-section {
-  background: #fff;
-  border-radius: 12px;
-  padding: 20px 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-}
-.filter-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-.filter-row:last-child { margin-bottom: 0; }
-.filter-label {
-  font-size: 14px;
-  color: #666;
-  font-weight: 500;
-  min-width: 42px;
-  flex-shrink: 0;
-}
-.type-tabs { display: flex; gap: 6px; flex: 1; }
-.type-tab {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 20px;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 8px;
-  background: #fff;
+.crumb {
   cursor: pointer;
-  font-size: 14px;
-  color: #555;
-  transition: all 0.2s;
+  transition: color .2s;
+  &:hover { color: $ink; }
+  &--on { font-style: normal; font-weight: 500; color: $ink; letter-spacing: 2.4px; }
 }
-.type-tab:hover  { border-color: #7c3aed; color: #7c3aed; }
-.type-tab.active { background: #7c3aed; border-color: #7c3aed; color: #fff; font-weight: 600; }
-.tab-icon { font-size: 16px; }
-.difficulty-tabs { display: flex; gap: 6px; }
-.diff-btn {
-  padding: 5px 14px;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 20px;
-  background: #fff;
+.sep { color: $rule; }
+
+.quick-links { display: flex; gap: 24px; }
+.q {
   cursor: pointer;
-  font-size: 13px;
-  color: #555;
-  transition: all 0.2s;
-}
-.diff-btn:hover  { border-color: #7c3aed; color: #7c3aed; }
-.diff-btn.active { background: #7c3aed; border-color: #7c3aed; color: #fff; }
-.tags-row { align-items: flex-start; }
-.tag-chips-container { display: flex; flex-wrap: wrap; gap: 8px; flex: 1; }
-.tag-chip {
-  padding: 4px 12px;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 16px;
-  background: #f9f9f9;
-  cursor: pointer;
-  font-size: 13px;
-  color: #555;
-  transition: all 0.18s;
-  user-select: none;
-}
-.tag-chip:hover    { border-color: #7c3aed; color: #7c3aed; background: #f3eeff; }
-.tag-chip.selected { background: #7c3aed; border-color: #7c3aed; color: #fff; font-weight: 500; }
-.clear-tags-btn {
-  padding: 4px 10px;
-  border: 1.5px dashed #e0e0e0;
-  border-radius: 16px;
-  background: transparent;
-  cursor: pointer;
-  font-size: 12px;
-  color: #999;
-  transition: all 0.18s;
-}
-.clear-tags-btn:hover { border-color: #f56c6c; color: #f56c6c; }
-.filter-summary { border-top: 1px solid #f0f0f0; padding-top: 12px; margin-top: 12px; }
-.summary-text { font-size: 13px; color: #888; }
-.summary-text strong { color: #7c3aed; }
-
-/* ===== 课程网格 ===== */
-.course-grid-wrapper { min-height: 300px; }
-.course-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-}
-.course-card {
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-.course-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(124,58,237,0.12);
-}
-.card-cover {
-  position: relative;
-  height: 160px;
-  overflow: hidden;
-  background: #1a1a2e;
-}
-.cover-img  { width: 100%; height: 100%; }
-.type-badge { position: absolute; top: 8px; left: 8px; }
-.nasa-badge, .mars-badge { position: absolute; top: 8px; right: 8px; }
-.card-body  { padding: 14px 16px; }
-.card-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #222;
-  margin: 0 0 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.card-subtitle {
-  font-size: 12px;
-  color: #999;
-  margin: 0 0 10px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
-.chapter-count { display: flex; align-items: center; gap: 3px; font-size: 12px; color: #888; }
-
-/* ✅ 5.6 新增：评分样式 */
-.card-rating {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 12px;
-  color: #888;
-}
-.rating-star { color: #f59e0b; font-size: 13px; }
-.rating-count { color: #bbb; }
-
-.card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
-.card-tag { font-size: 11px !important; }
-.more-tags { font-size: 11px; color: #aaa; align-self: center; }
-.card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 8px;
-  border-top: 1px solid #f0f0f0;
-}
-.progress-hint { font-size: 12px; color: #7c3aed; font-weight: 500; }
-.view-count    { font-size: 12px; color: #aaa; }
-.favorite-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 4px;
-  color: #ccc;
-  display: flex;
-  align-items: center;
-  transition: color 0.2s;
-}
-.favorite-btn:hover  { color: #f59e0b; }
-.favorite-btn.active { color: #f59e0b; }
-
-/* ===== 分页 ===== */
-.pagination-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-top: 32px;
-  margin-bottom: 32px;
-}
-
-/* ===== 5.4 「为你推荐」区块（底部常驻）===== */
-.recommend-section {
-  background: linear-gradient(135deg, #f5f0ff 0%, #ede9fe 50%, #f0f4ff 100%);
-  border-radius: 16px;
-  padding: 20px 24px;
-  margin-top: 8px;
-  border: 1px solid #e5d9fd;
-  box-shadow: 0 2px 16px rgba(124, 58, 237, 0.06);
-}
-.recommend-header {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-.recommend-title {
-  font-size: 17px;
-  font-weight: 700;
-  color: #4c1d95;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.recommend-icon   { font-size: 18px; }
-.recommend-subtitle { font-size: 12px; color: #7c6aad; margin: 0; }
-.recommend-scroll-wrapper {
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  cursor: grab;
-  user-select: none;
-  width: 100%;
-  padding-bottom: 4px;
-}
-.recommend-scroll-wrapper::-webkit-scrollbar { height: 4px; }
-.recommend-scroll-wrapper::-webkit-scrollbar-track { background: #ede9fe; border-radius: 2px; }
-.recommend-scroll-wrapper::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 2px; }
-.recommend-scroll-wrapper::-webkit-scrollbar-thumb:hover { background: #7c3aed; }
-.recommend-scroll {
-  display: flex;
-  gap: 16px;
-  padding-bottom: 8px;
-  padding-right: 24px;
-  min-width: max-content;
-}
-
-/* 推荐卡片 */
-.recommend-card {
-  flex-shrink: 0;
-  width: 200px;
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  border: 1px solid rgba(124,58,237,0.08);
-}
-.recommend-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(124,58,237,0.15);
-  border-color: rgba(124,58,237,0.2);
-}
-.rec-card-cover {
-  position: relative;
-  height: 110px;
-  overflow: hidden;
-  background: #1a1a2e;
-}
-.rec-cover-img   { width: 100%; height: 100%; }
-.rec-type-badge  { position: absolute; top: 6px; left: 6px; }
-.rec-nasa-badge, .rec-mars-badge { position: absolute; top: 6px; right: 6px; }
-.rec-card-body   { padding: 10px 12px 12px; }
-.rec-card-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #222;
-  margin: 0 0 8px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.rec-card-meta   { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
-.rec-chapter-count { display: flex; align-items: center; gap: 2px; font-size: 11px; color: #aaa; }
-
-/* ✅ 5.6 新增：推荐卡评分 */
-.rec-rating {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 11px;
-  color: #888;
-}
-
-.rec-card-tags   { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 8px; }
-.rec-card-tag    { font-size: 11px !important; }
-.rec-more-tags   { font-size: 11px; color: #bbb; align-self: center; }
-.rec-card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 6px;
-  border-top: 1px solid #f0f0f0;
-}
-.rec-progress-hint { font-size: 11px; color: #7c3aed; font-weight: 500; }
-.rec-view-count    { font-size: 11px; color: #bbb; }
-.rec-favorite-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 2px;
-  color: #ccc;
-  display: flex;
-  align-items: center;
-  transition: color 0.2s;
-  font-size: 14px;
-}
-.rec-favorite-btn:hover  { color: #f59e0b; }
-.rec-favorite-btn.active { color: #f59e0b; }
-
-/* ===== 响应式 ===== */
-@media (max-width: 768px) {
-  .course-grid {
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 14px;
+  display: inline-flex; align-items: baseline; gap: 6px;
+  font-family: $serif;
+  font-size: 13.5px;
+  color: $ink-soft;
+  transition: color .2s;
+  em { font-style: italic; letter-spacing: .5px; color: $ink-dim; }
+  i  { font-style: normal; color: $rule; }
+  &:hover {
+    color: $ink;
+    em { color: $sepia; }
   }
-  .type-tabs   { flex-wrap: wrap; }
-  .search-box  { width: 100%; }
-  .search-box .el-input { width: 100% !important; }
-  .back-home-btn {
-    position: static;
-    transform: none;
-    display: block;
+}
+
+// ── masthead ────────────────────────────────────────────────────
+.mast {
+  position: relative; z-index: 2;
+  text-align: center;
+  padding: 36px 40px 22px;
+
+  &__kicker {
+    font-family: $serif;
+    font-style: italic;
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: $sepia;
     margin-bottom: 8px;
   }
-  .header-quick-links {
-    position: static;
-    transform: none;
-    justify-content: center;
-    margin-top: 8px;
+  &__title {
+    font-family: $serif;
+    font-weight: 500;
+    font-size: 44px;
+    letter-spacing: 12px;
+    color: $ink;
+    margin: 0 0 14px;
+    line-height: 1;
   }
-  .recommend-section  { padding: 16px; }
-  .recommend-card     { width: 170px; }
-  .rec-card-cover     { height: 95px; }
+  &__rule {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    margin: 0 auto 14px;
+    max-width: 340px;
+    color: $rule;
+    &::before, &::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: $rule-soft;
+    }
+    span {
+      font-family: $serif;
+      color: $gold;
+      font-size: 14px;
+    }
+  }
+  &__sub {
+    font-family: $serif;
+    font-style: italic;
+    font-size: 14px;
+    color: $ink-soft;
+    letter-spacing: 1px;
+    margin: 0;
+  }
+}
+
+// ── filters ─────────────────────────────────────────────────────
+.filters {
+  position: relative; z-index: 2;
+  max-width: 1180px;
+  margin: 0 auto 28px;
+  padding: 24px 32px;
+  background: rgba(246,236,216,0.6);
+  border: 1px solid $rule-soft;
+  border-radius: 3px;
+  box-shadow: 0 1px 0 $paper-xdeep inset, 0 8px 22px rgba(60,45,20,0.05);
+
+  &__type {
+    display: flex; align-items: center; gap: 10px;
+    padding-bottom: 16px;
+    margin-bottom: 14px;
+    border-bottom: 1px dashed $rule-soft;
+  }
+  &__row {
+    display: flex; align-items: flex-start; gap: 18px;
+    padding: 9px 0;
+    &:not(:last-of-type) { border-bottom: 1px solid rgba(184,169,137,0.18); }
+  }
+  &__label {
+    flex-shrink: 0;
+    width: 120px;
+    padding-top: 4px;
+    font-family: $serif;
+    font-size: 13px;
+    color: $ink-soft;
+    letter-spacing: 1px;
+    em { font-style: italic; color: $sepia; margin-right: 4px; }
+  }
+  &__search {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px;
+    background: $paper;
+    border: 1px solid $rule-soft;
+    border-radius: 999px;
+    transition: border-color .2s;
+    width: 260px;
+
+    &-ico { color: $ink-dim; font-size: 14px; }
+    &-in {
+      flex: 1;
+      background: transparent;
+      border: none; outline: none;
+      font-family: $serif;
+      font-size: 14px;
+      color: $ink;
+      &::placeholder { color: $ink-dim; font-style: italic; }
+    }
+    &-x {
+      cursor: pointer;
+      color: $ink-dim;
+      font-size: 12px;
+      &:hover { color: $rose; }
+    }
+    &:focus-within { border-color: $gold; }
+  }
+  &__summary {
+    margin-top: 14px;
+    padding: 8px 14px;
+    background: rgba(255,248,229,0.6);
+    border-left: 2px solid $gold;
+    font-family: $serif;
+    font-size: 14px;
+    color: $ink-soft;
+    letter-spacing: .5px;
+    em { font-style: italic; color: $sepia; margin: 0 6px; }
+    strong { color: $ink; font-weight: 600; margin: 0 2px; }
+  }
+}
+
+.type-pill {
+  border: 1px solid $rule-soft;
+  background: $paper;
+  padding: 9px 22px;
+  border-radius: 999px;
+  font-family: $serif;
+  font-size: 15px;
+  letter-spacing: 2px;
+  color: $ink-soft;
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+  transition: all .2s;
+
+  &__ico { font-size: 13px; color: $gold; }
+
+  &:hover {
+    border-color: $gold;
+    color: $ink;
+  }
+  &--on {
+    background: $ink;
+    border-color: $ink;
+    color: $paper;
+    box-shadow: 0 2px 10px rgba(19,26,46,0.15);
+    .type-pill__ico { color: $gold-soft; }
+  }
+}
+
+.diff-line { display: flex; gap: 18px; flex-wrap: wrap; padding-top: 4px; }
+.diff-lk {
+  background: none; border: none; cursor: pointer;
+  font-family: $serif;
+  font-size: 15px;
+  color: $ink-soft;
+  letter-spacing: 1.5px;
+  padding: 2px 2px 6px;
+  border-bottom: 1px solid transparent;
+  transition: all .2s;
+
+  &:hover { color: $ink; }
+  &--on {
+    color: $ink;
+    font-weight: 500;
+    border-bottom-color: $gold;
+  }
+}
+
+.tag-line { display: flex; gap: 8px 10px; flex-wrap: wrap; }
+.tg {
+  padding: 4px 12px;
+  font-family: $serif;
+  font-size: 13px;
+  color: $ink-soft;
+  letter-spacing: .5px;
+  border: 1px solid $rule-soft;
+  border-radius: 999px;
+  background: $paper;
+  cursor: pointer;
+  transition: all .15s;
+  user-select: none;
+
+  &:hover {
+    border-color: $gold;
+    color: $ink;
+  }
+  &--on {
+    background: $ink;
+    border-color: $ink;
+    color: $paper;
+  }
+}
+.tg-clear {
+  padding: 4px 12px;
+  font-family: $serif;
+  font-style: italic;
+  font-size: 12.5px;
+  color: $rose;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(160,85,109,0.3);
+  &:hover { border-bottom-color: $rose; }
+}
+
+// ── plates grid ─────────────────────────────────────────────────
+.plates-wrap {
+  position: relative; z-index: 2;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 32px;
+  min-height: 400px;
+}
+
+.plates {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px 36px;
+}
+
+.plate {
+  cursor: pointer;
+  transition: transform .3s ease;
+
+  &__frame {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border: 1px solid $paper-edge;
+    background: $paper-deep;
+    border-radius: 2px;
+    box-shadow:
+      0 0 0 1px rgba(255,248,229,0.6) inset,
+      0 6px 14px rgba(60,45,20,0.08);
+    transition: box-shadow .3s ease;
+  }
+  &__img {
+    width: 100%; height: 100%;
+    display: block;
+  }
+  :deep(.plate__img .el-image__inner) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(.92) contrast(.98);
+  }
+  &__img-fallback { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  &__tags {
+    position: absolute; top: 10px; left: 10px;
+    display: flex; gap: 6px;
+  }
+
+  &__cap {
+    padding: 18px 4px 0;
+  }
+  &__title {
+    font-family: $serif;
+    font-weight: 500;
+    font-size: 19px;
+    letter-spacing: 1px;
+    color: $ink;
+    margin: 0 0 4px;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  &__sub {
+    font-family: $serif;
+    font-style: italic;
+    font-size: 13.5px;
+    color: $ink-soft;
+    margin: 0 0 10px;
+    line-height: 1.5;
+    letter-spacing: .3px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  &__meta {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    font-family: $sans;
+    font-size: 12px;
+    color: $ink-soft;
+    margin-bottom: 8px;
+    em { font-style: italic; color: $ink-dim; margin-right: 3px; }
+  }
+
+  &__tagline {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  &__foot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px dashed $rule-soft;
+  }
+  &__resume, &__learners {
+    font-family: $serif;
+    font-size: 13px;
+    color: $ink-soft;
+    letter-spacing: .5px;
+    em { font-style: italic; color: $sepia; }
+  }
+  &__resume em { color: $gold; }
+
+  &:hover {
+    transform: translateY(-4px);
+
+    .plate__frame {
+      box-shadow:
+        0 0 0 1px rgba(255,248,229,0.8) inset,
+        0 14px 28px rgba(60,45,20,0.15);
+    }
+    .plate__title { color: $sepia; }
+  }
+}
+
+// corner pill tags
+.pt {
+  padding: 3px 10px;
+  font-family: $serif;
+  font-size: 11.5px;
+  letter-spacing: 1.5px;
+  color: $paper;
+  border-radius: 2px;
+  background: rgba(19,26,46,0.82);
+  backdrop-filter: blur(4px);
+
+  &--video { background: rgba(160,85,109,0.9); }
+  &--book  { background: rgba(107,124,74,0.9); }
+  &--apod  { background: rgba(184,141,62,0.92); color: $paper; }
+  &--mars  { background: rgba(160,85,109,0.92); }
+}
+
+// meta difficulty dots
+.pm {
+  &--diff { font-weight: 500; }
+  &--rate { color: $gold; em { color: $ink-dim; margin-left: 3px; } }
+}
+.pm-dot { color: $rule; }
+.pm--d1 { color: $moss; }
+.pm--d2 { color: $gold-soft; }
+.pm--d3 { color: $rose; }
+
+.pl-tag {
+  font-family: $serif;
+  font-style: italic;
+  font-size: 12.5px;
+  color: $sepia;
+  letter-spacing: .5px;
+}
+.pl-more {
+  font-family: $sans;
+  font-size: 11.5px;
+  color: $ink-dim;
+}
+
+// favorite btn
+.fav {
+  width: 30px; height: 30px;
+  border: 1px solid $rule-soft;
+  background: $paper;
+  border-radius: 50%;
+  cursor: pointer;
+  color: $ink-dim;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all .2s;
+
+  &:hover { color: $gold; border-color: $gold; }
+  &--on {
+    color: $gold;
+    border-color: $gold;
+    background: rgba(184,141,62,0.08);
+  }
+  &--mini { width: 26px; height: 26px; font-size: 12px; }
+}
+
+// ── pager ───────────────────────────────────────────────────────
+.pager {
+  margin-top: 48px;
+  display: flex; justify-content: center;
+}
+:deep(.el-pagination.is-background .btn-prev),
+:deep(.el-pagination.is-background .btn-next),
+:deep(.el-pagination.is-background .el-pager li) {
+  background: $paper !important;
+  color: $ink-soft !important;
+  border: 1px solid $rule-soft !important;
+  font-family: $serif;
+  &:hover { color: $ink !important; border-color: $gold !important; }
+}
+:deep(.el-pagination.is-background .el-pager li.is-active) {
+  background: $ink !important;
+  color: $paper !important;
+  border-color: $ink !important;
+}
+:deep(.el-pagination .el-pagination__total),
+:deep(.el-pagination .el-pagination__jump) {
+  color: $ink-soft !important;
+  font-family: $serif;
+}
+:deep(.el-pagination__editor.el-input .el-input__wrapper) {
+  background: $paper !important;
+  box-shadow: 0 0 0 1px $rule-soft inset !important;
+}
+
+// ── shelf (recommend) ───────────────────────────────────────────
+.shelf {
+  position: relative; z-index: 2;
+  max-width: 1180px;
+  margin: 64px auto 0;
+  padding: 40px 32px;
+  background: $paper-deep;
+  border-top: 1px solid $rule-soft;
+  border-bottom: 1px solid $rule-soft;
+
+  &__head {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  &__kicker {
+    display: block;
+    font-family: $serif;
+    font-style: italic;
+    font-size: 13px;
+    color: $sepia;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+  &__title {
+    font-family: $serif;
+    font-weight: 500;
+    font-size: 30px;
+    letter-spacing: 8px;
+    color: $ink;
+    margin: 0 0 8px;
+  }
+  &__sub {
+    font-family: $serif;
+    font-style: italic;
+    font-size: 13.5px;
+    color: $ink-soft;
+    margin: 0;
+  }
+
+  &__track {
+    overflow-x: auto;
+    cursor: grab;
+    user-select: none;
+    scrollbar-width: thin;
+    scrollbar-color: $rule transparent;
+    padding-bottom: 8px;
+    &::-webkit-scrollbar { height: 6px; }
+    &::-webkit-scrollbar-thumb { background: $rule; border-radius: 3px; }
+  }
+  &__row {
+    display: flex; gap: 20px;
+    padding-right: 32px;
+  }
+}
+
+.mini-plate {
+  flex: 0 0 230px;
+  cursor: pointer;
+  transition: transform .25s ease;
+
+  &__frame {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border: 1px solid $paper-edge;
+    background: $paper;
+    box-shadow: 0 0 0 1px rgba(255,248,229,0.6) inset, 0 4px 10px rgba(60,45,20,0.08);
+  }
+  &__img { width: 100%; height: 100%; display: block; }
+  :deep(.mini-plate__img .el-image__inner) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(.92) contrast(.98);
+  }
+  &__img-fallback { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  &__type, &__nasa, &__mars {
+    position: absolute;
+    padding: 2px 8px;
+    font-family: $serif;
+    font-size: 10.5px;
+    letter-spacing: 1.5px;
+    color: $paper;
+    border-radius: 2px;
+  }
+  &__type { top: 8px; left: 8px; }
+  &__nasa { top: 8px; right: 8px; background: rgba(184,141,62,0.92); }
+  &__mars { top: 8px; right: 8px; background: rgba(160,85,109,0.92); }
+
+  &__cap { padding: 12px 4px 0; }
+  &__title {
+    font-family: $serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: $ink;
+    margin: 0 0 6px;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  &__meta {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    font-family: $sans;
+    font-size: 11.5px;
+    color: $ink-soft;
+    margin-bottom: 6px;
+    em { font-style: italic; color: $ink-dim; }
+  }
+  &__tags {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-bottom: 6px;
+    span {
+      font-family: $serif;
+      font-style: italic;
+      font-size: 11.5px;
+      color: $sepia;
+    }
+  }
+  &__foot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 6px;
+    border-top: 1px dashed $rule-soft;
+  }
+  &__resume, &__learners {
+    font-family: $serif;
+    font-size: 12px;
+    color: $ink-soft;
+    em { font-style: italic; color: $sepia; }
+  }
+  &__resume em { color: $gold; }
+
+  &:hover .mini-plate__title { color: $sepia; }
+}
+
+// ── el-loading override ─────────────────────────────────────────
+:deep(.el-loading-mask) {
+  background: rgba(244,235,217,0.75) !important;
+  .el-loading-spinner .path { stroke: $gold; }
+}
+:deep(.el-loading-spinner .el-loading-text) {
+  color: $sepia !important;
+  font-family: $serif;
+  font-style: italic;
+}
+
+// ── el-empty override ───────────────────────────────────────────
+:deep(.el-empty__description p) {
+  color: $ink-soft;
+  font-family: $serif;
+  font-style: italic;
+  letter-spacing: .5px;
+}
+
+// ── responsive ──────────────────────────────────────────────────
+@media (max-width: 960px) {
+  .plates { grid-template-columns: repeat(2, 1fr); gap: 32px 24px; }
+  .mast__title { font-size: 34px; letter-spacing: 8px; }
+  .topbar { padding: 18px 20px 10px; flex-direction: column; gap: 12px; align-items: flex-start; }
+  .filters { margin: 0 20px 24px; padding: 18px 18px; }
+  .filters__type { flex-wrap: wrap; }
+  .filters__search { width: 100%; margin-left: 0; }
+  .filters__label { width: 100px; font-size: 12.5px; }
+  .shelf { margin: 48px 20px 0; }
+}
+@media (max-width: 640px) {
+  .plates { grid-template-columns: 1fr; }
+  .plates-wrap { padding: 0 20px; }
+  .mast { padding: 24px 20px 18px; }
+  .mast__title { font-size: 28px; letter-spacing: 6px; }
+  .quick-links { gap: 14px; flex-wrap: wrap; }
 }
 </style>

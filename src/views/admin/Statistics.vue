@@ -1,18 +1,35 @@
 <template>
   <div class="statistics-page">
+    <div class="dashboard-header">
+      <div>
+        <div class="header-kicker">ADMIN ANALYTICS</div>
+        <h1>运营数据看板</h1>
+        <p>汇总交易、订单、用户与评价数据，辅助后台快速判断今日运营状态。</p>
+      </div>
+      <div class="header-panel">
+        <span class="panel-label">最近更新</span>
+        <strong>{{ lastUpdated || '等待加载' }}</strong>
+        <el-button size="small" class="refresh-btn" @click="reloadAll">刷新数据</el-button>
+      </div>
+    </div>
 
     <!-- ==================== 数据概览卡片 ==================== -->
-    <div class="section-title">📊 数据概览</div>
+    <div class="section-title">
+      <div>
+        <span class="section-kicker">OVERVIEW</span>
+        <strong>核心指标</strong>
+      </div>
+    </div>
     <el-row :gutter="16" class="overview-cards" v-loading="overviewLoading">
       <!-- 今日订单 -->
-      <el-col :span="6">
-        <div class="stat-card">
+      <el-col :xs="24" :sm="12" :lg="6">
+        <div class="stat-card tone-blue">
           <div class="stat-icon bg-blue">
             <el-icon size="28"><ShoppingCart /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">{{ overview.todayOrderCount ?? '--' }}</div>
             <div class="stat-label">今日订单数</div>
+            <div class="stat-value">{{ overview.todayOrderCount ?? '--' }}</div>
             <div class="stat-growth" :class="growthClass(overview.todayOrderGrowth)">
               <el-icon><component :is="growthIcon(overview.todayOrderGrowth)" /></el-icon>
               {{ formatGrowth(overview.todayOrderGrowth) }}
@@ -21,14 +38,14 @@
         </div>
       </el-col>
       <!-- 今日销售额 -->
-      <el-col :span="6">
-        <div class="stat-card">
+      <el-col :xs="24" :sm="12" :lg="6">
+        <div class="stat-card tone-green">
           <div class="stat-icon bg-green">
             <el-icon size="28"><Money /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">¥ {{ formatAmount(overview.todaySalesAmount) }}</div>
             <div class="stat-label">今日销售额</div>
+            <div class="stat-value">¥ {{ formatAmount(overview.todaySalesAmount) }}</div>
             <div class="stat-growth" :class="growthClass(overview.todaySalesGrowth)">
               <el-icon><component :is="growthIcon(overview.todaySalesGrowth)" /></el-icon>
               {{ formatGrowth(overview.todaySalesGrowth) }}
@@ -37,14 +54,14 @@
         </div>
       </el-col>
       <!-- 本月销售额 -->
-      <el-col :span="6">
-        <div class="stat-card">
+      <el-col :xs="24" :sm="12" :lg="6">
+        <div class="stat-card tone-gold">
           <div class="stat-icon bg-purple">
             <el-icon size="28"><TrendCharts /></el-icon>
           </div>
           <div class="stat-info">
-            <div class="stat-value">¥ {{ formatAmount(overview.monthSalesAmount) }}</div>
             <div class="stat-label">本月销售额</div>
+            <div class="stat-value">¥ {{ formatAmount(overview.monthSalesAmount) }}</div>
             <div class="stat-growth" :class="growthClass(overview.monthSalesGrowth)">
               <el-icon><component :is="growthIcon(overview.monthSalesGrowth)" /></el-icon>
               {{ formatGrowth(overview.monthSalesGrowth) }}
@@ -53,12 +70,13 @@
         </div>
       </el-col>
       <!-- 待处理预警 -->
-      <el-col :span="6">
-        <div class="stat-card">
+      <el-col :xs="24" :sm="12" :lg="6">
+        <div class="stat-card tone-warn">
           <div class="stat-icon bg-orange">
             <el-icon size="28"><Warning /></el-icon>
           </div>
           <div class="stat-info">
+            <div class="stat-label">待处理事项</div>
             <div class="stat-value">
               <span class="badge-item" :class="{ 'badge-warn': overview.pendingOrderCount > 0 }">
                 {{ overview.pendingOrderCount ?? 0 }} 待发货
@@ -72,7 +90,6 @@
                 {{ overview.stockWarningCount }} 库存预警
               </el-tag>
             </div>
-            <div class="stat-label">待处理事项</div>
           </div>
         </div>
       </el-col>
@@ -80,7 +97,10 @@
 
     <!-- ==================== 销售统计 ==================== -->
     <div class="section-title">
-      📈 销售统计
+      <div>
+        <span class="section-kicker">SALES</span>
+        <strong>销售统计</strong>
+      </div>
       <el-radio-group v-model="salesDays" size="small" @change="loadSalesTrend" class="period-selector">
         <el-radio-button :label="7">近7天</el-radio-button>
         <el-radio-button :label="30">近30天</el-radio-button>
@@ -90,16 +110,26 @@
 
     <el-row :gutter="16" v-loading="salesLoading">
       <!-- 销售趋势折线图 -->
-      <el-col :span="16">
+      <el-col :xs="24" :lg="16">
         <div class="chart-card">
-          <div class="chart-title">销售趋势</div>
+          <div class="chart-title">
+            <div>
+              <strong>销售趋势</strong>
+              <span>订单数与销售额走势</span>
+            </div>
+          </div>
           <div ref="salesChartRef" class="chart-body"></div>
         </div>
       </el-col>
       <!-- 分类销售占比饼图 -->
-      <el-col :span="8">
+      <el-col :xs="24" :lg="8">
         <div class="chart-card">
-          <div class="chart-title">分类销售占比</div>
+          <div class="chart-title">
+            <div>
+              <strong>分类销售占比</strong>
+              <span>按商品分类汇总销售额</span>
+            </div>
+          </div>
           <div ref="categoryChartRef" class="chart-body"></div>
         </div>
       </el-col>
@@ -107,8 +137,13 @@
 
     <!-- 商品销售排行 -->
     <div class="chart-card mt-16" v-loading="salesLoading">
-      <div class="chart-title">商品销售排行 TOP 10</div>
-      <el-table :data="productRank" stripe size="small" style="width:100%">
+      <div class="chart-title">
+        <div>
+          <strong>商品销售排行 TOP 10</strong>
+          <span>按销量和销售额排序</span>
+        </div>
+      </div>
+      <el-table :data="productRank" size="small" style="width:100%">
         <el-table-column type="index" label="排名" width="60" align="center">
           <template #default="{ $index }">
             <span class="rank-badge" :class="rankClass($index)">{{ $index + 1 }}</span>
@@ -130,7 +165,7 @@
           <template #default="{ row }">
             <el-progress
                 :percentage="calcRankPct(row.salesCount)"
-                :color="'#409eff'"
+                :color="'#2563eb'"
                 :stroke-width="8"
                 :show-text="false"
             />
@@ -140,19 +175,34 @@
     </div>
 
     <!-- ==================== 订单统计 ==================== -->
-    <div class="section-title">📦 订单统计</div>
+    <div class="section-title">
+      <div>
+        <span class="section-kicker">ORDERS</span>
+        <strong>订单统计</strong>
+      </div>
+    </div>
     <el-row :gutter="16" v-loading="orderLoading">
       <!-- 订单状态分布 -->
-      <el-col :span="10">
+      <el-col :xs="24" :lg="10">
         <div class="chart-card">
-          <div class="chart-title">订单状态分布</div>
+          <div class="chart-title">
+            <div>
+              <strong>订单状态分布</strong>
+              <span>待支付、待发货、待收货等状态</span>
+            </div>
+          </div>
           <div ref="orderStatusChartRef" class="chart-body"></div>
         </div>
       </el-col>
       <!-- 订单金额分布 -->
-      <el-col :span="14">
+      <el-col :xs="24" :lg="14">
         <div class="chart-card">
-          <div class="chart-title">订单金额分布</div>
+          <div class="chart-title">
+            <div>
+              <strong>订单金额分布</strong>
+              <span>不同金额区间的订单数量</span>
+            </div>
+          </div>
           <div ref="orderAmountChartRef" class="chart-body"></div>
         </div>
       </el-col>
@@ -160,7 +210,10 @@
 
     <!-- ==================== 用户统计 ==================== -->
     <div class="section-title">
-      👤 用户统计
+      <div>
+        <span class="section-kicker">USERS</span>
+        <strong>用户统计</strong>
+      </div>
       <el-radio-group v-model="userDays" size="small" @change="loadUserStatistics" class="period-selector">
         <el-radio-button :label="7">近7天</el-radio-button>
         <el-radio-button :label="30">近30天</el-radio-button>
@@ -169,16 +222,26 @@
 
     <el-row :gutter="16" v-loading="userLoading">
       <!-- 新增用户趋势 -->
-      <el-col :span="16">
+      <el-col :xs="24" :lg="16">
         <div class="chart-card">
-          <div class="chart-title">新增用户趋势</div>
+          <div class="chart-title">
+            <div>
+              <strong>新增用户趋势</strong>
+              <span>统计周期内新增注册用户</span>
+            </div>
+          </div>
           <div ref="userTrendChartRef" class="chart-body"></div>
         </div>
       </el-col>
       <!-- 活跃度 -->
-      <el-col :span="8">
+      <el-col :xs="24" :lg="8">
         <div class="chart-card">
-          <div class="chart-title">用户活跃度 (近30天)</div>
+          <div class="chart-title">
+            <div>
+              <strong>用户活跃度</strong>
+              <span>近30天活跃用户占比</span>
+            </div>
+          </div>
           <div ref="activeChartRef" class="chart-body"></div>
         </div>
       </el-col>
@@ -186,16 +249,26 @@
 
     <el-row :gutter="16" class="mt-16" v-loading="userLoading">
       <!-- 地区分布 -->
-      <el-col :span="12">
+      <el-col :xs="24" :lg="12">
         <div class="chart-card">
-          <div class="chart-title">用户地区分布 (Top 10)</div>
+          <div class="chart-title">
+            <div>
+              <strong>用户地区分布 TOP 10</strong>
+              <span>按省份统计用户数量</span>
+            </div>
+          </div>
           <div ref="provinceChartRef" class="chart-body"></div>
         </div>
       </el-col>
       <!-- 等级分布 -->
-      <el-col :span="12">
+      <el-col :xs="24" :lg="12">
         <div class="chart-card">
-          <div class="chart-title">用户等级分布</div>
+          <div class="chart-title">
+            <div>
+              <strong>用户等级分布</strong>
+              <span>按观测等级统计用户结构</span>
+            </div>
+          </div>
           <div ref="levelChartRef" class="chart-body"></div>
         </div>
       </el-col>
@@ -203,7 +276,10 @@
 
     <!-- ==================== 评价统计 ==================== -->
     <div class="section-title">
-      ⭐ 评价统计
+      <div>
+        <span class="section-kicker">REVIEWS</span>
+        <strong>评价统计</strong>
+      </div>
       <el-radio-group v-model="reviewDays" size="small" @change="loadReviewStatistics" class="period-selector">
         <el-radio-button :label="7">近7天</el-radio-button>
         <el-radio-button :label="30">近30天</el-radio-button>
@@ -212,19 +288,19 @@
 
     <!-- 评价概览数字卡片 -->
     <el-row :gutter="16" class="review-overview" v-loading="reviewLoading">
-      <el-col :span="8">
+      <el-col :xs="24" :sm="8">
         <div class="mini-card">
           <div class="mini-val">{{ reviewData.totalCount ?? 0 }}</div>
           <div class="mini-label">总评价数</div>
         </div>
       </el-col>
-      <el-col :span="8">
+      <el-col :xs="24" :sm="8">
         <div class="mini-card">
           <div class="mini-val">{{ reviewData.avgRating ?? '0.0' }}</div>
           <div class="mini-label">平均评分</div>
         </div>
       </el-col>
-      <el-col :span="8">
+      <el-col :xs="24" :sm="8">
         <div class="mini-card">
           <div class="mini-val text-green">{{ reviewData.goodRate ?? 0 }}%</div>
           <div class="mini-label">好评率</div>
@@ -234,16 +310,26 @@
 
     <el-row :gutter="16" class="mt-16" v-loading="reviewLoading">
       <!-- 评分分布 -->
-      <el-col :span="10">
+      <el-col :xs="24" :lg="10">
         <div class="chart-card">
-          <div class="chart-title">评分分布</div>
+          <div class="chart-title">
+            <div>
+              <strong>评分分布</strong>
+              <span>不同星级评价数量</span>
+            </div>
+          </div>
           <div ref="ratingChartRef" class="chart-body-sm"></div>
         </div>
       </el-col>
       <!-- 评价趋势 -->
-      <el-col :span="14">
+      <el-col :xs="24" :lg="14">
         <div class="chart-card">
-          <div class="chart-title">评价趋势</div>
+          <div class="chart-title">
+            <div>
+              <strong>评价趋势</strong>
+              <span>统计周期内评价提交数量</span>
+            </div>
+          </div>
           <div ref="reviewTrendChartRef" class="chart-body"></div>
         </div>
       </el-col>
@@ -272,6 +358,7 @@ import {
 const overview = ref({})
 const productRank = ref([])
 const reviewData = ref({})
+const lastUpdated = ref('')
 
 const salesDays = ref(7)
 const userDays = ref(7)
@@ -300,13 +387,13 @@ let salesChart, categoryChart, orderStatusChart, orderAmountChart,
     ratingChart, reviewTrendChart
 
 // ==================== 颜色常量 ====================
-const COLORS = ['#409eff', '#67c23a', '#e6a23c', '#f56c6c', '#909399', '#9b59b6']
+const COLORS = ['#2563eb', '#059669', '#c0842f', '#dc2626', '#64748b', '#7c3aed']
 const ORDER_STATUS_MAP = {
-  0: { name: '待支付', color: '#e6a23c' },
-  1: { name: '待发货', color: '#409eff' },
-  2: { name: '待收货', color: '#9b59b6' },
-  3: { name: '已完成', color: '#67c23a' },
-  4: { name: '已取消', color: '#909399' }
+  0: { name: '待支付', color: '#c0842f' },
+  1: { name: '待发货', color: '#2563eb' },
+  2: { name: '待收货', color: '#7c3aed' },
+  3: { name: '已完成', color: '#059669' },
+  4: { name: '已取消', color: '#64748b' }
 }
 
 // ==================== 工具函数 ====================
@@ -342,6 +429,22 @@ const rankClass = (index) => {
   if (index === 1) return 'rank-silver'
   if (index === 2) return 'rank-bronze'
   return ''
+}
+
+const updateTime = () => {
+  const now = new Date()
+  lastUpdated.value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
+}
+
+async function reloadAll() {
+  await Promise.all([
+    loadOverview(),
+    loadSalesTrend(),
+    loadOrderStatistics(),
+    loadUserStatistics(),
+    loadReviewStatistics()
+  ])
+  updateTime()
 }
 
 // ==================== 数据加载 ====================
@@ -460,15 +563,15 @@ function renderSalesChart(dates, orderCounts, salesAmounts) {
     series: [
       {
         name: '订单数', type: 'bar', data: orderCounts,
-        itemStyle: { color: '#409eff', borderRadius: [3, 3, 0, 0] },
+        itemStyle: { color: '#2563eb', borderRadius: [4, 4, 0, 0] },
         barMaxWidth: 30
       },
       {
         name: '销售额', type: 'line', yAxisIndex: 1, data: salesAmounts,
         smooth: true, symbol: 'circle', symbolSize: 6,
-        lineStyle: { color: '#67c23a', width: 2 },
-        areaStyle: { color: 'rgba(103,194,58,0.08)' },
-        itemStyle: { color: '#67c23a' }
+        lineStyle: { color: '#059669', width: 2 },
+        areaStyle: { color: 'rgba(5,150,105,0.08)' },
+        itemStyle: { color: '#059669' }
       }
     ]
   })
@@ -479,6 +582,7 @@ function renderCategoryChart(data) {
   if (!data || !data.length) return
   categoryChart = initOrGet(categoryChartRef.value, categoryChart)
   categoryChart.setOption({
+    color: COLORS,
     tooltip: {
       trigger: 'item',
       formatter: (p) => `${p.name}<br/>销售额：¥${Number(p.data.value).toLocaleString()}<br/>占比：${p.percent}%`
@@ -504,11 +608,11 @@ function renderCategoryChart(data) {
 function renderOrderStatusChart(data) {
   orderStatusChart = initOrGet(orderStatusChartRef.value, orderStatusChart)
   const pieData = [
-    { name: '待支付', value: data.waitPayCount, itemStyle: { color: '#e6a23c' } },
-    { name: '待发货', value: data.waitDeliverCount, itemStyle: { color: '#409eff' } },
-    { name: '待收货', value: data.waitReceiveCount, itemStyle: { color: '#9b59b6' } },
-    { name: '已完成', value: data.completedCount, itemStyle: { color: '#67c23a' } },
-    { name: '已取消', value: data.cancelledCount, itemStyle: { color: '#909399' } }
+    { name: '待支付', value: data.waitPayCount, itemStyle: { color: '#c0842f' } },
+    { name: '待发货', value: data.waitDeliverCount, itemStyle: { color: '#2563eb' } },
+    { name: '待收货', value: data.waitReceiveCount, itemStyle: { color: '#7c3aed' } },
+    { name: '已完成', value: data.completedCount, itemStyle: { color: '#059669' } },
+    { name: '已取消', value: data.cancelledCount, itemStyle: { color: '#64748b' } }
   ].filter(d => d.value > 0)
 
   orderStatusChart.setOption({
@@ -559,9 +663,9 @@ function renderUserTrendChart(dates, counts) {
     series: [{
       type: 'line', data: counts, smooth: true,
       symbol: 'circle', symbolSize: 6,
-      lineStyle: { color: '#409eff', width: 2 },
-      areaStyle: { color: 'rgba(64,158,255,0.1)' },
-      itemStyle: { color: '#409eff' }
+      lineStyle: { color: '#2563eb', width: 2 },
+      areaStyle: { color: 'rgba(37,99,235,0.08)' },
+      itemStyle: { color: '#2563eb' }
     }]
   })
 }
@@ -580,7 +684,7 @@ function renderActiveChart(activeCount, totalCount, activeRate) {
       axisLine: {
         lineStyle: {
           width: 12,
-          color: [[0.3, '#f56c6c'], [0.7, '#e6a23c'], [1, '#67c23a']]
+          color: [[0.3, '#dc2626'], [0.7, '#c0842f'], [1, '#059669']]
         }
       },
       pointer: { itemStyle: { color: 'auto' } },
@@ -628,7 +732,7 @@ function renderProvinceChart(data) {
 function renderLevelChart(data) {
   if (!data || !data.length) return
   levelChart = initOrGet(levelChartRef.value, levelChart)
-  const levelColors = ['#909399', '#67c23a', '#409eff', '#e6a23c', '#f56c6c']
+  const levelColors = ['#64748b', '#059669', '#2563eb', '#c0842f', '#dc2626']
   levelChart.setOption({
     tooltip: { trigger: 'axis', formatter: (p) => `${p[0].name}：${p[0].value} 人 (${data[p[0].dataIndex]?.percentage}%)` },
     grid: { left: 50, right: 20, bottom: 30, top: 30 },
@@ -654,7 +758,7 @@ function renderLevelChart(data) {
 function renderRatingChart(data) {
   if (!data || !data.length) return
   ratingChart = initOrGet(ratingChartRef.value, ratingChart)
-  const starColors = ['#f56c6c', '#e6a23c', '#e6a23c', '#67c23a', '#67c23a']
+  const starColors = ['#dc2626', '#c0842f', '#c0842f', '#059669', '#059669']
   // 按评分1→5排序
   const sorted = [...data].sort((a, b) => a.rating - b.rating)
   ratingChart.setOption({
@@ -692,9 +796,9 @@ function renderReviewTrendChart(dates, counts) {
     series: [{
       type: 'line', data: counts, smooth: true,
       symbol: 'circle', symbolSize: 6,
-      lineStyle: { color: '#e6a23c', width: 2 },
-      areaStyle: { color: 'rgba(230,162,60,0.1)' },
-      itemStyle: { color: '#e6a23c' }
+      lineStyle: { color: '#c0842f', width: 2 },
+      areaStyle: { color: 'rgba(192,132,47,0.1)' },
+      itemStyle: { color: '#c0842f' }
     }]
   })
 }
@@ -702,13 +806,7 @@ function renderReviewTrendChart(dates, counts) {
 // ==================== 生命周期 ====================
 
 onMounted(async () => {
-  await Promise.all([
-    loadOverview(),
-    loadSalesTrend(),
-    loadOrderStatistics(),
-    loadUserStatistics(),
-    loadReviewStatistics()
-  ])
+  await reloadAll()
 
   // 响应式 resize
   window.addEventListener('resize', handleResize)
@@ -732,176 +830,399 @@ function handleResize() {
 
 <style scoped>
 .statistics-page {
-  padding: 16px;
-  background: #f5f7fa;
   min-height: 100vh;
+  padding: 22px;
+  background:
+    linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(241, 245, 249, 0.96)),
+    radial-gradient(circle at 85% 0%, rgba(37, 99, 235, 0.08), transparent 34%);
+  color: #0f172a;
 }
 
-/* 标题 */
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
-  margin: 20px 0 12px;
+.dashboard-header {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 24px 26px;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, #0f172a 0%, #172033 58%, #1e293b 100%);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.14);
+  color: #fff;
+}
+
+.header-kicker,
+.section-kicker {
+  display: block;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.dashboard-header h1 {
+  margin: 8px 0 8px;
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.dashboard-header p {
+  margin: 0;
+  max-width: 620px;
+  color: #cbd5e1;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.header-panel {
+  width: 210px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.panel-label {
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.header-panel strong {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.refresh-btn {
+  width: 100%;
+  border-color: rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.refresh-btn:hover {
+  border-color: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.section-title {
+  margin: 24px 0 12px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.section-title strong {
+  display: block;
+  margin-top: 4px;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 900;
 }
 
 .period-selector {
   margin-left: auto;
 }
 
-/* 概览卡片 */
-.stat-card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 20px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  transition: box-shadow 0.2s;
+:deep(.period-selector .el-radio-button__inner) {
+  border-color: #dbe3ef;
+  color: #475569;
+  font-weight: 700;
 }
 
-.stat-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+:deep(.period-selector .el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  border-color: #0f172a;
+  background: #0f172a;
+  color: #fff;
+  box-shadow: -1px 0 0 0 #0f172a;
 }
+
+.overview-cards :deep(.el-col),
+.review-overview :deep(.el-col),
+.statistics-page > .el-row :deep(.el-col) {
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  min-height: 142px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: #2563eb;
+}
+
+.stat-card:hover,
+.chart-card:hover,
+.mini-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(37, 99, 235, 0.26);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.1);
+}
+
+.tone-green::before { background: #059669; }
+.tone-gold::before { background: #c0842f; }
+.tone-warn::before { background: #dc2626; }
 
 .stat-icon {
-  width: 54px;
-  height: 54px;
-  border-radius: 12px;
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
   flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
-.bg-blue   { background: linear-gradient(135deg, #409eff, #6ec3ff); }
-.bg-green  { background: linear-gradient(135deg, #67c23a, #95d475); }
-.bg-purple { background: linear-gradient(135deg, #9b59b6, #c68fe8); }
-.bg-orange { background: linear-gradient(135deg, #e6a23c, #f5c56e); }
+.bg-blue { background: #2563eb; }
+.bg-green { background: #059669; }
+.bg-purple { background: #c0842f; }
+.bg-orange { background: #dc2626; }
 
-.stat-info { flex: 1; min-width: 0; }
+.stat-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.stat-label {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
 
 .stat-value {
-  font-size: 22px;
-  font-weight: 700;
-  color: #303133;
-  line-height: 1.3;
+  margin-top: 8px;
+  color: #0f172a;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .stat-value-sm {
-  margin-top: 4px;
+  margin-top: 8px;
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
 }
 
-.stat-label {
-  font-size: 13px;
-  color: #909399;
-  margin-top: 4px;
-}
-
 .stat-growth {
-  font-size: 12px;
-  margin-top: 4px;
-  display: flex;
+  margin-top: 10px;
+  display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f8fafc;
+  font-size: 12px;
+  font-weight: 800;
 }
 
-.stat-growth.up     { color: #67c23a; }
-.stat-growth.down   { color: #f56c6c; }
-.stat-growth.neutral { color: #909399; }
+.stat-growth.up { color: #059669; background: #ecfdf5; }
+.stat-growth.down { color: #dc2626; background: #fef2f2; }
+.stat-growth.neutral { color: #64748b; background: #f1f5f9; }
 
-/* 图表卡片 */
-.chart-card {
-  background: #fff;
+.chart-card,
+.mini-card {
+  border: 1px solid #dbe3ef;
   border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.chart-card {
+  padding: 18px;
 }
 
 .chart-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.chart-title strong {
+  display: block;
+  color: #0f172a;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.chart-title span {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .chart-body {
-  height: 280px;
+  height: 286px;
 }
 
 .chart-body-sm {
-  height: 220px;
+  height: 230px;
 }
 
-.mt-16 { margin-top: 16px; }
+.mt-16 {
+  margin-top: 0;
+}
 
-/* 商品排行 */
+:deep(.el-table) {
+  --el-table-border-color: #e2e8f0;
+  --el-table-header-bg-color: #f8fafc;
+  --el-table-header-text-color: #334155;
+  --el-table-row-hover-bg-color: #f8fafc;
+  color: #334155;
+}
+
+:deep(.el-table th.el-table__cell) {
+  font-weight: 800;
+}
+
 .product-cell {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+}
+
+.product-cell span {
+  color: #0f172a;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .product-thumb {
-  width: 36px;
-  height: 36px;
-  border-radius: 4px;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
   flex-shrink: 0;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
 }
 
 .rank-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
   font-size: 12px;
-  font-weight: 700;
-  background: #f2f3f5;
-  color: #606266;
+  font-weight: 900;
+  background: #f1f5f9;
+  color: #475569;
 }
 
-.rank-gold   { background: #ffd700; color: #7a4f00; }
-.rank-silver { background: #c0c0c0; color: #444; }
-.rank-bronze { background: #cd7f32; color: #fff; }
+.rank-gold {
+  background: #fef3c7;
+  color: #92400e;
+}
 
-/* 评价概览迷你卡片 */
-.review-overview { margin-bottom: 0; }
+.rank-silver {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.rank-bronze {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.review-overview {
+  margin-bottom: 0;
+}
 
 .mini-card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 20px;
+  padding: 22px;
   text-align: center;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
 .mini-val {
-  font-size: 28px;
-  font-weight: 700;
-  color: #303133;
+  color: #0f172a;
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.1;
 }
 
 .mini-label {
+  margin-top: 8px;
+  color: #64748b;
   font-size: 13px;
-  color: #909399;
-  margin-top: 6px;
+  font-weight: 700;
 }
 
-.text-green { color: #67c23a; }
+.text-green {
+  color: #059669;
+}
 
-.badge-item { font-size: 16px; color: #303133; }
-.badge-warn { color: #e6a23c; }
+.badge-item {
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.badge-warn {
+  color: #c0842f;
+}
+
+@media (max-width: 980px) {
+  .statistics-page {
+    padding: 16px;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+  }
+
+  .header-panel {
+    width: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .section-title {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .period-selector {
+    margin-left: 0;
+  }
+
+  .dashboard-header h1 {
+    font-size: 24px;
+  }
+}
 </style>

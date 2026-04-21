@@ -1,22 +1,13 @@
 <template>
   <div class="notice-detail-page">
-
-    <!-- 背景装饰 -->
-    <div class="bg-decoration">
-      <div class="bg-circle bg-circle-1"></div>
-      <div class="bg-circle bg-circle-2"></div>
-      <div class="bg-circle bg-circle-3"></div>
-    </div>
-
-    <!-- 顶部返回栏 -->
     <div class="back-bar">
       <button class="back-btn" @click="router.back()">
         <span class="back-arrow">←</span>
         <span>返回</span>
       </button>
+      <span class="page-kicker">NOTICE BOARD</span>
     </div>
 
-    <!-- 加载中 -->
     <div v-if="loading" class="loading-box">
       <div class="skeleton-header"></div>
       <div class="skeleton-meta"></div>
@@ -27,60 +18,40 @@
       <div class="skeleton-line mid"></div>
     </div>
 
-    <!-- 公告内容 -->
-    <div v-else-if="detail" class="notice-card">
-
-      <!-- 顶部色条（根据优先级变色） -->
-      <div class="notice-top-bar" :class="topBarClass"></div>
-
-      <div class="notice-body">
-
-        <!-- 优先级徽章 + 标题 -->
-        <div class="notice-header">
-          <div class="priority-badge" :class="badgeClass">
-            <span class="badge-icon">{{ badgeIcon }}</span>
-            <span class="badge-text">{{ detail.priorityText || '普通公告' }}</span>
-          </div>
+    <article v-else-if="detail" class="notice-card" :class="topBarClass">
+      <header class="notice-header">
+        <div class="priority-badge" :class="badgeClass">
+          <span class="badge-dot"></span>
+          <span>{{ detail.priorityText || '普通公告' }}</span>
+        </div>
+        <div class="notice-title-wrap">
           <h1 class="notice-title">{{ detail.title }}</h1>
         </div>
+      </header>
 
-        <!-- 元信息栏 -->
-        <div class="notice-meta">
-          <div class="meta-item">
-            <span class="meta-icon">📅</span>
-            <span class="meta-label">发布时间</span>
-            <span class="meta-value">{{ formatTime(detail.createTime) }}</span>
-          </div>
-          <div class="meta-item">
-            <span class="meta-icon">📢</span>
-            <span class="meta-label">来源</span>
-            <span class="meta-value">天文器材商城</span>
-          </div>
+      <div class="notice-meta">
+        <div class="meta-item">
+          <span class="meta-label">发布时间</span>
+          <span class="meta-value">{{ formatTime(detail.createTime) }}</span>
         </div>
-
-        <!-- 分割线 -->
-        <div class="notice-divider">
-          <span class="divider-dot"></span>
-          <span class="divider-line"></span>
-          <span class="divider-text">公告内容</span>
-          <span class="divider-line"></span>
-          <span class="divider-dot"></span>
+        <div class="meta-item">
+          <span class="meta-label">来源</span>
+          <span class="meta-value">天文器材商城</span>
         </div>
-
-        <!-- 正文 -->
-        <div class="notice-content">{{ detail.content }}</div>
-
-        <!-- 底部签名 -->
-        <div class="notice-footer">
-          <span class="footer-seal">🌌 天文器材商城官方公告</span>
-        </div>
-
       </div>
-    </div>
 
-    <!-- 不存在 -->
+      <div class="notice-content-wrap">
+        <div class="content-label">公告内容</div>
+        <div class="notice-content">{{ detail.content }}</div>
+      </div>
+
+      <footer class="notice-footer">
+        <span>天文器材商城官方公告</span>
+      </footer>
+    </article>
+
     <div v-else class="empty-box">
-      <div class="empty-icon">🔭</div>
+      <div class="empty-mark">NOTICE</div>
       <p class="empty-text">公告不存在或已被删除</p>
       <button class="go-home-btn" @click="router.push('/home')">返回首页</button>
     </div>
@@ -144,12 +115,6 @@ const badgeClass = computed(() => {
   return p === 2 ? 'badge-danger' : p === 1 ? 'badge-warning' : 'badge-normal'
 })
 
-const badgeIcon = computed(() => {
-  if (!detail.value) return '📢'
-  const p = Number(detail.value.priority)
-  return p === 2 ? '🔴' : p === 1 ? '🟡' : '🔵'
-})
-
 const formatTime = (time) => {
   if (!time) return '-'
   return String(time).replace('T', ' ').slice(0, 16)
@@ -157,70 +122,50 @@ const formatTime = (time) => {
 </script>
 
 <style scoped>
-/* ── 整体容器 ── */
 .notice-detail-page {
   min-height: 100vh;
-  background: #f0f4f8;
-  padding: 24px 16px 60px;
+  padding: 26px 18px 72px;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  background:
+    linear-gradient(rgba(17, 24, 39, .028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17, 24, 39, .026) 1px, transparent 1px),
+    #f7f4ec;
+  background-size: 28px 28px;
+  color: #172033;
 }
 
-/* ── 背景装饰圆 ── */
-.bg-decoration { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
-
-.bg-circle {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0.06;
-}
-
-.bg-circle-1 {
-  width: 600px; height: 600px;
-  background: radial-gradient(circle, #3b82f6, transparent);
-  top: -200px; right: -100px;
-}
-
-.bg-circle-2 {
-  width: 400px; height: 400px;
-  background: radial-gradient(circle, #8b5cf6, transparent);
-  bottom: -100px; left: -100px;
-}
-
-.bg-circle-3 {
-  width: 300px; height: 300px;
-  background: radial-gradient(circle, #06b6d4, transparent);
-  top: 40%; left: 40%;
-}
-
-/* ── 返回栏 ── */
 .back-bar {
-  max-width: 800px;
-  margin: 0 auto 20px;
+  max-width: 860px;
+  margin: 0 auto 18px;
   position: relative;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
 }
 
 .back-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 16px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 20px;
+  padding: 8px 15px;
+  background: #fffdfa;
+  border: 1px solid #e6ddcf;
+  border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
-  color: #475569;
+  font-size: 13px;
+  font-weight: 800;
+  color: #172033;
   transition: all 0.2s;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 8px 20px rgba(35, 30, 22, .06);
 }
 
 .back-btn:hover {
-  background: #f8fafc;
-  color: #1e40af;
-  border-color: #bfdbfe;
-  transform: translateX(-2px);
+  background: #111827;
+  color: #fffdfa;
+  border-color: #111827;
 }
 
 .back-arrow {
@@ -228,149 +173,145 @@ const formatTime = (time) => {
   line-height: 1;
 }
 
-/* ── 公告卡片 ── */
+.page-kicker {
+  color: #9a6b36;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
 .notice-card {
-  max-width: 800px;
+  max-width: 860px;
   margin: 0 auto;
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+  background: #fffdfa;
+  border: 1px solid #e6ddcf;
+  border-radius: 8px;
+  box-shadow: 0 20px 48px rgba(35, 30, 22, .10);
   overflow: hidden;
   position: relative;
   z-index: 1;
 }
 
-/* 顶部色条 */
-.notice-top-bar {
+.notice-card::before {
+  content: '';
+  display: block;
   height: 5px;
 }
-.bar-normal  { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
-.bar-warning { background: linear-gradient(90deg, #f59e0b, #f97316); }
-.bar-danger  { background: linear-gradient(90deg, #ef4444, #ec4899); }
 
-/* 卡片内容区 */
-.notice-body {
-  padding: 36px 44px 40px;
-}
+.bar-normal::before { background: #8a5f2e; }
+.bar-warning::before { background: #c28a2e; }
+.bar-danger::before { background: #9f2f2f; }
 
-/* ── 标题区 ── */
 .notice-header {
-  margin-bottom: 20px;
+  padding: 38px 46px 20px;
 }
 
-/* 优先级徽章 */
+.notice-title-wrap {
+  margin-top: 14px;
+}
+
 .priority-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 12px;
-  border-radius: 20px;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
   font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  margin-bottom: 14px;
+  font-weight: 900;
+  letter-spacing: .8px;
 }
 
-.badge-normal  { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
-.badge-warning { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
-.badge-danger  { background: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; }
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
 
-.badge-icon { font-size: 13px; }
+.badge-normal  { background: #f7f0e5; color: #8a5f2e; border: 1px solid #e6d7c1; }
+.badge-warning { background: #fff4d6; color: #9a6b10; border: 1px solid #ecd293; }
+.badge-danger  { background: #fff0ee; color: #9f2f2f; border: 1px solid #e3b8b0; }
 
 .notice-title {
   margin: 0;
-  font-size: 26px;
-  font-weight: 700;
-  color: #0f172a;
+  font-size: 30px;
+  font-weight: 900;
+  color: #111827;
   line-height: 1.45;
   word-break: break-word;
-  letter-spacing: -0.3px;
 }
 
-/* ── 元信息栏 ── */
 .notice-meta {
   display: flex;
-  gap: 24px;
-  margin-bottom: 28px;
+  gap: 12px;
   flex-wrap: wrap;
+  padding: 0 46px 26px;
+  border-bottom: 1px solid #ebe3d7;
 }
 
 .meta-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid #ebe3d7;
+  border-radius: 4px;
+  background: #faf6ef;
   font-size: 13px;
 }
 
-.meta-icon  { font-size: 14px; }
-.meta-label { color: #94a3b8; }
-.meta-value { color: #475569; font-weight: 500; }
+.meta-label { color: #8b95a5; }
+.meta-value { color: #172033; font-weight: 800; }
 
-/* ── 分割线 ── */
-.notice-divider {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 24px;
+.notice-content-wrap {
+  padding: 30px 46px 34px;
 }
 
-.divider-line {
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
-}
-
-.divider-dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: #cbd5e1;
-}
-
-.divider-text {
+.content-label {
+  margin-bottom: 14px;
+  color: #9a6b36;
   font-size: 12px;
-  color: #94a3b8;
-  white-space: nowrap;
-  padding: 0 4px;
+  font-weight: 900;
+  letter-spacing: 1.6px;
 }
 
-/* ── 正文 ── */
 .notice-content {
   font-size: 15px;
-  line-height: 1.9;
+  line-height: 2;
   color: #334155;
   white-space: pre-wrap;
   word-break: break-word;
-  padding: 20px 24px;
-  background: #f8fafc;
-  border-radius: 10px;
-  border-left: 4px solid #e2e8f0;
+  padding: 22px 24px;
+  background: #f8f4ec;
+  border: 1px solid #ebe3d7;
+  border-left: 4px solid #c7a572;
+  border-radius: 6px;
   min-height: 80px;
 }
 
-/* ── 底部签名 ── */
 .notice-footer {
-  margin-top: 28px;
+  padding: 18px 46px 34px;
   text-align: right;
 }
 
-.footer-seal {
+.notice-footer span {
   display: inline-block;
   font-size: 12px;
-  color: #94a3b8;
-  padding: 6px 14px;
-  border: 1px dashed #e2e8f0;
-  border-radius: 20px;
-  background: #fafafa;
+  color: #8b95a5;
+  padding: 7px 12px;
+  border: 1px dashed #d8caba;
+  border-radius: 4px;
+  background: #fffdfa;
 }
 
-/* ── 加载骨架 ── */
 .loading-box {
-  max-width: 800px;
+  max-width: 860px;
   margin: 0 auto;
-  background: #fff;
-  border-radius: 16px;
+  background: #fffdfa;
+  border: 1px solid #e6ddcf;
+  border-radius: 8px;
   padding: 36px 44px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 18px 42px rgba(35, 30, 22, .08);
   position: relative;
   z-index: 1;
 }
@@ -385,7 +326,7 @@ const formatTime = (time) => {
 .skeleton-divider,
 .skeleton-line {
   border-radius: 6px;
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background: linear-gradient(90deg, #f6efe4 25%, #eadfce 50%, #f6efe4 75%);
   background-size: 600px 100%;
   animation: shimmer 1.4s infinite;
   margin-bottom: 14px;
@@ -398,48 +339,71 @@ const formatTime = (time) => {
 .skeleton-line.short { width: 45%; }
 .skeleton-line.mid   { width: 70%; }
 
-/* ── 空状态 ── */
 .empty-box {
-  max-width: 400px;
+  max-width: 420px;
   margin: 80px auto 0;
   text-align: center;
   position: relative;
   z-index: 1;
+  padding: 44px 28px;
+  border: 1px solid #e6ddcf;
+  border-radius: 8px;
+  background: #fffdfa;
 }
 
-.empty-icon {
-  font-size: 60px;
-  margin-bottom: 16px;
-  opacity: 0.6;
+.empty-mark {
+  width: 104px;
+  height: 104px;
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 34%, #fff7e0, #f3e9cf 58%, #d7c192 100%);
+  color: #111827;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1.8px;
 }
 
 .empty-text {
   font-size: 15px;
-  color: #94a3b8;
+  color: #667085;
   margin-bottom: 24px;
 }
 
 .go-home-btn {
   padding: 10px 28px;
-  background: linear-gradient(135deg, #3b82f6, #06b6d4);
-  color: #fff;
-  border: none;
-  border-radius: 24px;
+  background: #111827;
+  color: #fffdfa;
+  border: 1px solid #111827;
+  border-radius: 4px;
   font-size: 14px;
+  font-weight: 800;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
 }
 
 .go-home-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.45);
+  background: #9a6b36;
+  border-color: #9a6b36;
 }
 
-/* ── 响应式 ── */
 @media (max-width: 600px) {
-  .notice-body   { padding: 24px 20px 28px; }
-  .notice-title  { font-size: 20px; }
-  .notice-meta   { gap: 12px; }
+  .back-bar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .notice-header,
+  .notice-meta,
+  .notice-content-wrap,
+  .notice-footer {
+    padding-left: 22px;
+    padding-right: 22px;
+  }
+
+  .notice-title { font-size: 22px; }
+  .notice-meta { gap: 10px; }
 }
 </style>
