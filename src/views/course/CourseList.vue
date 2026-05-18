@@ -100,14 +100,6 @@
               </template>
             </el-image>
 
-            <!-- corner tags -->
-            <div class="plate__tags">
-              <span class="pt" :class="course.type === 0 ? 'pt--video' : 'pt--book'">
-                {{ course.type === 0 ? '视频课' : '书本课' }}
-              </span>
-              <span v-if="course.isApodCourse === 1" class="pt pt--apod">NASA</span>
-              <span v-if="course.isMarsCourse === 1" class="pt pt--mars">MARS</span>
-            </div>
           </div>
 
           <!-- caption -->
@@ -116,6 +108,12 @@
             <p v-if="course.subtitle" class="plate__sub">{{ course.subtitle }}</p>
 
             <div class="plate__meta">
+              <span class="pt pt--inline" :class="course.type === 0 ? 'pt--video' : 'pt--book'">
+                {{ course.type === 0 ? '视频课' : '书本课' }}
+              </span>
+              <span v-if="course.isApodCourse === 1" class="pt pt--inline pt--apod">NASA</span>
+              <span v-if="course.isMarsCourse === 1" class="pt pt--inline pt--mars">MARS</span>
+              <span class="pm-dot">·</span>
               <span class="pm pm--diff" :class="'pm--d' + course.difficulty">
                 {{ course.difficultyText }}
               </span>
@@ -178,15 +176,16 @@
                   <img :src="defaultCover" class="mini-plate__img-fallback" alt="cover" />
                 </template>
               </el-image>
-              <span class="mini-plate__type" :class="course.type === 0 ? 'pt--video' : 'pt--book'">
-                {{ course.type === 0 ? '视频' : '书本' }}
-              </span>
-              <span v-if="course.isApodCourse === 1" class="mini-plate__nasa">NASA</span>
-              <span v-if="course.isMarsCourse === 1" class="mini-plate__mars">MARS</span>
             </div>
             <div class="mini-plate__cap">
               <h4 class="mini-plate__title" :title="course.title">{{ course.title }}</h4>
               <div class="mini-plate__meta">
+                <span class="pt pt--inline pt--mini" :class="course.type === 0 ? 'pt--video' : 'pt--book'">
+                  {{ course.type === 0 ? '视频' : '书本' }}
+                </span>
+                <span v-if="course.isApodCourse === 1" class="pt pt--inline pt--mini pt--apod">NASA</span>
+                <span v-if="course.isMarsCourse === 1" class="pt pt--inline pt--mini pt--mars">MARS</span>
+                <span class="pm-dot">·</span>
                 <span :class="'pm--d' + course.difficulty">{{ course.difficultyText }}</span>
                 <span class="pm-dot">·</span>
                 <span><em>ch.</em> {{ course.chapterCount }}</span>
@@ -772,11 +771,6 @@ $sans  : 'Inter', system-ui, -apple-system, sans-serif;
   }
   &__img-fallback { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-  &__tags {
-    position: absolute; top: 10px; left: 10px;
-    display: flex; gap: 6px;
-  }
-
   &__cap {
     padding: 18px 4px 0;
   }
@@ -847,7 +841,7 @@ $sans  : 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
 
-// corner pill tags
+// small course marks kept outside image covers
 .pt {
   padding: 3px 10px;
   font-family: $serif;
@@ -862,6 +856,22 @@ $sans  : 'Inter', system-ui, -apple-system, sans-serif;
   &--book  { background: rgba(107,124,74,0.9); }
   &--apod  { background: rgba(184,141,62,0.92); color: $paper; }
   &--mars  { background: rgba(160,85,109,0.92); }
+  &--inline {
+    padding: 2px 8px;
+    color: $sepia;
+    background: transparent;
+    border: 1px solid rgba(184,141,62,0.42);
+    backdrop-filter: none;
+  }
+  &--inline.pt--video { color: $rose; border-color: rgba(160,85,109,0.38); }
+  &--inline.pt--book { color: $moss; border-color: rgba(107,124,74,0.38); }
+  &--inline.pt--apod { color: $gold; border-color: rgba(184,141,62,0.45); }
+  &--inline.pt--mars { color: $rose; border-color: rgba(160,85,109,0.42); }
+  &--mini {
+    padding: 1px 6px;
+    font-size: 10.5px;
+    letter-spacing: .8px;
+  }
 }
 
 // meta difficulty dots
@@ -1012,19 +1022,6 @@ $sans  : 'Inter', system-ui, -apple-system, sans-serif;
     filter: saturate(.92) contrast(.98);
   }
   &__img-fallback { width: 100%; height: 100%; object-fit: cover; display: block; }
-
-  &__type, &__nasa, &__mars {
-    position: absolute;
-    padding: 2px 8px;
-    font-family: $serif;
-    font-size: 10.5px;
-    letter-spacing: 1.5px;
-    color: $paper;
-    border-radius: 2px;
-  }
-  &__type { top: 8px; left: 8px; }
-  &__nasa { top: 8px; right: 8px; background: rgba(184,141,62,0.92); }
-  &__mars { top: 8px; right: 8px; background: rgba(160,85,109,0.92); }
 
   &__cap { padding: 12px 4px 0; }
   &__title {
