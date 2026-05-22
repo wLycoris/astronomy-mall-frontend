@@ -497,12 +497,15 @@ const loadReviews = async () => {
 }
 
 const handleFilterRating = (rating) => {
-  if (filterRating.value === rating) {
+  // 同星级再次点击 → 取消选择回到「全部」(rating=0)
+  // 不同星级 / 点「全部评价」按钮 → 设置 rating
+  // 任一情况都必须清掉「有图评价」过滤，否则 UI 看起来切换了但实际仍在筛有图
+  if (filterRating.value === rating && !filterHasImages.value) {
     filterRating.value = 0
   } else {
     filterRating.value = rating
-    filterHasImages.value = false
   }
+  filterHasImages.value = false
   reviewPage.value = 1
   loadReviews()
 }
